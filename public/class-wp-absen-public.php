@@ -3,7 +3,7 @@
 /**
  * The public-facing functionality of the plugin.
  *
- * @link       https://https://github.com/agusnurwanto
+ * @link       https://github.com/agusnurwanto
  * @since      1.0.0
  *
  * @package    Wp_Absen
@@ -20,7 +20,10 @@
  * @subpackage Wp_Absen/public
  * @author     Agus Nurwanto <agusnurwantomuslim@gmail.com>
  */
+require_once ABSEN_PLUGIN_PATH . "/public/trait/CustomTrait.php";
 class Wp_Absen_Public {
+
+	use CustomTraitAbsen;
 
 	/**
 	 * The ID of this plugin.
@@ -39,6 +42,7 @@ class Wp_Absen_Public {
 	 * @var      string    $version    The current version of this plugin.
 	 */
 	private $version;
+	private $functions;
 
 	/**
 	 * Initialize the class and set its properties.
@@ -47,10 +51,11 @@ class Wp_Absen_Public {
 	 * @param      string    $plugin_name       The name of the plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version ) {
+	public function __construct( $plugin_name, $version, $functions ) {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
+		$this->functions = $functions;
 
 	}
 
@@ -73,9 +78,18 @@ class Wp_Absen_Public {
 		 * class.
 		 */
 
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-absen-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style($this->plugin_name . 'select2', plugin_dir_url(__FILE__) . 'css/select2.min.css', array(), $this->version, 'all');
+		wp_enqueue_style($this->plugin_name . 'datatables', plugin_dir_url(__FILE__) . 'css/datatables.min.css', array(), $this->version, 'all');
+
+		wp_enqueue_style( 'dashicons' );
 
 	}
+
+	public function prefix_add_footer_styles() {
+		wp_enqueue_style($this->plugin_name . 'bootstrap', plugin_dir_url(__FILE__) . 'css/bootstrap.min.css', array(), $this->version, 'all');
+		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-absen-public.css', array(), $this->version, 'all' );
+	}
+
 
 	/**
 	 * Register the JavaScript for the public-facing side of the site.
@@ -95,9 +109,15 @@ class Wp_Absen_Public {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-
+		
+		wp_enqueue_script($this->plugin_name . 'bootstrap', plugin_dir_url(__FILE__) . 'js/bootstrap.bundle.min.js', array('jquery'), $this->version, false);
+		wp_enqueue_script($this->plugin_name . 'select2', plugin_dir_url(__FILE__) . 'js/select2.min.js', array('jquery'), $this->version, false);
+		wp_enqueue_script($this->plugin_name . 'datatables', plugin_dir_url(__FILE__) . 'js/datatables.min.js', array('jquery'), $this->version, false);
+		wp_enqueue_script($this->plugin_name . 'chart', plugin_dir_url(__FILE__) . 'js/chart.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-absen-public.js', array( 'jquery' ), $this->version, false );
-
+		wp_localize_script($this->plugin_name, 'ajax', array(
+			'api_key' => get_option(ABSEN_APIKEY),
+			'url' => admin_url('admin-ajax.php')
+		));
 	}
-
 }

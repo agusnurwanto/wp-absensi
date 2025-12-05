@@ -6,7 +6,7 @@
  * A class definition that includes attributes and functions used across both the
  * public-facing side of the site and the admin area.
  *
- * @link       https://https://github.com/agusnurwanto
+ * @link       https://github.com/agusnurwanto
  * @since      1.0.0
  *
  * @package    Wp_Absen
@@ -56,6 +56,7 @@ class Wp_Absen {
 	 * @var      string    $version    The current version of the plugin.
 	 */
 	protected $version;
+	protected $functions;
 
 	/**
 	 * Define the core functionality of the plugin.
@@ -124,6 +125,13 @@ class Wp_Absen {
 
 		$this->loader = new Wp_Absen_Loader();
 
+		// Functions tambahan
+		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wp-absen-functions.php';
+
+		$this->functions = new ABSEN_Functions( $this->plugin_name, $this->version );
+
+		$this->loader->add_action('template_redirect', $this->functions, 'allow_access_private_post', 0);
+
 	}
 
 	/**
@@ -152,11 +160,10 @@ class Wp_Absen {
 	 */
 	private function define_admin_hooks() {
 
-		$plugin_admin = new Wp_Absen_Admin( $this->get_plugin_name(), $this->get_version() );
+		$plugin_admin = new Wp_Absen_Admin( $this->get_plugin_name(), $this->get_version(), $this->functions );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-
 	}
 
 	/**
@@ -168,7 +175,7 @@ class Wp_Absen {
 	 */
 	private function define_public_hooks() {
 
-		$plugin_public = new Wp_Absen_Public( $this->get_plugin_name(), $this->get_version() );
+		$plugin_public = new Wp_Absen_Public( $this->get_plugin_name(), $this->get_version(), $this->functions );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );

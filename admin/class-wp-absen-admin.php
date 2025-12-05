@@ -3,7 +3,7 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * @link       https://https://github.com/agusnurwanto
+ * @link       https://github.com/agusnurwanto
  * @since      1.0.0
  *
  * @package    Wp_Absen
@@ -20,6 +20,10 @@
  * @subpackage Wp_Absen/admin
  * @author     Agus Nurwanto <agusnurwantomuslim@gmail.com>
  */
+
+use Carbon_Fields\Container;
+use Carbon_Fields\Field;
+
 class Wp_Absen_Admin {
 
 	/**
@@ -39,6 +43,7 @@ class Wp_Absen_Admin {
 	 * @var      string    $version    The current version of this plugin.
 	 */
 	private $version;
+	private $functions;
 
 	/**
 	 * Initialize the class and set its properties.
@@ -47,10 +52,11 @@ class Wp_Absen_Admin {
 	 * @param      string    $plugin_name       The name of this plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version ) {
+	public function __construct( $plugin_name, $version, $functions ) {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
+		$this->functions = $functions;
 
 	}
 
@@ -96,8 +102,9 @@ class Wp_Absen_Admin {
 		 * class.
 		 */
 
+		wp_enqueue_script( $this->plugin_name.'jszip', plugin_dir_url( __FILE__ ) . 'js/jszip.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->plugin_name.'xlsx', plugin_dir_url( __FILE__ ) . 'js/xlsx.js', array( 'jquery' ), $this->version, false );
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-absen-admin.js', array( 'jquery' ), $this->version, false );
 
 	}
-
 }
