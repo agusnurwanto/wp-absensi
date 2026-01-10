@@ -203,6 +203,9 @@ class Wp_Absen {
 		$this->loader->add_action('wp_ajax_get_data_lembaga_by_id',  $plugin_public, 'get_data_lembaga_by_id');
 		$this->loader->add_action('wp_ajax_tambah_data_lembaga',  $plugin_public, 'tambah_data_lembaga');
 		$this->loader->add_action('wp_ajax_get_datatable_lembaga',  $plugin_public, 'get_datatable_lembaga');
+		$this->loader->add_action('wp_ajax_get_datatable_pegawai',  $plugin_public, 'get_datatable_pegawai');
+		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public, 'tambah_data_pegawai');
+		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id',  $plugin_public, 'get_data_pegawai_by_id');
 
 		add_shortcode('management_data_pegawai_absensi', array($plugin_public, 'management_data_pegawai_absensi'));
 		add_shortcode('management_data_lembaga', array($plugin_public, 'management_data_lembaga'));
