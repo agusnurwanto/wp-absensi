@@ -164,6 +164,13 @@ class Wp_Absen {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'init', $plugin_admin, 'absen_create_posttype' );
+		$this->loader->add_action('carbon_fields_register_fields', $plugin_admin, 'crb_absen_options');
+
+		$this->loader->add_action('wp_ajax_import_excel_absen_pegawai',  $plugin_admin, 'import_excel_absen_pegawai');
+		$this->loader->add_action('wp_ajax_generate_user_absen',  $plugin_admin, 'generate_user_absen');
+		$this->loader->add_action('wp_ajax_sql_migrate_absen',  $plugin_admin, 'sql_migrate_absen');
+		$this->loader->add_action('wp_ajax_get_data_unit_wpsipd',  $plugin_admin, 'get_data_unit_wpsipd');
 	}
 
 	/**
@@ -179,6 +186,21 @@ class Wp_Absen {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'get_footer', $plugin_public, 'prefix_add_footer_styles' );
+		
+		$this->loader->add_action('wp_ajax_get_datatable_pegawai',  $plugin_public, 'get_datatable_pegawai');
+		$this->loader->add_action('wp_ajax_hapus_data_pegawai_by_id',  $plugin_public, 'hapus_data_pegawai_by_id');
+		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id',  $plugin_public, 'get_data_pegawai_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public, 'tambah_data_pegawai');
+
+		$this->loader->add_action('wp_ajax_hapus_data_pasar_by_id',  $plugin_public, 'hapus_data_pasar_by_id');
+		$this->loader->add_action('wp_ajax_get_data_pasar_by_id',  $plugin_public, 'get_data_pasar_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_pasar',  $plugin_public, 'tambah_data_pasar');
+		$this->loader->add_action('wp_ajax_get_datatable_pasar',  $plugin_public, 'get_datatable_pasar');
+
+		add_shortcode('management_data_pegawai_absensi', array($plugin_public, 'management_data_pegawai_absensi'));
+		add_shortcode('management_data_pasar', array($plugin_public, 'management_data_pasar'));
+		add_shortcode('management_data_absensi', array($plugin_public, 'management_data_absensi'));
 
 	}
 

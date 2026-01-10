@@ -86,3 +86,141 @@ function relayAjax(options, retries=20, delay=5000, timeout=9000000){
         }
     });
 }
+function import_excel_absen_pegawai(){
+    var data = jQuery('#data-excel').val();
+    if(!data){
+        return alert('Excel Data can not empty!');
+    }else{
+        data = JSON.parse(data);
+        jQuery('#wrap-loading').show();
+
+        var data_all = [];
+        var data_sementara = [];
+        var max = 100;
+        data.map(function(b, i){
+            data_sementara.push(b);
+            if(data_sementara.length%max == 0){
+                data_all.push(data_sementara);
+                data_sementara = [];
+            }
+        });
+        if(data_sementara.length > 0){
+            data_all.push(data_sementara);
+        }
+        var last = data_all.length - 1;
+        data_all.reduce(function(sequence, nextData){
+            return sequence.then(function(current_data){
+                return new Promise(function(resolve_reduce, reject_reduce){
+                    relayAjax({
+                        url: ajaxurl,
+                        type: 'post',
+                        data: {
+                            action: 'import_excel_absen_pegawai',
+                            data: current_data
+                        },
+                        success: function(res){
+                            resolve_reduce(nextData);
+                        },
+                        error: function(e){
+                            console.log('Error import excel', e);
+                        }
+                    });
+                })
+                .catch(function(e){
+                    console.log(e);
+                    return Promise.resolve(nextData);
+                });
+            })
+            .catch(function(e){
+                console.log(e);
+                return Promise.resolve(nextData);
+            });
+        }, Promise.resolve(data_all[last]))
+        .then(function(data_last){
+            jQuery('#wrap-loading').hide();
+            alert('Success import data pegawai dari excel!');
+        })
+        .catch(function(e){
+            console.log(e);
+            jQuery('#wrap-loading').hide();
+            alert('Error!');
+        });
+    }
+}
+
+function sql_migrate_absen() {
+    jQuery("#wrap-loading").show();
+    jQuery.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: {
+            action: "sql_migrate_absen",
+        },
+        dataType: "json",
+        success: function (data) {
+            jQuery("#wrap-loading").hide();
+            return alert(data.message);
+        },
+        error: function (e) {
+            console.log(e);
+            return alert(data.message);
+        },
+    });
+}
+
+function generate_user_absen(){
+    if(confirm("Apakah anda yakin untuk menggenerate user dari tabel data_pegawai!")){
+        jQuery('#wrap-loading').show();
+        relayAjax({
+            url: ajaxurl,
+            type: "post",
+            data: {
+                "action": "generate_user_absen",
+                "pass": prompt('Masukan password default untuk User yang akan dibuat')
+            },
+            dataType: "json",
+            success: function(data){
+                jQuery('#wrap-loading').hide();
+                return alert(data.message);
+            },
+            error: function(e) {
+                console.log(e);
+                return alert(data.message);
+            }
+        });
+    }
+}
+
+function get_data_unit_wpsipd() {
+    jQuery("#wrap-loading").show();
+    jQuery.ajax({
+        url: ajaxurl,
+        type: "post",
+        dataType: "json",
+        data: {
+            action: "get_data_unit_wpsipd",
+            server: jQuery(
+                'input[name="carbon_fields_compact_input[_crb_url_server_wpsipd]"]'
+            ).val(),
+            api_key: jQuery(
+                'input[name="carbon_fields_compact_input[_crb_apikey_wpsipd]"]'
+            ).val(),
+            tahun_anggaran: jQuery(
+                'input[name="carbon_fields_compact_input[_crb_tahun_wpsipd]"]'
+            ).val(),
+        },
+        success: function (data) {
+            jQuery("#wrap-loading").hide();
+            console.log(data.message);
+            if (data.status == "success") {
+                alert("Data berhasil disinkron");
+            } else {
+                alert(data.message);
+            }
+        },
+        error: function (e) {
+            console.log(e);
+            return alert(e);
+        },
+    });
+}

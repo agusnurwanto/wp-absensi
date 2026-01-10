@@ -107,4 +107,661 @@ class Wp_Absen_Admin {
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-absen-admin.js', array( 'jquery' ), $this->version, false );
 
 	}
+
+	// https://www.wpbeginner.com/wp-tutorials/how-to-create-custom-post-types-in-wordpress/
+	function absen_create_posttype() {
+	    register_post_type( 'Instansi',
+	        array(
+	            'labels' => array(
+	                'name' => __( 'Instansi' ),
+	                'singular_name' => __( 'Instansi' )
+	            ),
+	            'hierarchical'        => false,
+		        'public'              => true,
+		        'show_ui'             => true,
+		        'show_in_menu'        => true,
+		        'show_in_nav_menus'   => true,
+		        'show_in_admin_bar'   => true,
+		        'menu_position'       => 5,
+		        'can_export'          => true,
+		        'has_archive'         => true,
+		        'exclude_from_search' => false,
+		        'publicly_queryable'  => true,
+		        'capability_type'     => 'post',
+		        'show_in_rest' 		  => true,
+	            'rewrite' 			  => array('slug' => 'instansi'),
+        		'supports'            => array( 'title', 'editor', 'author', 'thumbnail', 'comments', 'revisions', 'custom-fields', ),
+	        )
+	    );
+	}
+
+	public function crb_absen_options()
+    {      
+        $laporan_bulanan_absensi = $this->functions->generatePage(array(
+            'nama_page' => 'Laporan Bulanan Absensi',
+            'content' => '[laporan_bulanan_absensi]',
+            'show_header' => 1,
+            'no_key' => 1,
+            'post_status' => 'private'
+        ));
+
+        $api_key = get_option(ABSEN_APIKEY);
+        if(empty($api_key)){
+            $api_key = $this->functions->generateRandomString();
+            update_option(ABSEN_APIKEY, $api_key);
+        }
+        
+        global $wpdb;
+        
+        $table_name = 'absensi_data_unit';
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+        
+        $get_data = '';
+        $get_data_pasar = '';
+        $get_absensi_pegawai = '';
+        if($table_exists){
+            $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
+            
+            if(!empty($get_tahun) && is_array($get_tahun)){
+                foreach ($get_tahun as $k => $v){
+                    $management_data_pegawai = $this->functions->generatePage(array(
+                        'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
+                        'content' => '[management_data_pegawai tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                        'show_header' => 1,
+                        'no_key' => 1,
+                        'post_status' => 'private'
+                    ));
+                    $get_data .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
+                    $management_data_pasar = $this->functions->generatePage(array(
+                        'nama_page' => 'Management Data Pasar | ' . $v['tahun_anggaran'],
+                        'content' => '[management_data_pasar tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                        'show_header' => 1,
+                        'no_key' => 1,
+                        'post_status' => 'private'
+                    ));
+                    $get_data_pasar .= '<li><a target="_blank" href="' . $management_data_pasar['url'] . '">' . esc_html($management_data_pasar['title']) . '</a></li>';
+                    $management_data_absensi = $this->functions->generatePage(array(
+                        'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun_anggaran'],
+                        'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                        'show_header' => 1,
+                        'no_key' => 1,
+                        'post_status' => 'private'
+                    ));
+                    $get_absensi_pegawai .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
+                }
+            }
+        } else {
+            $get_data = '<li style="color: red; font-weight: bold;">Tabel belum dibuat. Silakan jalankan SQL Migrate terlebih dahulu.</li>';
+        }
+        
+        $basic_options_container = Container::make('theme_options', 'Absensi Options')
+            ->set_page_menu_position(3)
+            ->add_tab('⚙️ Konfigurasi Umum', $this->generate_fields_options_konfigurasi_umum($get_data_pasar))
+            ->add_tab('🔌 API WP SIPD', $this->generate_fields_options_api_wpsipd());
+
+        Container::make('theme_options', __('Menu Pegawai'))
+            ->set_page_parent($basic_options_container)
+            ->add_tab('⚙️ Data Pegawai', $this->generate_fields_options_konfigurasi_umum_pegawai($get_data))
+            ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai));
+    }
+
+	public function import_excel_absen_pegawai(){
+        global $wpdb;
+        $ret = array(
+            'status' => 'success',
+            'message' => 'Berhasil import excel!'
+        );
+        
+        if (!empty($_POST)) {
+            $ret['data'] = array(
+                'insert' => array(),
+                'update' => array(),
+                'error' => array()
+            );
+            
+            foreach ($_POST['data'] as $k => $data) {
+                $newData = array();
+                foreach($data as $kk => $vv){
+                    $cleanKey = trim(strtolower(preg_replace('/\s+/', '_', $kk)));
+                    $newData[$cleanKey] = trim(preg_replace('/\s+/', ' ', $vv));
+                }
+                
+                $data_db = array(
+                    'id_skpd' => $newData['id_skpd'],
+                    'nip' => $newData['nip'],
+                    'nik' => $newData['nik'],
+                    'gelar_depan' => $newData['gelar_depan'],
+                    'nama' => $newData['nama'],
+                    'gelar_belakang' => $newData['gelar_belakang'],
+                    'nama_lengkap' => $newData['nama_lengkap'],
+                    'tempat_lahir' => $newData['tempat_lahir'],
+                    'tanggal_lahir' => $newData['tanggal_lahir'],
+                    'kode_jenis_kelamin' => $newData['kode_jenis_kelamin'],
+                    'status' => $newData['status'],
+                    'gol_ruang' => $newData['gol_ruang'],
+                    'kode_gol' => $newData['kode_gol'],
+                    'tmt_pangkat' => $newData['tmt_pangkat'],
+                    'eselon' => $newData['eselon'],
+                    'jabatan' => $newData['jabatan'],
+                    'tipe_pegawai' => $newData['tipe_pegawai'],
+                    'tmt_jabatan' => $newData['tmt_jabatan'],
+                    'agama' => $newData['agama'],
+                    'no_hp' => $newData['no_hp'],
+                    'alamat' => $newData['alamat'],
+                    'satuan_kerja' => $newData['satuan_kerja'],
+                    'unit_kerja_induk' => $newData['unit_kerja_induk'],
+                    'tmt_pensiun' => $newData['tmt_pensiun'],
+                    'pendidikan' => $newData['pendidikan'],
+                    'kode_pendidikan' => $newData['kode_pendidikan'],
+                    'nama_sekolah' => $newData['nama_sekolah'],
+                    'nama_pendidikan' => $newData['nama_pendidikan'],
+                    'lulus' => $newData['lulus'],
+                    'karpeg' => $newData['karpeg'],
+                    'karis_karsu' => $newData['karis_karsu'],
+                    'nilai_prestasi' => $newData['nilai_prestasi'],
+                    'email' => $newData['email'],
+                    'tahun' => $newData['tahun'],
+                    'user_role' => $newData['user_role'],
+                );
+                
+                $wpdb->last_error = "";
+                $cek_id = $wpdb->get_var($wpdb->prepare("
+                    SELECT id 
+                    FROM absensi_data_pegawai 
+                    WHERE nip = %s 
+                    AND nik = %s 
+                    AND tahun = %s
+                ", $newData['nip'], $newData['nik'], $newData['tahun']));
+                
+                if (empty($cek_id)) {
+                    $wpdb->insert("absensi_data_pegawai", $data_db);
+                    $ret['data']['insert'][] = $data_db;
+                } else {
+                    $wpdb->update("absensi_data_pegawai", $data_db, array(
+                        "id" => $cek_id
+                    ));
+                    $ret['data']['update'][] = $data_db;
+                }
+                
+                if (!empty($wpdb->last_error)) {
+                    $ret['data']['error'][] = array($wpdb->last_error, $data_db);
+                }
+            }
+        } else {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Format Salah!';
+        }
+        
+        die(json_encode($ret));
+    }
+
+	function sql_migrate_absen()
+    {
+        global $wpdb;
+        $ret = array(
+            'status'    => 'success',
+            'message'   => 'Berhasil menjalankan SQL migrate!'
+        );
+        
+        $file = 'tabel.sql';
+        $path = ABSEN_PLUGIN_PATH . '/' . $file;
+        
+        if (!file_exists($path)) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'File ' . $path . ' tidak ditemukan!';
+            die(json_encode($ret));
+        }
+        
+        $sql = file_get_contents($path);
+        if (empty($sql)) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'File SQL kosong atau tidak dapat dibaca!';
+            die(json_encode($ret));
+        }
+        
+        $ret['value'] = $file . ' (tgl: ' . date('Y-m-d H:i:s') . ')';
+        $ret['sql'] = $sql;
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        $wpdb->hide_errors();
+        
+        try {
+            $rows_affected = dbDelta($sql);
+            
+            if (empty($rows_affected)) {
+                $ret['status'] = 'error';
+                $ret['message'] = !empty($wpdb->last_error) ? $wpdb->last_error : 'Tidak ada perubahan pada database atau query gagal dieksekusi.';
+            } else {
+                $ret['message'] = 'Berhasil menjalankan SQL migrate: ' . implode(' | ', $rows_affected);
+                $ret['rows_affected'] = $rows_affected;
+                
+                $ret['version'] = $this->version;
+                update_option('_last_update_sql_migrate_absen', $ret['value']);
+                update_option('_wp_absen_db_version', $this->version);
+            }
+        } catch (Exception $e) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Error: ' . $e->getMessage();
+        }
+        
+        die(json_encode($ret));
+    }
+
+	function generate_user_absen($user = array()){
+		$ret = array(
+			'status' => 'success',
+			'message' => 'Berhasil generate user',
+			'data' => array(
+				'insert' => array(),
+				'update' => array()
+			)
+		);
+		global $wpdb;
+		$user_all = $wpdb->get_results("
+			SELECT 
+				p.*,
+				u.nama_skpd 
+			from absensi_data_pegawai p
+			inner join absensi_data_unit u on u.id_skpd=p.id_skpd
+				and u.active=p.active 
+				and u.tahun_anggaran=p.tahun 
+			where p.active=1
+			group by p.nik, p.nip
+		", ARRAY_A);
+		foreach($user_all as $user){
+			$username = $user['nip'];
+			if(empty($username)){
+				$username = $user['nik'];
+			}
+			$email = $user['email'];
+			if(empty($email)){
+				$email = $username.'@absenlocal.com';
+			}
+			if(empty($user['user_role'])){
+				continue;
+			}
+			$all_roles = explode('|', $user['user_role']);
+			foreach($all_roles as $user_role){
+				$role = get_role($user_role);
+				if(empty($role)){
+					add_role( $user_role, $user_role, array( 
+						'read' => true,
+						'edit_posts' => false,
+						'delete_posts' => false
+					) );
+				}
+			}
+			$id_user = username_exists($username);
+			$options = array(
+				'user_login' => $username,
+				'user_pass' => $_POST['pass'],
+				'user_email' => $email,
+				'first_name' => $user['nama'],
+				'display_name' => $user['nama'],
+				'role' => $all_roles[0]
+			);
+			if(empty($id_user)){
+				$id_user = wp_insert_user($options);
+				$ret['data']['insert'][] = $options;
+			}else{
+				$options['ID'] = $id_user;
+				// wp_update_user($options);
+				$ret['data']['update'][] = $options;
+			}
+
+			$user_meta = get_userdata( $id_user );
+			foreach($all_roles as $user_role){
+				if(
+					empty($user_meta->roles) 
+					|| !in_array($user_role, $user_meta->roles)
+				){
+					$theUser = new WP_User($id_user);
+		 			$theUser->add_role( $user_role );
+				}
+			}
+
+			$skpd = $wpdb->get_var("
+				SELECT 
+					nama_skpd 
+				from absensi_data_unit 
+				where id_skpd=".$user['id_skpd']." 
+					AND active=1
+			");
+			$meta = array(
+			    '_crb_nama_skpd' => $skpd,
+			    '_id_sub_skpd' => $user['id_skpd'],
+			    '_nip' => $user['nip'],
+			    'id_pegawai' => $user['id'],
+			    'description' => 'User dibuat dari autogenerate sistem'
+			);
+		    foreach( $meta as $key => $val ) {
+		      	update_user_meta( $id_user, $key, $val ); 
+		    }
+		}
+		die(json_encode($ret));
+	}
+
+	function get_user_roles_by_user_id( $user_id ) {
+	    $user = get_userdata( $user_id );
+	    return empty( $user ) ? array() : $user->roles;
+	}
+
+	function is_user_in_role( $user_id, $role  ) {
+	    return in_array( $role, get_user_roles_by_user_id( $user_id ) );
+	}
+
+	public function generate_fields_options_konfigurasi_umum($get_data_pasar)
+    {
+        return [
+            Field::make('html', 'crb_absen_halaman_terkait_pasar')
+            ->set_html('
+            <h5>HALAMAN TERKAIT</h5>
+            <ol>
+                ' . $get_data_pasar . '
+            </ol>
+            '),
+            Field::make('text', 'crb_apikey_absen', 'API KEY')
+                ->set_default_value($this->functions->generateRandomString())
+                ->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),
+
+             Field::make('html', 'crb_sql_fte_absen_buttons')
+					->set_html('
+	                <div>
+	                    <a onclick="sql_migrate_absen(); return false;" href="#" class="button button-primary button-large">SQL Migrate</a>
+	                </div>
+	            ')
+                ->set_width(33.33)
+                ->set_help_text('Tombol untuk menjalankan database migration.'),
+                
+            Field::make('html', 'crb_gen_user_absen')
+                ->set_html('<a target="_blank" onclick="generate_user_absen(); return false;" href="#" class="button button-primary button-large">Generate User Pegawai</a>')
+                ->set_help_text('Generate user dari tabel <b>data_pegawai</b>.')
+        ];
+    }
+
+    public function generate_fields_options_api_wpsipd()
+    {
+        return [
+            Field::make('text', 'crb_url_server_wpsipd', 'URL Server WP-SIPD')
+                ->set_default_value(admin_url('admin-ajax.php'))
+                ->set_required(true),
+                
+            Field::make('text', 'crb_apikey_wpsipd', 'API KEY WP-SIPD')
+                ->set_default_value($this->functions->generateRandomString())
+                ->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),
+                
+            Field::make('text', 'crb_tahun_wpsipd', 'Tahun Anggaran WP-SIPD')
+                ->set_default_value(date('Y'))
+                ->set_help_text('Wajib diisi.'),
+                
+            Field::make('html', 'crb_html_data_unit')
+                ->set_html('<a href="#" class="button button-primary" onclick="get_data_unit_wpsipd(); return false;">Tarik Data Unit dari WP SIPD</a>')
+                ->set_help_text('Tombol untuk menarik data Unit dari WP SIPD.')
+        ];
+    }
+
+	public function generate_fields_options_konfigurasi_umum_pegawai($get_data)
+    {
+        return [
+            Field::make('html', 'crb_absen_pegawai_hide_sidebar')
+            ->set_html('
+            <h5>HALAMAN TERKAIT</h5>
+            <ol>
+                ' . $get_data . '
+            </ol>
+            '),
+
+             Field::make('html', 'crb_absen_pegawai_upload_html')
+                    ->set_html('<h3>Import EXCEL data Pegawai</h3>Pilih file excel .xlsx : <input type="file" id="file-excel" onchange="filePickedAbsen(event);"><br>Contoh format file excel bisa <a target="_blank" href="' . ABSEN_PLUGIN_URL . 'public/media/absen/contoh_data_pegawai.xlsx' . '">download di sini</a>. Sheet file excel yang akan diimport harus diberi nama <b>data</b>. Untuk kolom nilai angka ditulis tanpa tanda titik.'),
+                Field::make('html', 'crb_absen_pegawai')
+                    ->set_html('Data JSON : <textarea id="data-excel" class="cf-select__input"></textarea>'),
+                Field::make('html', 'crb_absen_pegawai_save_button')
+                    ->set_html('<a onclick="import_excel_absen_pegawai(); return false" href="javascript:void(0);" class="button button-primary">Import WP</a>')
+        ];
+    }
+
+    public function generate_fields_options_absensi_pegawai($get_absensi_pegawai)
+    {
+        return [
+            Field::make('html', 'crb_options_absen_pegawai')
+            ->set_html('
+            <h5>HALAMAN TERKAIT</h5>
+            <ol>
+                ' . $get_absensi_pegawai . '
+            </ol>
+            ')
+        ];
+    }
+
+    function get_data_unit_wpsipd()
+	{
+		global $wpdb;
+		$ret = array(
+			'status'  => 'success',
+			'message' => 'Berhasil Get Data Unit WP-SIPD!'
+		);
+		if (empty($_POST['server'])) {
+			$ret['status'] 	= 'error';
+			$ret['message'] = 'URL Server Tidak Boleh Kosong';
+			die(json_encode($ret));
+		} else if (empty($_POST['tahun_anggaran'])) {
+			$ret['status'] 	= 'error';
+			$ret['message'] = 'Tahun Anggaran Tidak Boleh Kosong';
+			die(json_encode($ret));
+		} else if (empty($_POST['api_key'])) {
+			$ret['status'] 	= 'error';
+			$ret['message'] = 'API Key Tidak Boleh Kosong';
+			die(json_encode($ret));
+		}
+
+		// data to send in API request
+		$api_params_get_skpd = array(
+			'action' 		 => 'get_skpd',
+			'api_key'		 => $_POST['api_key'],
+			'tahun_anggaran' => $_POST['tahun_anggaran']
+		);
+
+		$api_params_get_rekening = array(
+			'action' 		 => 'get_rekening_akun',
+			'api_key'		 => $_POST['api_key'],
+			'tahun_anggaran' => $_POST['tahun_anggaran']
+		);
+
+		$api_params_get_satuan = array(
+			'action' 		 => 'get_data_satuan_ssh',
+			'api_key'		 => $_POST['api_key'],
+			'tahun_anggaran' => $_POST['tahun_anggaran'],
+			'no_option' 	 => true
+		);
+
+		$response_get_skpd = wp_remote_post(
+			$_POST['server'],
+			array(
+				'timeout' 	=> 1000,
+				'sslverify' => false,
+				'body' 		=> $api_params_get_skpd
+			)
+		);
+
+		$response_get_rekening = wp_remote_post(
+			$_POST['server'],
+			array(
+				'timeout' 	=> 1000,
+				'sslverify' => false,
+				'body' 		=> $api_params_get_rekening
+			)
+		);
+
+		$response_get_satuan = wp_remote_post(
+			$_POST['server'],
+			array(
+				'timeout' 	=> 1000,
+				'sslverify' => false,
+				'body' 		=> $api_params_get_satuan
+			)
+		);
+
+		$response_get_skpd 		= wp_remote_retrieve_body($response_get_skpd);
+		$response_get_rekening 	= wp_remote_retrieve_body($response_get_rekening);
+		$response_get_satuan 	= wp_remote_retrieve_body($response_get_satuan);
+
+		$data_get_skpd 		= json_decode($response_get_skpd);
+		$data_get_rekening 	= json_decode($response_get_rekening);
+		$data_get_satuan	= json_decode($response_get_satuan);
+
+		$absensi_data_unit 			= $data_get_skpd->data;
+		$absensi_data_rekening_akun 	= $data_get_rekening->items;
+		$absensi_data_satuan 		= $data_get_satuan->data;
+
+		if ($data_get_skpd->status == 'success' && !empty($absensi_data_unit)) {
+			$wpdb->update(
+				'absensi_data_unit',
+				array('active' => 0),
+				array('tahun_anggaran' => $api_params_get_skpd['tahun_anggaran'])
+			);
+			foreach ($absensi_data_unit as $vdata) {
+				$cek = $wpdb->get_var(
+					$wpdb->prepare('
+						SELECT id 
+						FROM absensi_data_unit 
+						WHERE id_skpd = %d
+						  AND tahun_anggaran = %d
+					', $vdata->id_skpd, $vdata->tahun_anggaran)
+				);
+				$data = array(
+					'id_setup_unit'  => $vdata->id_setup_unit,
+					'id_unit' 		 => $vdata->id_unit,
+					'is_skpd' 		 => $vdata->is_skpd,
+					'kode_skpd' 	 => $vdata->kode_skpd,
+					'kunci_skpd' 	 => $vdata->kunci_skpd,
+					'nama_skpd' 	 => $vdata->nama_skpd,
+					'posisi' 		 => $vdata->posisi,
+					'status' 		 => $vdata->status,
+					'id_skpd' 		 => $vdata->id_skpd,
+					'bidur_1' 		 => $vdata->bidur_1,
+					'bidur_2' 		 => $vdata->bidur_2,
+					'bidur_3' 		 => $vdata->bidur_3,
+					'idinduk' 		 => $vdata->idinduk,
+					'ispendapatan' 	 => $vdata->ispendapatan,
+					'isskpd' 		 => $vdata->isskpd,
+					'kode_skpd_1' 	 => $vdata->kode_skpd_1,
+					'kode_skpd_2' 	 => $vdata->kode_skpd_2,
+					'kodeunit' 		 => $vdata->kodeunit,
+					'komisi' 		 => $vdata->komisi,
+					'namabendahara'  => $vdata->namabendahara,
+					'namakepala' 	 => $vdata->namakepala,
+					'namaunit' 		 => $vdata->namaunit,
+					'nipbendahara' 	 => $vdata->nipbendahara,
+					'nipkepala' 	 => $vdata->nipkepala,
+					'pangkatkepala'  => $vdata->pangkatkepala,
+					'setupunit' 	 => $vdata->setupunit,
+					'statuskepala' 	 => $vdata->statuskepala,
+					'update_at' 	 => $vdata->update_at,
+					'tahun_anggaran' => $vdata->tahun_anggaran,
+					'active' 		 => $vdata->active
+				);
+				if (empty($cek)) {
+					$wpdb->insert(
+						'absensi_data_unit',
+						$data
+					);
+				} else {
+					$wpdb->update(
+						'absensi_data_unit',
+						$data,
+						array('id' => $cek)
+					);
+				}
+			}
+		} else {
+			$ret['status'] 	= 'error';
+			$ret['message'] = 'Data Unit gagal untuk didapatkan!';
+			die(json_encode($ret));
+		}
+
+		if ($data_get_rekening->status == true && !empty($absensi_data_rekening_akun)) {
+			$wpdb->update(
+				'absensi_data_rekening_akun',
+				array('active' => 0),
+				array('tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'])
+			);
+			foreach ($absensi_data_rekening_akun as $vdata) {
+				$cek = $wpdb->get_var(
+					$wpdb->prepare('
+						SELECT id 
+						FROM absensi_data_rekening_akun 
+						WHERE id_akun = %d
+						  AND kode_akun = %s
+						  AND tahun_anggaran = %d
+					', $vdata->id_akun, $vdata->kode_akun, $vdata->tahun_anggaran)
+				);
+				$data = array(
+					'id_akun'		 => $vdata->id_akun,
+					'kode_akun'		 => $vdata->kode_akun,
+					'nama_akun'		 => $vdata->nama_akun,
+					'tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'],
+					'active' 		 => 1
+				);
+				if (empty($cek)) {
+					$wpdb->insert(
+						'absensi_data_rekening_akun',
+						$data
+					);
+				} else {
+					$wpdb->update(
+						'absensi_data_rekening_akun',
+						$data,
+						array('id' => $cek)
+					);
+				}
+			}
+		} else {
+			$ret['status'] 	= 'error';
+			$ret['message'] = 'Data Rekening gagal untuk didapatkan!';
+			die(json_encode($ret));
+		}
+
+		if ($data_get_satuan->status == true && !empty($absensi_data_satuan)) {
+			$wpdb->update(
+				'absensi_data_satuan',
+				array('active' => 0),
+				array('tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'])
+			);
+			foreach ($absensi_data_satuan as $vdata) {
+				$cek = $wpdb->get_var(
+					$wpdb->prepare('
+						SELECT id 
+						FROM absensi_data_satuan 
+						WHERE tahun_anggaran = %d
+						  AND id_satuan = %d
+					', $vdata->id_satuan, $vdata->tahun_anggaran)
+				);
+
+				$data = array(
+					'id_satuan'		 => $vdata->id_satuan,
+					'nama_satuan'	 => $vdata->nama_satuan,
+					'tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'],
+					'active' 		 => 1
+				);
+				if (empty($cek)) {
+					$wpdb->insert(
+						'absensi_data_satuan',
+						$data
+					);
+				} else {
+					$wpdb->update(
+						'absensi_data_satuan',
+						$data,
+						array('id' => $cek)
+					);
+				}
+			}
+		} else {
+			$ret['status'] 	= 'error';
+			$ret['message'] = 'Data Satuan gagal untuk didapatkan!';
+			die(json_encode($ret));
+		}
+
+		die(json_encode($ret));
+	}
 }
