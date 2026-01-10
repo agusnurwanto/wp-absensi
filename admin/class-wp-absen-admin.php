@@ -157,7 +157,7 @@ class Wp_Absen_Admin {
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
         
         $get_data = '';
-        $get_data_pasar = '';
+        $get_data_lembaga = '';
         $get_absensi_pegawai = '';
         if($table_exists){
             $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
@@ -166,20 +166,20 @@ class Wp_Absen_Admin {
                 foreach ($get_tahun as $k => $v){
                     $management_data_pegawai = $this->functions->generatePage(array(
                         'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
-                        'content' => '[management_data_pegawai tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                        'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
                         'show_header' => 1,
                         'no_key' => 1,
                         'post_status' => 'private'
                     ));
                     $get_data .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
-                    $management_data_pasar = $this->functions->generatePage(array(
-                        'nama_page' => 'Management Data Pasar | ' . $v['tahun_anggaran'],
-                        'content' => '[management_data_pasar tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                    $management_data_lembaga = $this->functions->generatePage(array(
+                        'nama_page' => 'Management Data Lembaga | ' . $v['tahun_anggaran'],
+                        'content' => '[management_data_lembaga tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
                         'show_header' => 1,
                         'no_key' => 1,
                         'post_status' => 'private'
                     ));
-                    $get_data_pasar .= '<li><a target="_blank" href="' . $management_data_pasar['url'] . '">' . esc_html($management_data_pasar['title']) . '</a></li>';
+                    $get_data_lembaga .= '<li><a target="_blank" href="' . $management_data_lembaga['url'] . '">' . esc_html($management_data_lembaga['title']) . '</a></li>';
                     $management_data_absensi = $this->functions->generatePage(array(
                         'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun_anggaran'],
                         'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
@@ -196,13 +196,30 @@ class Wp_Absen_Admin {
         
         $basic_options_container = Container::make('theme_options', 'Absensi Options')
             ->set_page_menu_position(3)
-            ->add_tab('⚙️ Konfigurasi Umum', $this->generate_fields_options_konfigurasi_umum($get_data_pasar))
+            ->add_tab('⚙️ Konfigurasi Umum', $this->generate_fields_options_konfigurasi_umum())
             ->add_tab('🔌 API WP SIPD', $this->generate_fields_options_api_wpsipd());
 
         Container::make('theme_options', __('Menu Pegawai'))
             ->set_page_parent($basic_options_container)
             ->add_tab('⚙️ Data Pegawai', $this->generate_fields_options_konfigurasi_umum_pegawai($get_data))
             ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai));
+
+        Container::make('theme_options', __('Data Lembaga'))
+            ->set_page_parent($basic_options_container)
+            ->add_tab('⚙️ Data Lembaga', $this->generate_fields_options_data_lembaga($get_data_lembaga));
+    }
+
+    public function generate_fields_options_data_lembaga($get_data_lembaga)
+    {
+        return [
+            Field::make('html', 'crb_absen_halaman_terkait_lembaga')
+            ->set_html('
+            <h5>HALAMAN TERKAIT</h5>
+            <ol>
+                ' . $get_data_lembaga . '
+            </ol>
+            '),
+        ];
     }
 
 	public function import_excel_absen_pegawai(){
@@ -450,16 +467,9 @@ class Wp_Absen_Admin {
 	    return in_array( $role, get_user_roles_by_user_id( $user_id ) );
 	}
 
-	public function generate_fields_options_konfigurasi_umum($get_data_pasar)
+	public function generate_fields_options_konfigurasi_umum()
     {
         return [
-            Field::make('html', 'crb_absen_halaman_terkait_pasar')
-            ->set_html('
-            <h5>HALAMAN TERKAIT</h5>
-            <ol>
-                ' . $get_data_pasar . '
-            </ol>
-            '),
             Field::make('text', 'crb_apikey_absen', 'API KEY')
                 ->set_default_value($this->functions->generateRandomString())
                 ->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),

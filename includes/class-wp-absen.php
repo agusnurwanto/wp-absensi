@@ -193,13 +193,13 @@ class Wp_Absen {
 		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id',  $plugin_public, 'get_data_pegawai_by_id');
 		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public, 'tambah_data_pegawai');
 
-		$this->loader->add_action('wp_ajax_hapus_data_pasar_by_id',  $plugin_public, 'hapus_data_pasar_by_id');
-		$this->loader->add_action('wp_ajax_get_data_pasar_by_id',  $plugin_public, 'get_data_pasar_by_id');
-		$this->loader->add_action('wp_ajax_tambah_data_pasar',  $plugin_public, 'tambah_data_pasar');
-		$this->loader->add_action('wp_ajax_get_datatable_pasar',  $plugin_public, 'get_datatable_pasar');
+		$this->loader->add_action('wp_ajax_hapus_data_lembaga_by_id',  $plugin_public, 'hapus_data_lembaga_by_id');
+		$this->loader->add_action('wp_ajax_get_data_lembaga_by_id',  $plugin_public, 'get_data_lembaga_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_lembaga',  $plugin_public, 'tambah_data_lembaga');
+		$this->loader->add_action('wp_ajax_get_datatable_lembaga',  $plugin_public, 'get_datatable_lembaga');
 
 		add_shortcode('management_data_pegawai_absensi', array($plugin_public, 'management_data_pegawai_absensi'));
-		add_shortcode('management_data_pasar', array($plugin_public, 'management_data_pasar'));
+		add_shortcode('management_data_lembaga', array($plugin_public, 'management_data_lembaga'));
 		add_shortcode('management_data_absensi', array($plugin_public, 'management_data_absensi'));
 
 	}

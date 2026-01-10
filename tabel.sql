@@ -169,10 +169,12 @@ CREATE TABLE `absensi_data_satuan` (
   KEY `active` (`active`)
 );
 
-CREATE TABLE `absensi_data_pasar` (
+CREATE TABLE `absensi_data_lembaga` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `nama_pasar` VARCHAR(64) DEFAULT NULL,
-  `alamat_pasar` varchar(64) DEFAULT NULL,
+  `nama_lembaga` VARCHAR(64) DEFAULT NULL,
+  `alamat_lembaga` varchar(64) DEFAULT NULL,
+  `koordinat` VARCHAR(100) DEFAULT NULL,
+  `radius_meter` INT(11) DEFAULT 100,
   `tahun_anggaran` year(4) NOT NULL,
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,

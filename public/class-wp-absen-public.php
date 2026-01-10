@@ -127,11 +127,11 @@ class Wp_Absen_Public {
         }
         require_once plugin_dir_path(dirname(__FILE__)) . 'public/partials/wp-absen-management-data-pegawai.php';
     }
-    public function management_data_pasar($atts){
+    public function management_data_lembaga($atts){
         if(!empty($_GET) && !empty($_GET['post'])){
             return '';
         }
-        require_once plugin_dir_path(dirname(__FILE__)) . 'public/partials/wp-absen-management-data-pasar.php';
+        require_once plugin_dir_path(dirname(__FILE__)) . 'public/partials/wp-absen-management-data-lembaga.php';
     }
     public function management_data_absensi($atts){
         if(!empty($_GET) && !empty($_GET['post'])){
@@ -536,7 +536,7 @@ class Wp_Absen_Public {
 	    die(json_encode($ret));
 	}
 
-	public function get_datatable_pasar(){
+	public function get_datatable_lembaga(){
         global $wpdb;
         $ret = array(
             'status' => 'success',
@@ -551,9 +551,11 @@ class Wp_Absen_Public {
                 $params = $columns = $totalRecords = $data = array();
                 $params = $_REQUEST;
                 $columns = array( 
-				   0 => 'nama_pasar',
-				   1 => 'alamat_pasar',
-                   2 => 'id'
+				   0 => 'nama_lembaga',
+				   1 => 'alamat_lembaga',
+                   2 => 'koordinat',
+                   3 => 'radius_meter',
+                   4 => 'id'
                 );
                 $where = $sqlTot = $sqlRec = "";
 
@@ -563,8 +565,8 @@ class Wp_Absen_Public {
                 }
 
                 // getting total number records without any search
-                $sql_tot = "SELECT count(id) as jml FROM `absensi_data_pasar`";
-                $sql = "SELECT ".implode(', ', $columns)." FROM `absensi_data_pasar`";
+                $sql_tot = "SELECT count(id) as jml FROM `absensi_data_lembaga`";
+                $sql = "SELECT ".implode(', ', $columns)." FROM `absensi_data_lembaga`";
                 $where_first = " WHERE 1=1 AND active=1";
                 $sqlTot .= $sql_tot.$where_first;
                 $sqlRec .= $sql.$where_first;
@@ -613,7 +615,7 @@ class Wp_Absen_Public {
         die(json_encode($return));
     }
 
-    public function hapus_data_pasar_by_id(){
+    public function hapus_data_lembaga_by_id(){
 	    global $wpdb;
 	    $ret = array(
 	        'status' => 'success',
@@ -622,7 +624,7 @@ class Wp_Absen_Public {
 	    );
 	    if(!empty($_POST)){
 	        if(!empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
-	            $ret['data'] = $wpdb->update('absensi_data_pasar', array('active' => 0), array(
+	            $ret['data'] = $wpdb->update('absensi_data_lembaga', array('active' => 0), array(
 	                'id' => $_POST['id']
 	            ));
 	        }else{
@@ -637,7 +639,7 @@ class Wp_Absen_Public {
 	    die(json_encode($ret));
 	}
 
-	public function get_data_pasar_by_id(){
+	public function get_data_lembaga_by_id(){
         global $wpdb;
         $ret = array(
             'status' => 'success',
@@ -649,7 +651,7 @@ class Wp_Absen_Public {
                 $ret['data'] = $wpdb->get_row($wpdb->prepare('
                     SELECT 
                         *
-                    FROM absensi_data_pasar
+                    FROM absensi_data_lembaga
                     WHERE id=%d
                 ', $_POST['id']), ARRAY_A);
             }else{
@@ -664,7 +666,7 @@ class Wp_Absen_Public {
         die(json_encode($ret));
     }
 
-    public function tambah_data_pasar(){
+    public function tambah_data_lembaga(){
         global $wpdb;
         $ret = array(
             'status' => 'success',
@@ -673,28 +675,32 @@ class Wp_Absen_Public {
         );
         if(!empty($_POST)){
             if(!empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
-                if (empty($_POST['nama_pasar'])) {
+                if (empty($_POST['nama_lembaga'])) {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Data nama pasar tidak boleh kosong!';
-                } else if (empty($_POST['alamat_pasar'])) {
+                    $ret['message'] = 'Data nama lembaga tidak boleh kosong!';
+                } else if (empty($_POST['alamat_lembaga'])) {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Data alamat pasar tidak boleh kosong!';
+                    $ret['message'] = 'Data alamat lembaga tidak boleh kosong!';
                 } else if (empty($_POST['tahun'])) {
                     $ret['status'] = 'error';
                     $ret['message'] = 'Data tahun tidak boleh kosong!';
                 } else {
-                    $nama_pasar = $_POST['nama_pasar'];
-                    $alamat_pasar = $_POST['alamat_pasar'];
+                    $nama_lembaga = $_POST['nama_lembaga'];
+                    $alamat_lembaga = $_POST['alamat_lembaga'];
+                    $koordinat = isset($_POST['koordinat']) ? $_POST['koordinat'] : '';
+                    $radius_meter = isset($_POST['radius_meter']) ? $_POST['radius_meter'] : 100;
                     $tahun = $_POST['tahun'];
                     $data = array(
-                        'nama_pasar' => $nama_pasar,
-                        'alamat_pasar' => $alamat_pasar,
+                        'nama_lembaga' => $nama_lembaga,
+                        'alamat_lembaga' => $alamat_lembaga,
+                        'koordinat' => $koordinat,
+                        'radius_meter' => $radius_meter,
                         'tahun_anggaran' => $tahun,
                         'active' => 1,
                         'update_at' => current_time('mysql')
                     );
                     if(!empty($_POST['id_data'])){
-                        $wpdb->update('absensi_data_pasar', $data, array(
+                        $wpdb->update('absensi_data_lembaga', $data, array(
                             'id' => $_POST['id_data']
                         ));
                         $ret['message'] = 'Berhasil update data!';
@@ -703,20 +709,20 @@ class Wp_Absen_Public {
                             SELECT
                                 id,
                                 active
-                            FROM absensi_data_pasar
+                            FROM absensi_data_lembaga
                             WHERE id=%s
                             AND tahun_anggaran=%d
                         ', $_POST['id_data'], $tahun), ARRAY_A);
                         if(empty($cek_id)){
-                            $wpdb->insert('absensi_data_pasar', $data);
+                            $wpdb->insert('absensi_data_lembaga', $data);
                         }else{
                             if($cek_id['active'] == 0){
-                                $wpdb->update('absensi_data_pasar', $data, array(
+                                $wpdb->update('absensi_data_lembaga', $data, array(
                                     'id' => $cek_id['id']
                                 ));
                             }else{
                                 $ret['status'] = 'error';
-                                $ret['message'] = 'Gagal disimpan. Data pasar dengan id pasar="'.$_POST['id_data'].'" sudah ada!';
+                                $ret['message'] = 'Gagal disimpan. Data lembaga dengan id lembaga="'.$_POST['id_data'].'" sudah ada!';
                             }
                         }
                     }
