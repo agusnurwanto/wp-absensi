@@ -6,7 +6,7 @@ if (!defined('WPINC')) {
 }
 
 $input = shortcode_atts(array(
-    'tahun' => '2025',
+    'tahun_anggaran' => '2025',
 ), $atts);
 ?>
 <style type="text/css">
@@ -22,7 +22,7 @@ $input = shortcode_atts(array(
 <div class="cetak">
     <div style="padding: 10px;margin:0 0 3rem 0;">
         <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key">
-    <h1 class="text-center" style="margin:3rem;">Manajemen Data Lembaga<br>Tahun <?php echo $input['tahun']; ?></h1>
+    <h1 class="text-center" style="margin:3rem;">Manajemen Data Lembaga<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
         <div style="margin-bottom: 25px;">
             <button class="btn btn-primary" onclick="tambah_data_lembaga();"><i class="dashicons dashicons-plus"></i> Tambah Data</button>
         </div>
@@ -304,7 +304,7 @@ function submitTambahDataFormLembaga(){
             'action': 'tambah_data_lembaga',
             'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
             'id_data': id_data,
-            'tahun': <?php echo $input['tahun']; ?>,
+            'tahun': <?php echo $input['tahun_anggaran']; ?>,
             'alamat_lembaga': alamat_lembaga,
             'nama_lembaga': nama_lembaga,
             'koordinat': koordinat,

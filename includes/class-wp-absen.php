@@ -186,12 +186,18 @@ class Wp_Absen {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		$this->loader->add_action( 'get_footer', $plugin_public, 'prefix_add_footer_styles' );
+		$this->loader->add_action( 'get_footer', $plugin_public, 'prefix_add_footer_styles' );		
 		
-		$this->loader->add_action('wp_ajax_get_datatable_pegawai',  $plugin_public, 'get_datatable_pegawai');
-		$this->loader->add_action('wp_ajax_hapus_data_pegawai_by_id',  $plugin_public, 'hapus_data_pegawai_by_id');
-		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id',  $plugin_public, 'get_data_pegawai_by_id');
-		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public, 'tambah_data_pegawai');
+		$this->loader->add_action('wp_ajax_get_datatable_karyawan',  $plugin_public, 'get_datatable_karyawan');
+		$this->loader->add_action('wp_ajax_hapus_data_karyawan_by_id',  $plugin_public, 'hapus_data_karyawan_by_id');
+		$this->loader->add_action('wp_ajax_get_data_karyawan_by_id',  $plugin_public, 'get_data_karyawan_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_karyawan',  $plugin_public, 'tambah_data_karyawan');
+		$this->loader->add_action('wp_ajax_get_master_data',  $plugin_public, 'get_master_data');
+		$this->loader->add_action('wp_ajax_get_master_jenis_kelamin',  $plugin_public, 'get_master_jenis_kelamin');
+		$this->loader->add_action('wp_ajax_get_master_agama',  $plugin_public, 'get_master_agama');
+		$this->loader->add_action('wp_ajax_get_master_pendidikan',  $plugin_public, 'get_master_pendidikan');
+		$this->loader->add_action('wp_ajax_get_master_status_karyawan',  $plugin_public, 'get_master_status_karyawan');
+		$this->loader->add_action('wp_ajax_get_master_user_role',  $plugin_public, 'get_master_user_role');
 
 		$this->loader->add_action('wp_ajax_hapus_data_lembaga_by_id',  $plugin_public, 'hapus_data_lembaga_by_id');
 		$this->loader->add_action('wp_ajax_get_data_lembaga_by_id',  $plugin_public, 'get_data_lembaga_by_id');

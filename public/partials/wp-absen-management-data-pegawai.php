@@ -1,58 +1,130 @@
+<?php
+global $wpdb;
+
+if (!defined('WPINC')) {
+    die;
+}
+
+$input = shortcode_atts(array(
+    'tahun_anggaran' => '2025',
+), $atts);
+$idtahun = $wpdb->get_results("
+    SELECT DISTINCT 
+        tahun_anggaran 
+    FROM absensi_data_unit        
+    ORDER BY tahun_anggaran DESC
+",ARRAY_A);
+$tahun = '<option value="0">Pilih Tahun</option>';
+
+foreach ($idtahun as $val) {
+    if($val['tahun_anggaran'] == $input['tahun_anggaran']){
+        continue;
+    }
+    $selected = '';
+    if($val['tahun_anggaran'] == $input['tahun_anggaran']-1){
+        $selected = 'selected';
+    }
+    $tahun .= '<option value="'. $val['tahun_anggaran']. '" '. $selected .'>'. $val['tahun_anggaran'] .'</option>';
+}
+?>
 <style type="text/css">
     .wrap-table{
         overflow: auto;
         max-height: 100vh; 
         width: 100%; 
     }
+    .hidden {
+        display: none;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 5px;
+    }
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .status-inactive {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .swal2-popup {
+        font-size: 14px !important;
+    }
+    .swal2-actions button {
+        margin: 0 5px;
+    }
+    input[readonly], 
+    textarea[readonly], 
+    select[disabled] {
+        background-color: #e9ecef !important;
+        cursor: not-allowed !important;
+        opacity: 0.7;
+    }
+    .filter-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .filter-label {
+        font-weight: 600;
+        margin: 0;
+    }
+    #status_kerja_filter {
+        min-width: 200px;
+    }
 </style>
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <div class="cetak">
     <div style="padding: 10px;margin:0 0 3rem 0;">
         <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key">
-    <h1 class="text-center" style="margin:3rem;">Manajemen Data Pegawai</h1>
-        <div style="margin-bottom: 25px;">
+    <h1 class="text-center" style="margin:3rem;">Manajemen Data Pegawai<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
+        <div class="filter-container">
             <button class="btn btn-primary" onclick="tambah_data_pegawai();"><i class="dashicons dashicons-plus"></i> Tambah Data</button>
+            
+            <button class="btn btn-danger" onclick="copy_data();"><i class="dashicons dashicons-admin-page"></i> Copy Data</button>
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-left: 20px;">
+                <label class="filter-label">Filter Status:</label>
+                <select id="status_kerja_filter" class="form-control" onchange="filter_status_pegawai();">
+                    <option value="">Keduanya</option>
+                    <option value="1">Pegawai Active</option>
+                    <option value="0">Pegawai Non Active</option>
+                </select>
+            </div>
         </div>
         <div class="wrap-table">
-        <table id="management_data_table" cellpadding="2" cellspacing="0" style="font-family:\'Open Sans\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif; border-collapse: collapse; width:100%; overflow-wrap: break-word;" class="table table-bordered">
+        <table id="management_data_table" cellpadding="2" cellspacing="0"  class="table table-bordered">
             <thead>
                 <tr>
-                    <th class="text-center">Id SKPD</th>
                     <th class="text-center">NIK</th>
-                    <th class="text-center">NIP</th>
-                    <th class="text-center">Gelar Depan</th>
                     <th class="text-center">Nama</th>
-                    <th class="text-center">Gelar Belakang</th>
-                    <th class="text-center">Nama Lengkap</th>
                     <th class="text-center">Tempat Lahir</th>
                     <th class="text-center">Tanggal Lahir</th>
                     <th class="text-center">Jenis Kelamin</th>
-                    <th class="text-center">Kode Jenis Kelamin</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-center">Golongan Ruang</th>
-                    <th class="text-center">Kode Golongan</th>
-                    <th class="text-center">TMT Pangkat</th>
-                    <th class="text-center">Eselon</th>
                     <th class="text-center">Jabatan</th>
-                    <th class="text-center">Tipe Pegawai</th>
-                    <th class="text-center">TMT Jabatan</th>
                     <th class="text-center">Agama</th>
-                    <th class="text-center">Alamat</th>
                     <th class="text-center">No Handphone</th>
-                    <th class="text-center">Satuan Kerja</th>
-                    <th class="text-center">Unit Kerja Induk</th>
-                    <th class="text-center">TMT Pensiun</th>
-                    <th class="text-center">Pendidikan</th>
-                    <th class="text-center">Kode Pendidikan</th>
+                    <th class="text-center">Alamat</th>
+                    <th class="text-center">Pendidikan Terakhir</th>
+                    <th class="text-center">Pendidikan Sekarang</th>
                     <th class="text-center">Nama Sekolah</th>
-                    <th class="text-center">Nama Pendidikan</th>
                     <th class="text-center">Lulus</th>
-                    <th class="text-center">Kartu Pekerja</th>
-                    <th class="text-center">Karis / Karsu</th>
-                    <th class="text-center">Nilai Prestasi</th>
                     <th class="text-center">Email</th>
-                    <th class="text-center">Tahun</th>
-                    <th class="text-center">User</th>
+                    <th class="text-center">Kartu Pegawai</th>
+                    <th class="text-center">Tanggal Mulai</th>
+                    <th class="text-center">Tanggal Selesai</th>
+                    <th class="text-center">Gaji</th>
+                    <th class="text-center">User Role</th>
+                    <th class="text-center">Status Pegawai</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
                 </tr>
             </thead>
@@ -64,356 +136,528 @@
 </div>
 
 <div class="modal fade mt-4" id="modalTambahDataPegawai" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataPegawaiLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
+
             <div class="modal-header">
                 <h5 class="modal-title" id="modalTambahDataPegawaiLabel">Data Pegawai</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="id_data" name="id_data">
+
+                <div class="row">
+
+                    <div class="col-md-4 form-group">
+                        <label>NIK <span class="text-danger">*</span></label>
+                        <input type="number" id="nik" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Nama <span class="text-danger">*</span></label>
+                        <input type="text" id="nama" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Tempat Lahir</label>
+                        <input type="text" id="tempat_lahir" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Tanggal Lahir</label>
+                        <input type="date" id="tanggal_lahir" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Jenis Kelamin <span class="text-danger">*</span></label>
+                        <select id="jenis_kelamin" class="form-control">
+                            <option value="">-- Pilih Jenis Kelamin --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Agama</label>
+                        <select id="agama" class="form-control">
+                            <option value="">-- Pilih Agama --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>No Handphone</label>
+                        <input type="number" id="no_hp" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Pendidikan Terakhir</label>
+                        <select id="pendidikan_terakhir" class="form-control">
+                            <option value="">-- Pilih Pendidikan --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Pendidikan Sekarang</label>
+                        <select id="pendidikan_sekarang" class="form-control">
+                            <option value="">-- Pilih Pendidikan --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Nama Sekolah</label>
+                        <input type="text" id="nama_sekolah" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Lulus (Tahun)</label>
+                        <input type="number" id="lulus" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" class="form-control">
+                    </div>
+
+                    <div class="col-md-12 form-group">
+                        <label>Alamat</label>
+                        <textarea id="alamat" class="form-control"></textarea>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>Status Pegawai <span class="text-danger">*</span></label>
+                        <select id="status" class="form-control" onchange="status_pegawai_teks();">
+                            <option value="">-- Pilih Status --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group hidden" id="status_teks_wrapper">
+                        <label>Status Pegawai Lainnya <span class="text-danger">*</span></label>
+                        <input type="text" id="status_teks" class="form-control" placeholder="Sebutkan status lainnya">
+                    </div>
+
+                    <div class="col-md-4 form-group hidden" id="jabatan_wrapper">
+                        <label>Jabatan <span class="text-danger">*</span></label>
+                        <input type="text" id="jabatan" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group hidden" id="karpeg_wrapper">
+                        <label>Kartu Pegawai</label>
+                        <input type="text" id="karpeg" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group hidden" id="tanggal_mulai_wrapper">
+                        <label>Tanggal Mulai <span class="text-danger">*</span></label>
+                        <input type="date" id="tanggal_mulai" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group hidden" id="tanggal_selesai_wrapper">
+                        <label>Tanggal Selesai <span class="text-danger">*</span></label>
+                        <input type="date" id="tanggal_selesai" class="form-control">
+                    </div>
+
+                    <div class="col-md-4 form-group hidden" id="gaji_wrapper">
+                        <label>Gaji</label>
+                        <input type="number" id="gaji" class="form-control" step="0.01">
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>User Role <span class="text-danger">*</span></label>
+                        <select id="user_role" class="form-control">
+                            <option value="">-- Pilih Role --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="submitTambahDataFormPegawai()">Simpan</button>
+                <button class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal" data-backdrop="static"  role="dialog" aria-labelledby="modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modal title</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <input type='hidden' id='id_data' name="id_data" placeholder=''>
-                <div class="form-group">
-                    <label for='id_skpd' style='display:inline-block'>Id SKPD</label>
-                    <input type="text" id='id_skpd' name="id_skpd" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='nik' style='display:inline-block'>NIK</label>
-                    <input type='text' id='nik' name="nik" class="form-control" placeholder=''>
-                </div>
-                <div class="form-group">
-                    <label for='nip' style='display:inline-block'>NIP</label>
-                    <input type="text" id='nip' name="nip" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='gelar_depan' style='display:inline-block'>Gelar Depan</label>
-                    <input type="text" id='gelar_depan' name="gelar_depan" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='nama' style='display:inline-block'>Nama</label>
-                    <input type="text" id='nama' name="nama" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='gelar_belakang' style='display:inline-block'>Gelar Belakang</label>
-                    <input type="text" id='gelar_belakang' name="gelar_belakang" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='nama_lengkap' style='display:inline-block'>Nama Lengkap</label>
-                    <input type="text" id='nama_lengkap' name="nama_lengkap" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tanggal_lahir' style='display:inline-block'>Tanggal Lahir</label>
-                    <input type="text" id='tanggal_lahir' name="tanggal_lahir" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tempat_lahir' style='display:inline-block'>Tempat Lahir</label>
-                    <input type="text" id='tempat_lahir' name="tempat_lahir" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='jenis_kelamin' style='display:inline-block'>Jenis Kelamin</label>
-                    <input type="text" id='jenis_kelamin' name="jenis_kelamin" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='kode_jenis_kelamin' style='display:inline-block'>Kode Jenis Kelamin</label>
-                    <input type="text" id='kode_jenis_kelamin' name="kode_jenis_kelamin" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='status' style='display:inline-block'>Status</label>
-                    <input type="text" id='status' name="status" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='gol_ruang' style='display:inline-block'>Golongan Ruang</label>
-                    <input type="text" id='gol_ruang' name="gol_ruang" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='kode_gol' style='display:inline-block'>Kode Golongan</label>
-                    <input type="text" id='kode_gol' name="kode_gol" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tmt_pangkat' style='display:inline-block'>TMT Pangkat</label>
-                    <input type="text" id='tmt_pangkat' name="tmt_pangkat" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='eselon' style='display:inline-block'>Eselon</label>
-                    <input type="text" id='eselon' name="eselon" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='jabatan' style='display:inline-block'>Jabatan</label>
-                    <input type="text" id='jabatan' name="jabatan" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tipe_pegawai' style='display:inline-block'>Tipe Pegawai</label>
-                    <input type="text" id='tipe_pegawai' name="tipe_pegawai" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tmt_jabatan' style='display:inline-block'>TMT Jabatan</label>
-                    <input type="text" id='tmt_jabatan' name="tmt_jabatan" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='agama' style='display:inline-block'>Agama</label>
-                    <input type="text" id='agama' name="agama" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='alamat' style='display:inline-block'>Alamat</label>
-                    <input type="text" id='alamat' name="alamat" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='no_hp' style='display:inline-block'>No Handphone</label>
-                    <input type="text" id='no_hp' name="no_hp" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='satuan_kerja' style='display:inline-block'>Satuan Kerja</label>
-                    <input type="text" id='satuan_kerja' name="satuan_kerja" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='unit_kerja_induk' style='display:inline-block'>Unit Kerja Induk</label>
-                    <input type="text" id='unit_kerja_induk' name="unit_kerja_induk" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tmt_pensiun' style='display:inline-block'>TMT Pensiun</label>
-                    <input type="text" id='tmt_pensiun' name="tmt_pensiun" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='pendidikan' style='display:inline-block'>Pendidikan</label>
-                    <input type="text" id='pendidikan' name="pendidikan" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='kode_pendidikan' style='display:inline-block'>Kode Pendidikan</label>
-                    <input type="text" id='kode_pendidikan' name="kode_pendidikan" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='nama_sekolah' style='display:inline-block'>Nama Sekolah</label>
-                    <input type="text" id='nama_sekolah' name="nama_sekolah" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='nama_pendidikan' style='display:inline-block'>Nama Pendidikan</label>
-                    <input type="text" id='nama_pendidikan' name="nama_pendidikan" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='lulus' style='display:inline-block'>Lulus</label>
-                    <input type="text" id='lulus' name="lulus" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='karpeg' style='display:inline-block'>Kartu Pegawai</label>
-                    <input type="text" id='karpeg' name="karpeg" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='karis_karsu' style='display:inline-block'>Karis / Karsu</label>
-                    <input type="text" id='karis_karsu' name="karis_karsu" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='nilai_prestasi' style='display:inline-block'>Nilai Prestasi</label>
-                    <input type="text" id='nilai_prestasi' name="nilai_prestasi" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='email' style='display:inline-block'>Email</label>
-                    <input type="text" id='email' name="email" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='tahun' style='display:inline-block'>Tahun</label>
-                    <input type="text" id='tahun' name="tahun" class="form-control" placeholder=''/>
-                </div>
-                <div class="form-group">
-                    <label for='user_role' style='display:inline-block'>User</label>
-                    <input type="text" id='user_role' name="user_role" class="form-control" placeholder=''/>
-                </div>
-            </div> 
-            <div class="modal-footer">
-                <button class="btn btn-primary submitBtn" onclick="submitTambahDataFormPegawai()">Simpan</button>
-                <button type="submit" class="components-button btn btn-secondary" data-dismiss="modal">Tutup</button>
             </div>
+            <div class="modal-footer"></div>
         </div>
     </div>
 </div>
-<script>    
-jQuery(document).ready(function(){
-    // penyesuaian thema wp full width page
-    jQuery('.mg-card-box').parent().removeClass('col-md-8').addClass('col-md-12');
-    jQuery('#secondary').parent().remove();
-    get_data_pegawai();
-});
+<script>
+    var masterData = {};
 
-function get_data_pegawai(){
-    if(typeof datapegawai == 'undefined'){
-        window.datapegawai = jQuery('#management_data_table').on('preXhr.dt', function(e, settings, data){
-            jQuery("#wrap-loading").show();
-        }).DataTable({
-            "processing": true,
-            "serverSide": true,
-            "ajax": {
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                type: 'post',
-                dataType: 'json',
-                data:{
-                    'action': 'get_datatable_pegawai',
-                    'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                }
-            },
-            lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-            order: [[0, 'asc']],
-            "drawCallback": function( settings ){
-                jQuery("#wrap-loading").hide();
-            },
-            "columns": [
-                {
-                    "data": 'id_skpd',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nik',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nip',
-                    className: "text-center"
-                },
-                {
-                    "data": 'gelar_depan',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nama',
-                    className: "text-center"
-                },
-                {
-                    "data": 'gelar_belakang',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nama_lengkap',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tempat_lahir',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tanggal_lahir',
-                    className: "text-center"
-                },
-                {
-                    "data": 'jenis_kelamin',
-                    className: "text-center"
-                },
-                {
-                    "data": 'kode_jenis_kelamin',
-                    className: "text-center"
-                },
-                {
-                    "data": 'status',
-                    className: "text-center"
-                },
-                {
-                    "data": 'gol_ruang',
-                    className: "text-center"
-                },
-                {
-                    "data": 'kode_gol',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tmt_pangkat',
-                    className: "text-center"
-                },
-                {
-                    "data": 'eselon',
-                    className: "text-center"
-                },
-                {
-                    "data": 'jabatan',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tipe_pegawai',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tmt_jabatan',
-                    className: "text-center"
-                },
-                {
-                    "data": 'agama',
-                    className: "text-center"
-                },
-                {
-                    "data": 'alamat',
-                    className: "text-center"
-                },
-                {
-                    "data": 'no_hp',
-                    className: "text-center"
-                },
-                {
-                    "data": 'satuan_kerja',
-                    className: "text-center"
-                },
-                {
-                    "data": 'unit_kerja_induk',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tmt_pensiun',
-                    className: "text-center"
-                },
-                {
-                    "data": 'pendidikan',
-                    className: "text-center"
-                },
-                {
-                    "data": 'kode_pendidikan',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nama_sekolah',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nama_pendidikan',
-                    className: "text-center"
-                },
-                {
-                    "data": 'lulus',
-                    className: "text-center"
-                },
-                {
-                    "data": 'karpeg',
-                    className: "text-center"
-                },
-                {
-                    "data": 'karis_karsu',
-                    className: "text-center"
-                },
-                {
-                    "data": 'nilai_prestasi',
-                    className: "text-center"
-                },
-                {
-                    "data": 'email',
-                    className: "text-center"
-                },
-                {
-                    "data": 'tahun',
-                    className: "text-center"
-                },
-                {
-                    "data": 'user_role',
-                    className: "text-center"
-                },
-                {
-                    "data": 'aksi',
-                    className: "text-center"
-                }
-            ]
+    jQuery(document).ready(function(){
+        jQuery('.mg-card-box').parent().removeClass('col-md-8').addClass('col-md-12');
+        jQuery('#secondary').parent().remove();
+        
+        load_master_data(function(){
+            get_data_pegawai();
         });
-    }else{
-        datapegawai.draw();
-    }
-}
+    });
 
-function hapus_data(id){
-    let confirmDelete = confirm("Apakah anda yakin akan menghapus data ini?");
-    if(confirmDelete){
+    function copy_data(){
+        let tbody = '';
+        let tahun = '<?php echo $tahun; ?>';
+        jQuery("#modal").find('.modal-title').html('Copy Data Pegawai');
+        jQuery("#modal").find('.modal-body').html(`
+            <div class="form-group row">
+                <label for="staticEmail" class="col-sm-3 col-form-label">Tahun Anggaran Sumber Data Pegawai</label>
+                <div class="col-sm-9 d-flex align-items-center justify-content-center">
+                    <select id="tahunAnggaranCopy" class="form-control">
+                        ${tahun}
+                    </select>
+                </div>
+            </div>
+        `);
+        jQuery("#modal").find('.modal-footer').html(`
+            <button type="button" class="btn btn-warning" data-dismiss="modal">
+                Tutup
+            </button>
+            <button type="button" class="btn btn-danger" onclick="submitCopyData()">
+                Copy Data
+            </button>`);
+        jQuery("#modal").find('.modal-dialog').css('maxWidth','700');
+        jQuery("#modal").modal('show');
+    }
+
+    function submitCopyData() {
+            if (!confirm('Apakah anda yakin akan copy data Pegawai? \nData yang sudah ada akan ditimpa oleh data baru hasil copy data!')) {
+                return;
+            }
+
+            var tahun = jQuery("#tahunAnggaranCopy").val();
+
+            jQuery('#wrap-loading').show();
+
+            ajax_copy_data({
+                tahun: tahun
+            })
+            .then(function() {
+                alert('Berhasil Copy Data Pegawai.');
+                jQuery("#modal").modal('hide');
+                jQuery('#wrap-loading').hide();
+                get_data_pegawai();
+            })
+            .catch(function(err) {
+                console.log('err', err);
+                alert('Ada kesalahan sistem!');
+                jQuery('#wrap-loading').hide();
+            });
+        }
+
+        function ajax_copy_data(options){
+            return new Promise(function(resolve, reject){
+                jQuery.ajax({
+                    method: 'post',
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    dataType: 'json',
+                    data:{
+                        action: 'copy_data_pegawai',
+                        api_key: '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        tahun_sumber: options.tahun,
+                        tahun_tujuan: <?php echo $input['tahun_anggaran']; ?>
+                    },
+                    success: function(response) {
+                        resolve();
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('error', error);
+                        resolve();
+                    }
+                });
+            });
+        }
+
+    function load_master_data(callback){
+        jQuery('#wrap-loading').show();
+        jQuery.ajax({
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data:{
+                'action': 'get_master_data',
+                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
+            },
+            success: function(res){
+                if(res.status == 'success'){
+                    masterData = res.data;
+                    get_master_options();
+                    if(typeof callback === 'function'){
+                        callback();
+                    }
+                }else{
+                    alert('Gagal memuat master data: ' + res.message);
+                }
+                jQuery('#wrap-loading').hide();
+            },
+            error: function(){
+                alert('Gagal memuat master data!');
+                jQuery('#wrap-loading').hide();
+            }
+        });
+    }
+
+    function get_master_options(){
+        var jk_select = jQuery('#jenis_kelamin');
+        jk_select.find('option:not(:first)').remove();
+        jQuery.each(masterData.jenis_kelamin, function(i, item){
+            jk_select.append(jQuery('<option>', {
+                value: item.value,
+                text: item.label
+            }));
+        });
+        
+        var agama_select = jQuery('#agama');
+        agama_select.find('option:not(:first)').remove();
+        jQuery.each(masterData.agama, function(i, item){
+            agama_select.append(jQuery('<option>', {
+                value: item.value,
+                text: item.label
+            }));
+        });
+        
+        var pend_terakhir = jQuery('#pendidikan_terakhir');
+        pend_terakhir.find('option:not(:first)').remove();
+        jQuery.each(masterData.pendidikan, function(i, item){
+            if(item.value !== 'Tidak Sedang Menempuh'){
+                pend_terakhir.append(jQuery('<option>', {
+                    value: item.value,
+                    text: item.label
+                }));
+            }
+        });
+        
+        var pend_sekarang = jQuery('#pendidikan_sekarang');
+        pend_sekarang.find('option:not(:first)').remove();
+        jQuery.each(masterData.pendidikan, function(i, item){
+            pend_sekarang.append(jQuery('<option>', {
+                value: item.value,
+                text: item.label
+            }));
+        });
+        
+        var status_select = jQuery('#status');
+        status_select.find('option:not(:first)').remove();
+        jQuery.each(masterData.status_pegawai, function(i, item){
+            status_select.append(jQuery('<option>', {
+                value: item.value,
+                text: item.label
+            }));
+        });
+        
+        var role_select = jQuery('#user_role');
+        role_select.find('option:not(:first)').remove();
+        jQuery.each(masterData.user_role, function(i, item){
+            role_select.append(jQuery('<option>', {
+                value: item.value,
+                text: item.label
+            }));
+        });
+    }
+
+    function status_pegawai_teks(){
+        var status = jQuery('#status').val();
+        
+        jQuery('#status_teks_wrapper').addClass('hidden');
+        jQuery('#jabatan_wrapper').addClass('hidden');
+        jQuery('#karpeg_wrapper').addClass('hidden');
+        jQuery('#tanggal_mulai_wrapper').addClass('hidden');
+        jQuery('#tanggal_selesai_wrapper').addClass('hidden');
+        jQuery('#gaji_wrapper').addClass('hidden');
+        
+        if(status != ''){
+            jQuery('#jabatan_wrapper').removeClass('hidden');
+            jQuery('#karpeg_wrapper').removeClass('hidden');
+            jQuery('#tanggal_mulai_wrapper').removeClass('hidden');
+            jQuery('#gaji_wrapper').removeClass('hidden');
+            
+            if(status == '5'){
+                jQuery('#status_teks_wrapper').removeClass('hidden');
+            }
+            
+            if(status != '1'){
+                jQuery('#tanggal_selesai_wrapper').removeClass('hidden');
+            }
+        }
+    }
+
+
+    function filter_status_pegawai(){
+        if(typeof datapegawai != 'undefined'){
+            datapegawai.draw();
+        }
+    }
+
+    function get_data_pegawai(){
+        if(typeof datapegawai == 'undefined'){
+            window.datapegawai = jQuery('#management_data_table').on('preXhr.dt', function(e, settings, data){
+                jQuery("#wrap-loading").show();
+            }).DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    dataType: 'json',
+                    data: function(d){
+                        d.action = 'get_datatable_pegawai';
+                        d.api_key = '<?php echo get_option( ABSEN_APIKEY ); ?>';
+                        d.tahun = '<?php echo $input['tahun_anggaran']; ?>';
+                        d.status_kerja_filter = jQuery('#status_kerja_filter').val();
+                    }
+                },
+                lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
+                order: [[0, 'asc']],
+                "drawCallback": function( settings ){
+                    jQuery("#wrap-loading").hide();
+                },
+                "columns": [
+                    {
+                        "data": 'nik',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'nama',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'tempat_lahir',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'tanggal_lahir',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'jenis_kelamin',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'jabatan',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'agama',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'no_hp',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'alamat',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'pendidikan_terakhir',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'pendidikan_sekarang',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'nama_sekolah',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'lulus',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'email',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'karpeg',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'tanggal_mulai',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'tanggal_selesai',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'gaji',
+                        className: "text-right"
+                    },
+                    {
+                        "data": 'user_role',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'status_display',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'aksi',
+                        className: "text-center"
+                    }
+                ]
+            });
+        }else{
+            datapegawai.draw();
+        }
+    }
+
+    function hapus_data(id, status_kerja){
+        status_kerja = parseInt(status_kerja);
+        
+        if(status_kerja == 0){
+            // Jika sudah non active, hanya tampilkan opsi Hapus Data
+            Swal.fire({
+                title: 'Hapus Data',
+                text: "Apakah Anda yakin ingin menghapus data pegawai ini?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus Data',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    proses_hapus_data(id, 'hapus');
+                }
+            });
+        } else {
+            // Jika masih active, tampilkan 2 opsi
+            Swal.fire({
+                title: 'Pilih Aksi',
+                text: "Pilih tindakan yang ingin dilakukan pada pegawai ini:",
+                icon: 'question',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonColor: '#dc3545',
+                denyButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Hapus Data',
+                denyButtonText: 'Nonaktifkan Pegawai',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    proses_hapus_data(id, 'hapus');
+                } else if (result.isDenied) {
+                    proses_hapus_data(id, 'nonaktif');
+                }
+            });
+        }
+    }
+
+    function proses_hapus_data(id, tipe){
         jQuery('#wrap-loading').show();
         jQuery.ajax({
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
@@ -421,324 +665,239 @@ function hapus_data(id){
             data:{
                 'action' : 'hapus_data_pegawai_by_id',
                 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                'id'     : id
+                'id'     : id,
+                'tipe'   : tipe
             },
             dataType: 'json',
             success:function(response){
                 jQuery('#wrap-loading').hide();
                 if(response.status == 'success'){
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: response.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
                     get_data_pegawai(); 
                 }else{
-                    alert(`GAGAL! \n${response.message}`);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: response.message
+                    });
                 }
             }
         });
     }
-}
 
-function edit_data(_id){
-    jQuery('#wrap-loading').show();
-    jQuery.ajax({
-        method: 'post',
-        url: '<?php echo admin_url('admin-ajax.php'); ?>',
-        dataType: 'json',
-        data:{
-            'action': 'get_data_pegawai_by_id',
-            'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-            'id': _id,
-        },
-        success: function(res){
-            if(res.status == 'success'){
-                jQuery('#id_data').val(res.data.id);
-                jQuery('#id_skpd').val(res.data.id_skpd);
-                jQuery('#nik').val(res.data.nik);
-                jQuery('#nip').val(res.data.nip);
-                jQuery('#nama').val(res.data.nama);
-                jQuery('#tempat_lahir').val(res.data.tempat_lahir);
-                jQuery('#tanggal_lahir').val(res.data.tanggal_lahir);
-                jQuery('#status').val(res.data.status);
-                jQuery('#gol_ruang').val(res.data.gol_ruang);
-                jQuery('#tmt_pangkat').val(res.data.tmt_pangkat);
-                jQuery('#eselon').val(res.data.eselon);
-                jQuery('#jabatan').val(res.data.jabatan);
-                jQuery('#tipe_pegawai').val(res.data.tipe_pegawai);
-                jQuery('#tmt_jabatan').val(res.data.tmt_jabatan);
-                jQuery('#agama').val(res.data.agama);
-                jQuery('#alamat').val(res.data.alamat);
-                jQuery('#no_hp').val(res.data.no_hp);
-                jQuery('#satuan_kerja').val(res.data.satuan_kerja);
-                jQuery('#unit_kerja_induk').val(res.data.unit_kerja_induk);
-                jQuery('#tmt_pensiun').val(res.data.tmt_pensiun);
-                jQuery('#pendidikan').val(res.data.pendidikan);
-                jQuery('#kode_pendidikan').val(res.data.kode_pendidikan);
-                jQuery('#nama_sekolah').val(res.data.nama_sekolah);
-                jQuery('#nama_pendidikan').val(res.data.nama_pendidikan);
-                jQuery('#lulus').val(res.data.lulus);
-                jQuery('#karpeg').val(res.data.karpeg);
-                jQuery('#karis_karsu').val(res.data.karis_karsu);
-                jQuery('#nilai_prestasi').val(res.data.nilai_prestasi);
-                jQuery('#email').val(res.data.email);
-                jQuery('#tahun').val(res.data.tahun);
-                jQuery('#user_role').val(res.data.user_role);
-                jQuery('#gelar_depan').val(res.data.gelar_depan);
-                jQuery('#gelar_belakang').val(res.data.gelar_belakang);
-                jQuery('#nama_lengkap').val(res.data.nama_lengkap);
-                jQuery('#jenis_kelamin').val(res.data.jenis_kelamin);
-                jQuery('#kode_jenis_kelamin').val(res.data.kode_jenis_kelamin);
-                jQuery('#kode_gol').val(res.data.kode_gol);
-                jQuery('#modalTambahDataPegawai').modal('show');
-            }else{
-                alert(res.message);
-            }
-            jQuery('#wrap-loading').hide();
-        }
-    });
-}
-
-//show tambah data
-function tambah_data_pegawai(){
-    jQuery('#id_data').val('');
-    jQuery('#id_skpd').val('');
-    jQuery('#nik').val('');
-    jQuery('#nip').val('');
-    jQuery('#nama').val('');
-    jQuery('#tempat_lahir').val('');
-    jQuery('#tanggal_lahir').val('');
-    jQuery('#status').val('');
-    jQuery('#gol_ruang').val('');
-    jQuery('#tmt_pangkat').val('');
-    jQuery('#eselon').val('');
-    jQuery('#jabatan').val('');
-    jQuery('#tipe_pegawai').val('');
-    jQuery('#tmt_jabatan').val('');
-    jQuery('#agama').val('');
-    jQuery('#alamat').val('');
-    jQuery('#no_hp').val('');
-    jQuery('#satuan_kerja').val('');
-    jQuery('#unit_kerja_induk').val('');
-    jQuery('#tmt_pensiun').val('');
-    jQuery('#pendidikan').val('');
-    jQuery('#kode_pendidikan').val('');
-    jQuery('#nama_sekolah').val('');
-    jQuery('#nama_pendidikan').val('');
-    jQuery('#lulus').val('');
-    jQuery('#karpeg').val('');
-    jQuery('#karis_karsu').val('');
-    jQuery('#nilai_prestasi').val('');
-    jQuery('#email').val('');
-    jQuery('#tahun').val('');
-    jQuery('#user_role').val('');
-    jQuery('#gelar_depan').val('');
-    jQuery('#gelar_belakang').val('');
-    jQuery('#nama_lengkap').val('');
-    jQuery('#jenis_kelamin').val('');
-    jQuery('#kode_jenis_kelamin').val('');
-    jQuery('#kode_gol').val('');
-    jQuery('#modalTambahDataPegawai').modal('show');
-}
-
-function submitTambahDataFormPegawai(){
-    var id_data = jQuery('#id_data').val();
-    var nik = jQuery('#nik').val();
-    if(nik == ''){
-        return alert('Data nik tidak boleh kosong!');
-    }
-    var nama = jQuery('#nama').val();
-    if(nama == ''){
-        return alert('Data nama tidak boleh kosong!');
-    }
-    var nip = jQuery('#nip').val();
-    if(nip == ''){
-        return alert('Data nip tidak boleh kosong!');
-    }
-    var id_skpd = jQuery('#id_skpd').val();
-    if(id_skpd == ''){
-        return alert('Data id_skpd tidak boleh kosong!');
-    }
-    var tempat_lahir = jQuery('#tempat_lahir').val();
-    if(tempat_lahir == ''){
-        return alert('Data tempat_lahir tidak boleh kosong!');
-    }
-    var tanggal_lahir = jQuery('#tanggal_lahir').val();
-    if(tanggal_lahir == ''){
-        return alert('Data tanggal_lahir tidak boleh kosong!');
-    }
-    var status = jQuery('#status').val();
-    if(status == ''){
-        return alert('Data status tidak boleh kosong!');
-    }
-    var gol_ruang = jQuery('#gol_ruang').val();
-    if(gol_ruang == ''){
-        return alert('Data gol_ruang tidak boleh kosong!');
-    }
-    var tmt_pangkat = jQuery('#tmt_pangkat').val();
-    if(tmt_pangkat == ''){
-        return alert('Data tmt_pangkat tidak boleh kosong!');
-    }
-    var eselon = jQuery('#eselon').val();
-    if(eselon == ''){
-        return alert('Data eselon tidak boleh kosong!');
-    }
-    var jabatan = jQuery('#jabatan').val();
-    if(jabatan == ''){
-        return alert('Data jabatan tidak boleh kosong!');
-    }
-    var tipe_pegawai = jQuery('#tipe_pegawai').val();
-    if(tipe_pegawai == ''){
-        return alert('Data tipe_pegawai tidak boleh kosong!');
-    }
-    var tmt_jabatan = jQuery('#tmt_jabatan').val();
-    if(tmt_jabatan == ''){
-        return alert('Data tmt_jabatan tidak boleh kosong!');
-    }
-    var agama = jQuery('#agama').val();
-    if(agama == ''){
-        return alert('Data agama tidak boleh kosong!');
-    }
-    var alamat = jQuery('#alamat').val();
-    if(alamat == ''){
-        return alert('Data alamat tidak boleh kosong!');
-    }
-    var no_hp = jQuery('#no_hp').val();
-    if(no_hp == ''){
-        return alert('Data no_hp tidak boleh kosong!');
-    }
-    var satuan_kerja = jQuery('#satuan_kerja').val();
-    if(satuan_kerja == ''){
-        return alert('Data satuan_kerja tidak boleh kosong!');
-    }
-    var unit_kerja_induk = jQuery('#unit_kerja_induk').val();
-    if(unit_kerja_induk == ''){
-        return alert('Data unit_kerja_induk tidak boleh kosong!');
-    }
-    var tmt_pensiun = jQuery('#tmt_pensiun').val();
-    if(tmt_pensiun == ''){
-        return alert('Data tmt_pensiun tidak boleh kosong!');
-    }
-    var pendidikan = jQuery('#pendidikan').val();
-    if(pendidikan == ''){
-        return alert('Data pendidikan tidak boleh kosong!');
-    }
-    var kode_pendidikan = jQuery('#kode_pendidikan').val();
-    if(kode_pendidikan == ''){
-        return alert('Data kode_pendidikan tidak boleh kosong!');
-    }
-    var nama_sekolah = jQuery('#nama_sekolah').val();
-    if(nama_sekolah == ''){
-        return alert('Data nama_sekolah tidak boleh kosong!');
-    }
-    var nama_pendidikan = jQuery('#nama_pendidikan').val();
-    if(nama_pendidikan == ''){
-        return alert('Data nama_pendidikan tidak boleh kosong!');
-    }
-    var lulus = jQuery('#lulus').val();
-    if(lulus == ''){
-        return alert('Data lulus tidak boleh kosong!');
-    }
-    var karpeg = jQuery('#karpeg').val();
-    if(karpeg == ''){
-        return alert('Data karpeg tidak boleh kosong!');
-    }
-    var karis_karsu = jQuery('#karis_karsu').val();
-    if(karis_karsu == ''){
-        return alert('Data karis_karsu tidak boleh kosong!');
-    }
-    var nilai_prestasi = jQuery('#nilai_prestasi').val();
-    if(nilai_prestasi == ''){
-        return alert('Data nilai_prestasi tidak boleh kosong!');
-    }
-    var email = jQuery('#email').val();
-    if(email == ''){
-        return alert('Data email tidak boleh kosong!');
-    }
-    var tahun = jQuery('#tahun').val();
-    if(tahun == ''){
-        return alert('Data tahun tidak boleh kosong!');
-    }
-    var user_role = jQuery('#user_role').val();
-    if(user_role == ''){
-        return alert('Data User tidak boleh kosong!');
-    }
-    var gelar_depan = jQuery('#gelar_depan').val();
-    if(gelar_depan == ''){
-        return alert('Data gelar_depan tidak boleh kosong!');
-    }
-    var gelar_belakang = jQuery('#gelar_belakang').val();
-    if(gelar_belakang == ''){
-        return alert('Data gelar_belakang tidak boleh kosong!');
-    }
-    var nama_lengkap = jQuery('#nama_lengkap').val();
-    if(nama_lengkap == ''){
-        return alert('Data nama_lengkap tidak boleh kosong!');
-    }
-    var jenis_kelamin = jQuery('#jenis_kelamin').val();
-    if(jenis_kelamin == ''){
-        return alert('Data jenis_kelamin tidak boleh kosong!');
-    }
-    var kode_jenis_kelamin = jQuery('#kode_jenis_kelamin').val();
-    if(kode_jenis_kelamin == ''){
-        return alert('Data kode_jenis_kelamin tidak boleh kosong!');
-    }
-    var kode_gol = jQuery('#kode_gol').val();
-    if(kode_gol == ''){
-        return alert('Data kode_gol tidak boleh kosong!');
-    }
-
-    jQuery('#wrap-loading').show();
-    jQuery.ajax({
-        method: 'post',
-        url: '<?php echo admin_url('admin-ajax.php'); ?>',
-        dataType: 'json',
-        data:{
-            'action': 'tambah_data_pegawai',
-            'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-            'id_data': id_data,
-            'id_skpd': id_skpd,
-            'nik': nik,
-            'nip': nip,
-            'nama': nama,
-            'tempat_lahir': tempat_lahir,
-            'tanggal_lahir': tanggal_lahir,
-            'status': status,
-            'gol_ruang': gol_ruang,
-            'tmt_pangkat': tmt_pangkat,
-            'eselon': eselon,
-            'jabatan': jabatan,
-            'tipe_pegawai': tipe_pegawai,
-            'tmt_jabatan': tmt_jabatan,
-            'agama': agama,
-            'alamat': alamat,
-            'no_hp': no_hp,
-            'satuan_kerja': satuan_kerja,
-            'unit_kerja_induk': unit_kerja_induk,
-            'tmt_pensiun': tmt_pensiun,
-            'pendidikan': pendidikan,
-            'kode_pendidikan': kode_pendidikan,
-            'nama_sekolah': nama_sekolah,
-            'nama_pendidikan': nama_pendidikan,
-            'lulus': lulus,
-            'karpeg': karpeg,
-            'karis_karsu': karis_karsu,
-            'nilai_prestasi': nilai_prestasi,
-            'email': email,
-            'tahun': tahun,
-            'user_role': user_role,
-            'gelar_depan': gelar_depan,
-            'gelar_belakang': gelar_belakang,
-            'nama_lengkap': nama_lengkap,
-            'jenis_kelamin': jenis_kelamin,
-            'kode_jenis_kelamin': kode_jenis_kelamin,
-            'kode_gol': kode_gol,
-        },
-        success: function(res){
-            alert(res.message);
-            jQuery('#modalTambahDataPegawai').modal('hide');
-            if(res.status == 'success'){
-                get_data_pegawai();
-            }else{
+    function edit_data(_id){
+        jQuery('#wrap-loading').show();
+        jQuery.ajax({
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data:{
+                'action': 'get_data_pegawai_by_id',
+                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'id': _id,
+            },
+            success: function(res){
+                if(res.status == 'success'){
+                    var status_kerja = res.data.status_kerja ? parseInt(res.data.status_kerja) : 1;
+                    var is_non_active = status_kerja == 0;
+                    
+                    jQuery('#id_data').val(res.data.id);
+                    jQuery('#nik').val(res.data.nik);
+                    jQuery('#nama').val(res.data.nama);
+                    jQuery('#tempat_lahir').val(res.data.tempat_lahir);
+                    jQuery('#tanggal_lahir').val(res.data.tanggal_lahir);
+                    jQuery('#jenis_kelamin').val(res.data.jenis_kelamin);
+                    jQuery('#status').val(res.data.status);
+                    jQuery('#status_teks').val(res.data.status_teks);
+                    jQuery('#jabatan').val(res.data.jabatan);
+                    jQuery('#agama').val(res.data.agama);
+                    jQuery('#no_hp').val(res.data.no_hp);
+                    jQuery('#alamat').val(res.data.alamat);
+                    jQuery('#pendidikan_terakhir').val(res.data.pendidikan_terakhir);
+                    jQuery('#pendidikan_sekarang').val(res.data.pendidikan_sekarang);
+                    jQuery('#nama_sekolah').val(res.data.nama_sekolah);
+                    jQuery('#lulus').val(res.data.lulus);
+                    jQuery('#email').val(res.data.email);
+                    jQuery('#karpeg').val(res.data.karpeg);
+                    jQuery('#tanggal_mulai').val(res.data.tanggal_mulai);
+                    jQuery('#tanggal_selesai').val(res.data.tanggal_selesai);
+                    jQuery('#gaji').val(res.data.gaji);
+                    jQuery('#user_role').val(res.data.user_role);
+                    jQuery('#tahun').val(res.data.tahun);
+                    
+                    status_pegawai_teks();
+                    
+                    jQuery('#modalTambahDataPegawai').modal('show');
+                    
+                    setTimeout(function(){
+                        if(is_non_active){
+                            jQuery('#modalTambahDataPegawai input').prop('disabled', true).prop('readonly', true);
+                            jQuery('#modalTambahDataPegawai select').prop('disabled', true);
+                            jQuery('#modalTambahDataPegawai textarea').prop('disabled', true).prop('readonly', true);
+                            jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').hide();
+                            jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai (Non Active - Hanya Baca)');
+                        } else {
+                            jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
+                            jQuery('#modalTambahDataPegawai select').prop('disabled', false);
+                            jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
+                            jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
+                            jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
+                        }
+                    }, 300);
+                }else{
+                    alert(res.message);
+                }
                 jQuery('#wrap-loading').hide();
             }
+        });
+    }
+
+    function tambah_data_pegawai(){
+        jQuery('#id_data').val('');
+        jQuery('#nik').val('');
+        jQuery('#nama').val('');
+        jQuery('#tempat_lahir').val('');
+        jQuery('#tanggal_lahir').val('');
+        jQuery('#jenis_kelamin').val('');
+        jQuery('#status').val('');
+        jQuery('#status_teks').val('');
+        jQuery('#jabatan').val('');
+        jQuery('#agama').val('');
+        jQuery('#no_hp').val('');
+        jQuery('#alamat').val('');
+        jQuery('#pendidikan_terakhir').val('');
+        jQuery('#pendidikan_sekarang').val('');
+        jQuery('#nama_sekolah').val('');
+        jQuery('#lulus').val('');
+        jQuery('#email').val('');
+        jQuery('#karpeg').val('');
+        jQuery('#tanggal_mulai').val('');
+        jQuery('#tanggal_selesai').val('');
+        jQuery('#gaji').val('');
+        jQuery('#user_role').val('');
+        
+        status_pegawai_teks();
+        
+        jQuery('#modalTambahDataPegawai').modal('show');
+        
+        setTimeout(function(){
+            jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
+            jQuery('#modalTambahDataPegawai select').prop('disabled', false);
+            jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
+            jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
+            jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
+        }, 300);
+    }
+
+    function submitTambahDataFormPegawai(){
+        if(jQuery('#nik').prop('readonly') || jQuery('#nik').prop('disabled')){
+            return alert('Data pegawai Non Active tidak dapat diedit!');
         }
-    });
-}
+        
+        var id_data = jQuery('#id_data').val();
+        var nik = jQuery('#nik').val();
+        if(nik == ''){
+            return alert('Data NIK tidak boleh kosong!');
+        }
+        var nama = jQuery('#nama').val();
+        if(nama == ''){
+            return alert('Data Nama tidak boleh kosong!');
+        }
+        
+        var jenis_kelamin = jQuery('#jenis_kelamin').val();
+        if(jenis_kelamin == ''){
+            return alert('Jenis Kelamin tidak boleh kosong!');
+        }
+        
+        var status = jQuery('#status').val();
+        if(status == ''){
+            return alert('Status Pegawai tidak boleh kosong!');
+        }
+        
+        var status_teks = jQuery('#status_teks').val();
+        if(status == '5' && status_teks == ''){
+            return alert('Status Pegawai Lainnya tidak boleh kosong!');
+        }
+        
+        var jabatan = jQuery('#jabatan').val();
+        if(jabatan == ''){
+            return alert('Jabatan tidak boleh kosong!');
+        }
+        
+        var tanggal_mulai = jQuery('#tanggal_mulai').val();
+        if(tanggal_mulai == ''){
+            return alert('Tanggal Mulai tidak boleh kosong!');
+        }
+        
+        var tanggal_selesai = jQuery('#tanggal_selesai').val();
+        if(status != '1' && tanggal_selesai == ''){
+            return alert('Tanggal Selesai tidak boleh kosong!');
+        }
+        
+        var user_role = jQuery('#user_role').val();
+        if(user_role == ''){
+            return alert('User Role tidak boleh kosong!');
+        }
+        
+        var tempat_lahir = jQuery('#tempat_lahir').val();
+        var tanggal_lahir = jQuery('#tanggal_lahir').val();
+        var agama = jQuery('#agama').val();
+        var no_hp = jQuery('#no_hp').val();
+        var alamat = jQuery('#alamat').val();
+        var pendidikan_terakhir = jQuery('#pendidikan_terakhir').val();
+        var pendidikan_sekarang = jQuery('#pendidikan_sekarang').val();
+        var nama_sekolah = jQuery('#nama_sekolah').val();
+        var lulus = jQuery('#lulus').val();
+        var email = jQuery('#email').val();
+        var karpeg = jQuery('#karpeg').val();
+        var gaji = jQuery('#gaji').val();
+
+        jQuery('#wrap-loading').show();
+        jQuery.ajax({
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data:{
+                'action': 'tambah_data_pegawai',
+                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'id_data': id_data,
+                'nik': nik,
+                'nama': nama,
+                'tempat_lahir': tempat_lahir,
+                'tanggal_lahir': tanggal_lahir,
+                'jenis_kelamin': jenis_kelamin,
+                'status': status,
+                'status_teks': status_teks,
+                'jabatan': jabatan,
+                'agama': agama,
+                'no_hp': no_hp,
+                'alamat': alamat,
+                'pendidikan_terakhir': pendidikan_terakhir,
+                'pendidikan_sekarang': pendidikan_sekarang,
+                'nama_sekolah': nama_sekolah,
+                'lulus': lulus,
+                'email': email,
+                'karpeg': karpeg,
+                'tanggal_mulai': tanggal_mulai,
+                'tanggal_selesai': tanggal_selesai,
+                'gaji': gaji,
+                'user_role': user_role,
+                'tahun': <?php echo $input['tahun_anggaran']; ?>
+            },
+            success: function(res){
+                alert(res.message);
+                jQuery('#modalTambahDataPegawai').modal('hide');
+                if(res.status == 'success'){
+                    get_data_pegawai();
+                }
+                jQuery('#wrap-loading').hide();
+            }
+        });
+    }
 </script>

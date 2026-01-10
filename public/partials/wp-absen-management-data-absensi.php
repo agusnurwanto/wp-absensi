@@ -6,7 +6,7 @@ if (!defined('WPINC')) {
 }
 
 $input = shortcode_atts(array(
-    'tahun' => '2025',
+    'tahun_anggaran' => '2025',
 ), $atts);
 
 $date = date('d-m-Y');
@@ -17,7 +17,7 @@ $get_data_unit = $wpdb->get_results($wpdb->prepare('
     WHERE tahun_anggaran=%d
         AND active=1
         AND is_skpd=1
-', $input['tahun']), ARRAY_A);
+', $input['tahun_anggaran']), ARRAY_A);
 // print_r($ret['data']); die($wpdb->last_query);
 $get_skpd = '<option value="">Pilih SKPD</option>';
 foreach($get_data_unit as $skpd){
@@ -35,7 +35,7 @@ foreach($get_data_unit as $skpd){
 <div class="cetak">
     <div style="padding: 10px;margin:0 0 3rem 0;">
         <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key">
-    <h1 class="text-center" style="margin:3rem;">Manajemen Data Absensi<br>Tahun <?php echo $input['tahun']; ?></h1>
+    <h1 class="text-center" style="margin:3rem;">Manajemen Data Absensi<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
         <div style="margin-bottom: 25px;">
             <button class="btn btn-primary" onclick="tambah_data_absensi();"><i class="dashicons dashicons-plus"></i> Tambah Data</button>
         </div>
@@ -291,7 +291,7 @@ function submitTambahDataFormAbsensi(){
             'action': 'tambah_data_absensi',
             'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
             'id_data': id_data,
-            'tahun': <?php echo $input['tahun']; ?>,
+            'tahun': <?php echo $input['tahun_anggaran']; ?>,
             'alamat_absensi': alamat_absensi,
             'nama_absensi': nama_absensi,
         },
