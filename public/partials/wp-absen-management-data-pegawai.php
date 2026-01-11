@@ -93,11 +93,11 @@ foreach ($idtahun as $val) {
             <button class="btn btn-danger" onclick="copy_data();"><i class="dashicons dashicons-admin-page"></i> Copy Data</button>
             
             <div style="display: flex; align-items: center; gap: 10px; margin-left: 20px;">
-                <label class="filter-label">Filter Status:</label>
+                <label class="filter-label">Filter Status Akun Pegawai:</label>
                 <select id="status_kerja_filter" class="form-control" onchange="filter_status_pegawai();">
-                    <option value="">Keduanya</option>
-                    <option value="1">Pegawai Active</option>
-                    <option value="0">Pegawai Non Active</option>
+                    <option value="">-</option>
+                    <option value="1">Pegawai Aktif</option>
+                    <option value="0">Pegawai Non Aktif</option>
                 </select>
             </div>
         </div>
@@ -105,7 +105,7 @@ foreach ($idtahun as $val) {
         <table id="management_data_table" cellpadding="2" cellspacing="0"  class="table table-bordered">
             <thead>
                 <tr>
-                    <th class="text-center">NIK</th>
+                    <th class="text-center">NIP</th>
                     <th class="text-center">Nama</th>
                     <th class="text-center">Tempat Lahir</th>
                     <th class="text-center">Tanggal Lahir</th>
@@ -132,7 +132,7 @@ foreach ($idtahun as $val) {
             </tbody>
         </table>
         </div>
-    </div>          
+    </div>
 </div>
 
 <div class="modal fade mt-4" id="modalTambahDataPegawai" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataPegawaiLabel" aria-hidden="true">

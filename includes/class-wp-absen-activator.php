@@ -35,6 +35,13 @@ class Wp_Absen_Activator {
         $sql = file_get_contents($path);
         dbDelta($sql);
         update_option('_wp_absen_db_version', WP_ABSEN_VERSION);
+        
+        $role_slug = 'um_admin_instansi';
+        $display_name = 'Admin Instansi';
+        $capabilities = array(
+            'read' => true,
+        );
+        add_role( $role_slug, $display_name, $capabilities );
 	}
 
 }

@@ -123,6 +123,12 @@ class Wp_Absen {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public.php';
 
+		/**
+		 * The class responsible for defining all actions that occur in the public-facing
+		 * side of the site.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-instansi.php';
+
 		$this->loader = new Wp_Absen_Loader();
 
 		// Functions tambahan
@@ -183,6 +189,7 @@ class Wp_Absen {
 	private function define_public_hooks() {
 
 		$plugin_public = new Wp_Absen_Public( $this->get_plugin_name(), $this->get_version(), $this->functions );
+		$plugin_public_instansi = new Wp_Absen_Public_Instansi( $this->get_plugin_name(), $this->get_version(), $this->functions );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
@@ -199,16 +206,18 @@ class Wp_Absen {
 		$this->loader->add_action('wp_ajax_get_master_status_karyawan',  $plugin_public, 'get_master_status_karyawan');
 		$this->loader->add_action('wp_ajax_get_master_user_role',  $plugin_public, 'get_master_user_role');
 
-		$this->loader->add_action('wp_ajax_hapus_data_lembaga_by_id',  $plugin_public, 'hapus_data_lembaga_by_id');
-		$this->loader->add_action('wp_ajax_get_data_lembaga_by_id',  $plugin_public, 'get_data_lembaga_by_id');
-		$this->loader->add_action('wp_ajax_tambah_data_lembaga',  $plugin_public, 'tambah_data_lembaga');
-		$this->loader->add_action('wp_ajax_get_datatable_lembaga',  $plugin_public, 'get_datatable_lembaga');
+		$this->loader->add_action('wp_ajax_hapus_data_instansi_by_id',  $plugin_public_instansi, 'hapus_data_instansi_by_id');
+		$this->loader->add_action('wp_ajax_get_data_instansi_by_id',  $plugin_public_instansi, 'get_data_instansi_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_instansi',  $plugin_public_instansi, 'tambah_data_instansi');
+		$this->loader->add_action('wp_ajax_get_datatable_instansi',  $plugin_public_instansi, 'get_datatable_instansi');
+		$this->loader->add_action('wp_ajax_get_users_for_instansi',  $plugin_public_instansi, 'get_users_for_instansi');
 		$this->loader->add_action('wp_ajax_get_datatable_pegawai',  $plugin_public, 'get_datatable_pegawai');
 		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public, 'tambah_data_pegawai');
 		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id',  $plugin_public, 'get_data_pegawai_by_id');
+		$this->loader->add_action('wp_ajax_hapus_data_pegawai_by_id',  $plugin_public, 'hapus_data_pegawai_by_id');
 
 		add_shortcode('management_data_pegawai_absensi', array($plugin_public, 'management_data_pegawai_absensi'));
-		add_shortcode('management_data_lembaga', array($plugin_public, 'management_data_lembaga'));
+		add_shortcode('management_data_instansi', array($plugin_public_instansi, 'management_data_instansi'));
 		add_shortcode('management_data_absensi', array($plugin_public, 'management_data_absensi'));
 
 	}

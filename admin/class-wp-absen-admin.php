@@ -157,7 +157,7 @@ class Wp_Absen_Admin {
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
         
         $get_data = '';
-        $get_data_lembaga = '';
+        $get_data_instansi = '';
         $get_absensi_pegawai = '';
         if($table_exists){
             $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
@@ -172,14 +172,14 @@ class Wp_Absen_Admin {
                         'post_status' => 'private'
                     ));
                     $get_data .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
-                    $management_data_lembaga = $this->functions->generatePage(array(
-                        'nama_page' => 'Management Data Lembaga | ' . $v['tahun_anggaran'],
-                        'content' => '[management_data_lembaga tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                    $management_data_instansi = $this->functions->generatePage(array(
+                        'nama_page' => 'Management Data Instansi | ' . $v['tahun_anggaran'],
+                        'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
                         'show_header' => 1,
                         'no_key' => 1,
                         'post_status' => 'private'
                     ));
-                    $get_data_lembaga .= '<li><a target="_blank" href="' . $management_data_lembaga['url'] . '">' . esc_html($management_data_lembaga['title']) . '</a></li>';
+                    $get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
                     $management_data_absensi = $this->functions->generatePage(array(
                         'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun_anggaran'],
                         'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
@@ -204,19 +204,19 @@ class Wp_Absen_Admin {
             ->add_tab('⚙️ Data Pegawai', $this->generate_fields_options_konfigurasi_umum_pegawai($get_data))
             ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai));
 
-        Container::make('theme_options', __('Data Lembaga'))
+        Container::make('theme_options', __('Data Instansi'))
             ->set_page_parent($basic_options_container)
-            ->add_tab('⚙️ Data Lembaga', $this->generate_fields_options_data_lembaga($get_data_lembaga));
+            ->add_tab('⚙️ Data Instansi', $this->generate_fields_options_data_instansi($get_data_instansi));
     }
 
-    public function generate_fields_options_data_lembaga($get_data_lembaga)
+    public function generate_fields_options_data_instansi($get_data_instansi)
     {
         return [
-            Field::make('html', 'crb_absen_halaman_terkait_lembaga')
+            Field::make('html', 'crb_absen_halaman_terkait_instansi')
             ->set_html('
             <h5>HALAMAN TERKAIT</h5>
             <ol>
-                ' . $get_data_lembaga . '
+                ' . $get_data_instansi . '
             </ol>
             '),
         ];
