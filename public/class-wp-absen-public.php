@@ -145,7 +145,7 @@ class Wp_Absen_Public {
 		);
 
 		if (!empty($_POST)) {
-			if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(SIAKAR_APIKEY)) {
+			if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
 				if ($ret['status'] != 'error' && empty($_POST['tahun_sumber'])) {
 					$ret['status'] = 'error';
 					$ret['message'] = 'Tahun Sumber Tidak Boleh Kosong!';
