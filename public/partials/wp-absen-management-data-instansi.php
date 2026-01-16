@@ -43,7 +43,7 @@ $input = shortcode_atts(array(
         </h1>
         <div style="margin-bottom: 25px">
             <button class="btn btn-primary" onclick="tambah_data_instansi()">
-                <i class="dashicons dashicons-plus"></i> Tambah Data
+                <span class="dashicons dashicons-plus"></span> Tambah Data
             </button>
         </div>
         <div class="wrap-table">
@@ -52,9 +52,9 @@ $input = shortcode_atts(array(
                     <tr>
                         <th class="text-center">Nama Instansi</th>
                         <th class="text-center">Alamat</th>
-                        <th class="text-center">Koordinat</th>
-                        <th class="text-center">Radius (m)</th>
-                        <th class="text-center" style="width: 150px">Aksi</th>
+                        <th class="text-center">Username Admin</th>
+                        <th class="text-center">Email Instansi</th>
+                        <th class="text-center" style="width: 200px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -83,6 +83,25 @@ $input = shortcode_atts(array(
                 <div class="form-group">
                     <label for="nama_instansi" style="display: inline-block">Nama Instansi</label>
                     <input type="text" id="nama_instansi" name="nama_instansi" class="form-control" placeholder="" />
+                </div>
+                <div class="form-group">
+                    <label for="username" style="display: inline-block">Username (Login Admin Instansi)</label>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="form-control"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="email_instansi" style="display: inline-block">Email Instansi</label>
+                    <input
+                        type="email"
+                        id="email_instansi"
+                        name="email_instansi"
+                        class="form-control"
+                        placeholder="Contoh: youremail@example.com"
+                    />
                 </div>
                 <div class="form-group">
                     <label for="alamat_instansi" style="display: inline-block"> Alamat Instansi </label>
@@ -120,12 +139,6 @@ $input = shortcode_atts(array(
                         value="100"
                         placeholder="100"
                     />
-                </div>
-                <div class="form-group">
-                    <label for="id_user" style="display: inline-block">Admin Instansi (WP User)</label>
-                    <select id="id_user" name="id_user" class="form-control">
-                        <option value="0">-- Pilih User --</option>
-                    </select>
                 </div>
             </div>
             <div class="modal-footer">
@@ -176,11 +189,11 @@ $input = shortcode_atts(array(
                         className: "text-center"
                     },
                     {
-                        "data": 'koordinat',
+                        "data": 'username',
                         className: "text-center"
                     },
                     {
-                        "data": 'radius_meter',
+                        "data": 'email_instansi',
                         className: "text-center"
                     },
                     {
@@ -237,7 +250,8 @@ $input = shortcode_atts(array(
                     jQuery('#alamat_instansi').val(res.data.alamat_instansi);
                     jQuery('#koordinat').val(res.data.koordinat);
                     jQuery('#radius_meter').val(res.data.radius_meter);
-                    jQuery('#id_user').val(res.data.id_user);
+                    jQuery('#username').val(res.data.username);
+                    jQuery('#email_instansi').val(res.data.email_instansi);
                     jQuery('#modalTambahDataInstansi').modal('show');
 
                     setTimeout(() => {
@@ -258,13 +272,9 @@ $input = shortcode_atts(array(
         jQuery('#alamat_instansi').val('');
         jQuery('#koordinat').val('');
         jQuery('#radius_meter').val('100');
-        jQuery('#id_user').val('0');
+        jQuery('#username').val('');
+        jQuery('#email_instansi').val('');
         jQuery('#modalTambahDataInstansi').modal('show');
-
-        // Populate users if empty
-        if(jQuery('#id_user option').length <= 1){
-            get_users_list();
-        }
 
         setTimeout(() => {
             initMap();
@@ -381,8 +391,12 @@ $input = shortcode_atts(array(
 
         var koordinat = jQuery('#koordinat').val();
         var radius_meter = jQuery('#radius_meter').val();
-        var id_user = jQuery('#id_user').val();
+        var username = jQuery('#username').val();
+        var email_instansi = jQuery('#email_instansi').val();
 
+        if (username == '') { return alert('Username tidak boleh kosong!'); }
+        if (email_instansi == '') { return alert('Email Instansi tidak boleh kosong!'); }
+        
         jQuery('#wrap-loading').show();
         jQuery.ajax({
             method: 'post',
@@ -391,23 +405,63 @@ $input = shortcode_atts(array(
             data: {
                 'action': 'tambah_data_instansi',
                 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                'id_data': id_data,
+                'id': id_data,
                 'tahun': <?php echo $input['tahun_anggaran']; ?>,
                 'alamat_instansi': alamat_instansi,
                 'nama_instansi': nama_instansi,
                 'koordinat': koordinat,
                 'radius_meter': radius_meter,
-                'id_user': id_user
+                'username': username,
+                'email_instansi': email_instansi
+            },
+            error: (res) => {
+                alert(res.message);
+                jQuery('#wrap-loading').hide();
             },
             success: (res) => {
                 alert(res.message);
                 jQuery('#modalTambahDataInstansi').modal('hide');
+
 
                 if (res.status == 'success') {
                     get_data_instansi();
                 } else {
                     jQuery('#wrap-loading').hide();
                 }
+            }
+        });
+    }
+
+    function mutakhirkan_user(id_instansi, username) {
+        if (!username) {
+            return alert('Username belum diset untuk instansi ini!');
+        }
+
+        let confirmAction = confirm("Apakah Anda yakin ingin memutakhirkan user '" + username + "'? \n\nJika user belum ada, akan dibuat user baru dengan password sama dengan username.");
+        if (!confirmAction) {
+            return;
+        }
+
+        jQuery('#wrap-loading').show();
+        jQuery.ajax({
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data: {
+                'action': 'mutakhirkan_user_instansi',
+                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'id_instansi': id_instansi
+            },
+            success: (res) => {
+                jQuery('#wrap-loading').hide();
+                alert(res.message);
+                if (res.status == 'success') {
+                    get_data_instansi();
+                }
+            },
+            error: () => {
+                jQuery('#wrap-loading').hide();
+                alert('Terjadi kesalahan. Silakan coba lagi.');
             }
         });
     }

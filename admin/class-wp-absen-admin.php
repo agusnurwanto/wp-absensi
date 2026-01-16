@@ -109,31 +109,31 @@ class Wp_Absen_Admin {
 	}
 
 	// https://www.wpbeginner.com/wp-tutorials/how-to-create-custom-post-types-in-wordpress/
-	function absen_create_posttype() {
-	    register_post_type( 'Instansi',
-	        array(
-	            'labels' => array(
-	                'name' => __( 'Instansi' ),
-	                'singular_name' => __( 'Instansi' )
-	            ),
-	            'hierarchical'        => false,
-		        'public'              => true,
-		        'show_ui'             => true,
-		        'show_in_menu'        => true,
-		        'show_in_nav_menus'   => true,
-		        'show_in_admin_bar'   => true,
-		        'menu_position'       => 5,
-		        'can_export'          => true,
-		        'has_archive'         => true,
-		        'exclude_from_search' => false,
-		        'publicly_queryable'  => true,
-		        'capability_type'     => 'post',
-		        'show_in_rest' 		  => true,
-	            'rewrite' 			  => array('slug' => 'instansi'),
-        		'supports'            => array( 'title', 'editor', 'author', 'thumbnail', 'comments', 'revisions', 'custom-fields', ),
-	        )
-	    );
-	}
+	// function absen_create_posttype() {
+	// 	register_post_type( 'Instansi',
+	// 		array(
+	// 			'labels' => array(
+	// 				'name' => __( 'Instansi' ),
+	// 				'singular_name' => __( 'Instansi' )
+	// 			),
+	// 			'hierarchical'        => false,
+	// 			'public'              => true,
+	// 			'show_ui'             => true,
+	// 			'show_in_menu'        => true,
+	// 			'show_in_nav_menus'   => true,
+	// 			'show_in_admin_bar'   => true,
+	// 			'menu_position'       => 5,
+	// 			'can_export'          => true,
+	// 			'has_archive'         => true,
+	// 			'exclude_from_search' => false,
+	// 			'publicly_queryable'  => true,
+	// 			'capability_type'     => 'post',
+	// 			'show_in_rest' 		  => true,
+	// 			'rewrite' 			  => array('slug' => 'instansi'),
+	// 			'supports'            => array( 'title', 'editor', 'author', 'thumbnail', 'comments', 'revisions', 'custom-fields', ),
+	// 		)
+	// 	);
+	// }
 
 	public function crb_absen_options()
     {      
@@ -143,6 +143,14 @@ class Wp_Absen_Admin {
             'show_header' => 1,
             'no_key' => 1,
             'post_status' => 'private'
+        ));
+
+        $ubah_password_page = $this->functions->generatePage(array(
+            'nama_page' => 'Ubah Password Absen',
+            'content' => '[ubah_password_absen]',
+            'show_header' => 1,
+            'no_key' => 1,
+            'post_status' => 'publish'
         ));
 
         $api_key = get_option(ABSEN_APIKEY);
@@ -177,7 +185,7 @@ class Wp_Absen_Admin {
                         'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
                         'show_header' => 1,
                         'no_key' => 1,
-                        'post_status' => 'private'
+                        'post_status' => 'published'
                     ));
                     $get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
                     $management_data_absensi = $this->functions->generatePage(array(

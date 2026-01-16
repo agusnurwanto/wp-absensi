@@ -443,4 +443,182 @@ class ABSEN_Functions
 			);
 		}
 	}
+
+	/**
+	 * Check if user needs to change password on login and redirect if needed
+	 */
+	public function check_force_password_change() {
+		if (!is_user_logged_in()) {
+			return;
+		}
+
+		$user_id = get_current_user_id();
+		$force_change = get_user_meta($user_id, 'absen_force_password_change', true);
+
+		if ($force_change == 1) {
+			// Get password change page URL
+			$change_password_url = home_url('/ubah-password-absen/');
+
+			// Don't redirect if already on the password change page or admin-ajax
+			$current_url = $_SERVER['REQUEST_URI'];
+			if (
+				strpos($current_url, 'ubah-password-absen') === false &&
+				strpos($current_url, 'admin-ajax.php') === false &&
+				strpos($current_url, 'wp-login.php') === false &&
+				strpos($current_url, 'wp-admin') === false
+			) {
+				wp_redirect($change_password_url);
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * AJAX handler for changing password
+	 */
+	public function ajax_change_password() {
+		$ret = array(
+			'status' => 'success',
+			'message' => 'Password berhasil diubah!',
+			'data' => array()
+		);
+
+		if (!is_user_logged_in()) {
+			$ret['status'] = 'error';
+			$ret['message'] = 'Anda harus login terlebih dahulu!';
+			die(json_encode($ret));
+		}
+
+		if (!empty($_POST)) {
+			if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
+				$new_password = isset($_POST['new_password']) ? $_POST['new_password'] : '';
+				$confirm_password = isset($_POST['confirm_password']) ? $_POST['confirm_password'] : '';
+
+				if (empty($new_password)) {
+					$ret['status'] = 'error';
+					$ret['message'] = 'Password baru tidak boleh kosong!';
+				} elseif (strlen($new_password) < 6) {
+					$ret['status'] = 'error';
+					$ret['message'] = 'Password minimal 6 karakter!';
+				} elseif ($new_password !== $confirm_password) {
+					$ret['status'] = 'error';
+					$ret['message'] = 'Konfirmasi password tidak cocok!';
+				} else {
+					$user_id = get_current_user_id();
+
+					// Update password
+					wp_set_password($new_password, $user_id);
+
+					// Remove the force change flag
+					delete_user_meta($user_id, 'absen_force_password_change');
+
+					// Force re-login by destroying session
+					wp_destroy_current_session();
+					wp_clear_auth_cookie();
+
+					$ret['message'] = 'Password berhasil diubah! Silakan login kembali dengan password baru.';
+					$ret['redirect'] = wp_login_url();
+				}
+			} else {
+				$ret['status'] = 'error';
+				$ret['message'] = 'Api key tidak ditemukan!';
+			}
+		} else {
+			$ret['status'] = 'error';
+			$ret['message'] = 'Format salah!';
+		}
+
+		die(json_encode($ret));
+	}
+
+	/**
+	 * Shortcode for password change form
+	 */
+	public function shortcode_ubah_password($atts) {
+		if (!is_user_logged_in()) {
+			return '<div class="alert alert-warning">Anda harus login terlebih dahulu.</div>';
+		}
+
+		$user_id = get_current_user_id();
+		$force_change = get_user_meta($user_id, 'absen_force_password_change', true);
+		$current_user = wp_get_current_user();
+
+		ob_start();
+		?>
+		<div class="container" style="max-width: 500px; margin: 50px auto;">
+			<input type="hidden" value="<?php echo get_option(ABSEN_APIKEY); ?>" id="api_key" />
+
+			<div class="card">
+				<div class="card-header">
+					<h4 class="mb-0">Ubah Password</h4>
+				</div>
+				<div class="card-body">
+					<?php if ($force_change == 1): ?>
+					<div class="alert alert-info">
+						<strong>Perhatian!</strong> Ini adalah login pertama Anda. Silakan ubah password untuk keamanan akun.
+					</div>
+					<?php endif; ?>
+
+					<div class="form-group">
+						<label>Username</label>
+						<input type="text" class="form-control" value="<?php echo esc_attr($current_user->user_login); ?>" disabled />
+					</div>
+
+					<div class="form-group">
+						<label for="new_password">Password Baru <span class="text-danger">*</span></label>
+						<input type="password" id="new_password" name="new_password" class="form-control" placeholder="Minimal 6 karakter" required />
+					</div>
+
+					<div class="form-group">
+						<label for="confirm_password">Konfirmasi Password <span class="text-danger">*</span></label>
+						<input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Ulangi password baru" required />
+					</div>
+
+					<button type="button" class="btn btn-primary btn-block" onclick="submitChangePassword()">
+						Simpan Password Baru
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+		function submitChangePassword() {
+			var new_password = jQuery('#new_password').val();
+			var confirm_password = jQuery('#confirm_password').val();
+
+			if (new_password == '') {
+				return alert('Password baru tidak boleh kosong!');
+			}
+			if (new_password.length < 6) {
+				return alert('Password minimal 6 karakter!');
+			}
+			if (new_password != confirm_password) {
+				return alert('Konfirmasi password tidak cocok!');
+			}
+
+			jQuery.ajax({
+				method: 'post',
+				url: '<?php echo admin_url('admin-ajax.php'); ?>',
+				dataType: 'json',
+				data: {
+					'action': 'absen_change_password',
+					'api_key': jQuery('#api_key').val(),
+					'new_password': new_password,
+					'confirm_password': confirm_password
+				},
+				success: function(res) {
+					alert(res.message);
+					if (res.status == 'success' && res.redirect) {
+						window.location.href = res.redirect;
+					}
+				},
+				error: function() {
+					alert('Terjadi kesalahan. Silakan coba lagi.');
+				}
+			});
+		}
+		</script>
+		<?php
+		return ob_get_clean();
+	}
 }

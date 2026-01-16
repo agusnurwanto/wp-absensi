@@ -123,7 +123,7 @@ foreach ($idtahun as $val) {
                     <th class="text-center">Tanggal Mulai</th>
                     <th class="text-center">Tanggal Selesai</th>
                     <th class="text-center">Gaji</th>
-                    <th class="text-center">User Role</th>
+                    <th class="text-center">Admin Instansi</th>
                     <th class="text-center">Status Pegawai</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
                 </tr>
@@ -262,9 +262,9 @@ foreach ($idtahun as $val) {
                     </div>
 
                     <div class="col-md-4 form-group">
-                        <label>User Role <span class="text-danger">*</span></label>
-                        <select id="user_role" class="form-control">
-                            <option value="">-- Pilih Role --</option>
+                        <label>Admin Instansi <span class="text-danger">*</span></label>
+                        <select id="id_instansi" class="form-control">
+                            <option value="">-- Pilih Instansi --</option>
                         </select>
                     </div>
                 </div>
@@ -404,6 +404,41 @@ foreach ($idtahun as $val) {
             error: function(){
                 alert('Gagal memuat master data!');
                 jQuery('#wrap-loading').hide();
+            }
+        });
+
+        // Load Master Instansi (Parent Role)
+        jQuery.ajax({
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data:{
+                'action': 'get_master_instansi',
+                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
+            },
+            success: function(res){
+                if(res.status == 'success'){
+                    var instansi_select = jQuery('#id_instansi');
+                    instansi_select.find('option:not(:first)').remove();
+                    
+                    var count = 0;
+                    var last_val = '';
+                    jQuery.each(res.data, function(i, item){
+                        instansi_select.append(jQuery('<option>', {
+                            value: item.value,
+                            text: item.label
+                        }));
+                        count++;
+                        last_val = item.value;
+                    });
+                    
+                    // If only one option (e.g. Admin Instansi logged in), auto select and disable?
+                    // Actually let's check roles in PHP (which we did in get_master_instansi)
+                    // But if there is only 1 result, we might want to auto select.
+                    if (count === 1) {
+                         instansi_select.val(last_val);
+                    }
+                }
             }
         });
     }
@@ -596,7 +631,7 @@ foreach ($idtahun as $val) {
                         className: "text-right"
                     },
                     {
-                        "data": 'user_role',
+                        "data": 'nama_instansi',
                         className: "text-center"
                     },
                     {
@@ -728,7 +763,7 @@ foreach ($idtahun as $val) {
                     jQuery('#tanggal_mulai').val(res.data.tanggal_mulai);
                     jQuery('#tanggal_selesai').val(res.data.tanggal_selesai);
                     jQuery('#gaji').val(res.data.gaji);
-                    jQuery('#user_role').val(res.data.user_role);
+                    jQuery('#id_instansi').val(res.data.id_instansi);
                     jQuery('#tahun').val(res.data.tahun);
                     
                     status_pegawai_teks();
@@ -780,7 +815,15 @@ foreach ($idtahun as $val) {
         jQuery('#tanggal_mulai').val('');
         jQuery('#tanggal_selesai').val('');
         jQuery('#gaji').val('');
-        jQuery('#user_role').val('');
+        
+        // Reset instansi but keep if only 1 option (Admin Instansi context)
+        if (jQuery('#id_instansi option').length > 2) {
+             jQuery('#id_instansi').val('');
+        } else if (jQuery('#id_instansi option').length == 2) {
+             jQuery('#id_instansi').val(jQuery('#id_instansi option:eq(1)').val());
+        } else {
+             jQuery('#id_instansi').val('');
+        }
         
         status_pegawai_teks();
         
@@ -840,9 +883,11 @@ foreach ($idtahun as $val) {
             return alert('Tanggal Selesai tidak boleh kosong!');
         }
         
-        var user_role = jQuery('#user_role').val();
-        if(user_role == ''){
-            return alert('User Role tidak boleh kosong!');
+        var gaji = jQuery('#gaji').val();
+        var id_instansi = jQuery('#id_instansi').val();
+         
+        if(nik == '' || nama == '' || jenis_kelamin == '' || status == '' || id_instansi == '' || jabatan == '' || tanggal_mulai == '' || (status != '1' && tanggal_selesai == '')){
+            return alert('Harap lengkapi semua field bertanda bintang (*) !');
         }
         
         var tempat_lahir = jQuery('#tempat_lahir').val();
@@ -887,6 +932,7 @@ foreach ($idtahun as $val) {
                 'tanggal_mulai': tanggal_mulai,
                 'tanggal_selesai': tanggal_selesai,
                 'gaji': gaji,
+                'id_instansi': id_instansi,
                 'user_role': user_role,
                 'tahun': <?php echo $input['tahun_anggaran']; ?>
             },
