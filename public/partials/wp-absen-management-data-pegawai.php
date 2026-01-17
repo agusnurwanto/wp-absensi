@@ -9,9 +9,9 @@ $input = shortcode_atts(array(
     'tahun_anggaran' => '2025',
 ), $atts);
 $idtahun = $wpdb->get_results("
-    SELECT DISTINCT 
-        tahun_anggaran 
-    FROM absensi_data_unit        
+    SELECT DISTINCT
+        tahun_anggaran
+    FROM absensi_data_unit
     ORDER BY tahun_anggaran DESC
 ",ARRAY_A);
 $tahun = '<option value="0">Pilih Tahun</option>';
@@ -26,6 +26,17 @@ foreach ($idtahun as $val) {
     }
     $tahun .= '<option value="'. $val['tahun_anggaran']. '" '. $selected .'>'. $val['tahun_anggaran'] .'</option>';
 }
+
+// Get field visibility options
+$hide_tempat_lahir = carbon_get_theme_option('crb_hide_tempat_lahir');
+$hide_tanggal_lahir = carbon_get_theme_option('crb_hide_tanggal_lahir');
+$hide_jenis_kelamin = carbon_get_theme_option('crb_hide_jenis_kelamin');
+$hide_agama = carbon_get_theme_option('crb_hide_agama');
+$hide_pendidikan_terakhir = carbon_get_theme_option('crb_hide_pendidikan_terakhir');
+$hide_pendidikan_sekarang = carbon_get_theme_option('crb_hide_pendidikan_sekarang');
+$hide_nama_sekolah = carbon_get_theme_option('crb_hide_nama_sekolah');
+$hide_lulus = carbon_get_theme_option('crb_hide_lulus');
+$hide_alamat = carbon_get_theme_option('crb_hide_alamat');
 ?>
 <style type="text/css">
     .wrap-table{
@@ -161,24 +172,24 @@ foreach ($idtahun as $val) {
                         <input type="text" id="nama" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_tempat_lahir) echo ' style="display:none;"'; ?>>
                         <label>Tempat Lahir</label>
                         <input type="text" id="tempat_lahir" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_tanggal_lahir) echo ' style="display:none;"'; ?>>
                         <label>Tanggal Lahir</label>
                         <input type="date" id="tanggal_lahir" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group">
-                        <label>Jenis Kelamin <span class="text-danger">*</span></label>
+                    <div class="col-md-4 form-group"<?php if($hide_jenis_kelamin) echo ' style="display:none;"'; ?>>
+                        <label>Jenis Kelamin</label>
                         <select id="jenis_kelamin" class="form-control">
                             <option value="">-- Pilih Jenis Kelamin --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_agama) echo ' style="display:none;"'; ?>>
                         <label>Agama</label>
                         <select id="agama" class="form-control">
                             <option value="">-- Pilih Agama --</option>
@@ -190,26 +201,26 @@ foreach ($idtahun as $val) {
                         <input type="number" id="no_hp" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_pendidikan_terakhir) echo ' style="display:none;"'; ?>>
                         <label>Pendidikan Terakhir</label>
                         <select id="pendidikan_terakhir" class="form-control">
                             <option value="">-- Pilih Pendidikan --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_pendidikan_sekarang) echo ' style="display:none;"'; ?>>
                         <label>Pendidikan Sekarang</label>
                         <select id="pendidikan_sekarang" class="form-control">
                             <option value="">-- Pilih Pendidikan --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_nama_sekolah) echo ' style="display:none;"'; ?>>
                         <label>Nama Sekolah</label>
                         <input type="text" id="nama_sekolah" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group">
+                    <div class="col-md-4 form-group"<?php if($hide_lulus) echo ' style="display:none;"'; ?>>
                         <label>Lulus (Tahun)</label>
                         <input type="number" id="lulus" class="form-control">
                     </div>
@@ -219,25 +230,25 @@ foreach ($idtahun as $val) {
                         <input type="email" id="email" class="form-control">
                     </div>
 
-                    <div class="col-md-12 form-group">
+                    <div class="col-md-12 form-group"<?php if($hide_alamat) echo ' style="display:none;"'; ?>>
                         <label>Alamat</label>
                         <textarea id="alamat" class="form-control"></textarea>
                     </div>
 
                     <div class="col-md-4 form-group">
-                        <label>Status Pegawai <span class="text-danger">*</span></label>
+                        <label>Status Pegawai</label>
                         <select id="status" class="form-control" onchange="status_pegawai_teks();">
                             <option value="">-- Pilih Status --</option>
                         </select>
                     </div>
 
                     <div class="col-md-4 form-group hidden" id="status_teks_wrapper">
-                        <label>Status Pegawai Lainnya <span class="text-danger">*</span></label>
+                        <label>Status Pegawai Lainnya</label>
                         <input type="text" id="status_teks" class="form-control" placeholder="Sebutkan status lainnya">
                     </div>
 
                     <div class="col-md-4 form-group hidden" id="jabatan_wrapper">
-                        <label>Jabatan <span class="text-danger">*</span></label>
+                        <label>Jabatan</label>
                         <input type="text" id="jabatan" class="form-control">
                     </div>
 
@@ -247,12 +258,12 @@ foreach ($idtahun as $val) {
                     </div>
 
                     <div class="col-md-4 form-group hidden" id="tanggal_mulai_wrapper">
-                        <label>Tanggal Mulai <span class="text-danger">*</span></label>
+                        <label>Tanggal Mulai</label>
                         <input type="date" id="tanggal_mulai" class="form-control">
                     </div>
 
                     <div class="col-md-4 form-group hidden" id="tanggal_selesai_wrapper">
-                        <label>Tanggal Selesai <span class="text-danger">*</span></label>
+                        <label>Tanggal Selesai</label>
                         <input type="date" id="tanggal_selesai" class="form-control">
                     </div>
 
@@ -265,6 +276,13 @@ foreach ($idtahun as $val) {
                         <label>Admin Instansi <span class="text-danger">*</span></label>
                         <select id="id_instansi" class="form-control">
                             <option value="">-- Pilih Instansi --</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 form-group">
+                        <label>User Role</label>
+                        <select id="user_role" class="form-control">
+                            <option value="">-- Pilih Role (Opsional) --</option>
                         </select>
                     </div>
                 </div>
@@ -764,6 +782,7 @@ foreach ($idtahun as $val) {
                     jQuery('#tanggal_selesai').val(res.data.tanggal_selesai);
                     jQuery('#gaji').val(res.data.gaji);
                     jQuery('#id_instansi').val(res.data.id_instansi);
+                    jQuery('#user_role').val(res.data.user_role);
                     jQuery('#tahun').val(res.data.tahun);
                     
                     status_pegawai_teks();
@@ -815,7 +834,8 @@ foreach ($idtahun as $val) {
         jQuery('#tanggal_mulai').val('');
         jQuery('#tanggal_selesai').val('');
         jQuery('#gaji').val('');
-        
+        jQuery('#user_role').val('');
+
         // Reset instansi but keep if only 1 option (Admin Instansi context)
         if (jQuery('#id_instansi option').length > 2) {
              jQuery('#id_instansi').val('');
@@ -854,39 +874,21 @@ foreach ($idtahun as $val) {
         }
         
         var jenis_kelamin = jQuery('#jenis_kelamin').val();
-        if(jenis_kelamin == ''){
-            return alert('Jenis Kelamin tidak boleh kosong!');
-        }
-        
+
         var status = jQuery('#status').val();
-        if(status == ''){
-            return alert('Status Pegawai tidak boleh kosong!');
-        }
-        
+
         var status_teks = jQuery('#status_teks').val();
-        if(status == '5' && status_teks == ''){
-            return alert('Status Pegawai Lainnya tidak boleh kosong!');
-        }
-        
+
         var jabatan = jQuery('#jabatan').val();
-        if(jabatan == ''){
-            return alert('Jabatan tidak boleh kosong!');
-        }
-        
+
         var tanggal_mulai = jQuery('#tanggal_mulai').val();
-        if(tanggal_mulai == ''){
-            return alert('Tanggal Mulai tidak boleh kosong!');
-        }
-        
+
         var tanggal_selesai = jQuery('#tanggal_selesai').val();
-        if(status != '1' && tanggal_selesai == ''){
-            return alert('Tanggal Selesai tidak boleh kosong!');
-        }
         
         var gaji = jQuery('#gaji').val();
         var id_instansi = jQuery('#id_instansi').val();
-         
-        if(nik == '' || nama == '' || jenis_kelamin == '' || status == '' || id_instansi == '' || jabatan == '' || tanggal_mulai == '' || (status != '1' && tanggal_selesai == '')){
+        var user_role = jQuery('#user_role').val();
+        if(nik == '' || nama == '' || id_instansi == ''){
             return alert('Harap lengkapi semua field bertanda bintang (*) !');
         }
         

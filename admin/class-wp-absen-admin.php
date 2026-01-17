@@ -383,13 +383,13 @@ class Wp_Absen_Admin {
 		);
 		global $wpdb;
 		$user_all = $wpdb->get_results("
-			SELECT 
+			SELECT
 				p.*,
-				u.nama_skpd 
+				u.nama_skpd
 			from absensi_data_pegawai p
 			inner join absensi_data_unit u on u.id_skpd=p.id_skpd
-				and u.active=p.active 
-				and u.tahun_anggaran=p.tahun 
+				and u.active=p.active
+				and u.tahun_anggaran=p.tahun
 			where p.active=1
 			group by p.nik, p.nip
 		", ARRAY_A);
@@ -528,6 +528,45 @@ class Wp_Absen_Admin {
                 ' . $get_data . '
             </ol>
             '),
+
+            Field::make('html', 'crb_absen_pegawai_field_visibility_header')
+                ->set_html('<h5>PENGATURAN FIELD FORM PEGAWAI</h5><p>Centang field yang ingin disembunyikan pada form tambah/edit data pegawai:</p>'),
+
+            Field::make('checkbox', 'crb_hide_tempat_lahir', 'Sembunyikan Tempat Lahir')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_tanggal_lahir', 'Sembunyikan Tanggal Lahir')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_jenis_kelamin', 'Sembunyikan Jenis Kelamin')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_agama', 'Sembunyikan Agama')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_pendidikan_terakhir', 'Sembunyikan Pendidikan Terakhir')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_pendidikan_sekarang', 'Sembunyikan Pendidikan Sekarang')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_nama_sekolah', 'Sembunyikan Nama Sekolah')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_lulus', 'Sembunyikan Lulus (Tahun)')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
+
+            Field::make('checkbox', 'crb_hide_alamat', 'Sembunyikan Alamat')
+                ->set_default_value(true)
+                ->set_option_value('yes'),
 
              Field::make('html', 'crb_absen_pegawai_upload_html')
                     ->set_html('<h3>Import EXCEL data Pegawai</h3>Pilih file excel .xlsx : <input type="file" id="file-excel" onchange="filePickedAbsen(event);"><br>Contoh format file excel bisa <a target="_blank" href="' . ABSEN_PLUGIN_URL . 'public/media/absen/contoh_data_pegawai.xlsx' . '">download di sini</a>. Sheet file excel yang akan diimport harus diberi nama <b>data</b>. Untuk kolom nilai angka ditulis tanpa tanda titik.'),

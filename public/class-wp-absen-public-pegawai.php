@@ -534,7 +534,7 @@ class Wp_Absen_Public_Pegawai {
                     $tanggal_selesai = !empty($_POST['tanggal_selesai']) ? $_POST['tanggal_selesai'] : null;
                     $gaji = !empty($_POST['gaji']) ? $_POST['gaji'] : null;
                     $id_instansi = $_POST['id_instansi'];
-                    $user_role = 'pegawai'; // Default role
+                    $user_role = !empty($_POST['user_role']) ? $_POST['user_role'] : 'pegawai'; // Default role if not provided
                     $tahun = !empty($_POST['tahun']) ? $_POST['tahun'] : date('Y');
 
                     $data = array(
