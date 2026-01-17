@@ -20,9 +20,9 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 
 ## Environment
 
-**Always use `bun` and `bunx` instead of `npm` or `npx`** for any JavaScript/Node.js tooling in this project.
+**Shell preference (Windows):** Check if Git Bash is installed first (`bash --version`). If available, use Git Bash instead of PowerShell or CMD for better Unix command compatibility.
 
-**For `agent-browser`**: Run it from Git Bash (not PowerShell or CMD) as it requires `/bin/sh`.
+**Prefer `bun` and `bunx` over `npm` or `npx`** for any JavaScript/Node.js tooling in this project. Check if bun is installed first (`bun --version`), if not available, fall back to npm/npx.
 
 ## Architecture
 
@@ -123,7 +123,6 @@ if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) 
     $ret['status'] = 'error';
     $ret['message'] = 'Api key tidak ditemukan!';
 }
-die(json_encode($ret));
 ```
 
 ### Hook Registration
@@ -234,3 +233,7 @@ class Wp_Absen_Public_Pegawai {
 - `cuti` - Leave
 - `NIK` - Nomor Induk Kependudukan (National ID Number)
 - `NIP` - Nomor Induk Pegawai (Employee ID Number)
+
+## Maintenance
+
+When making significant changes to the codebase (new dependencies, refactoring, architectural changes), update this CLAUDE.md file to keep documentation in sync.
