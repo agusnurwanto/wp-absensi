@@ -40,7 +40,7 @@ $hide_lulus = carbon_get_theme_option('crb_hide_lulus');
 $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
 
 $current_user = wp_get_current_user();
-$is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles);
+$is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles);
 $current_user_id = $current_user->ID;
 
 
@@ -300,52 +300,52 @@ $current_user_id = $current_user->ID;
     }
 
     function submitCopyData() {
-            if (!confirm('Apakah anda yakin akan copy data Pegawai? \nData yang sudah ada akan ditimpa oleh data baru hasil copy data!')) {
-                return;
-            }
-
-            var tahun = jQuery("#tahunAnggaranCopy").val();
-
-            jQuery('#wrap-loading').show();
-
-            ajax_copy_data({
-                tahun: tahun
-            })
-            .then(function() {
-                alert('Berhasil Copy Data Pegawai.');
-                jQuery("#modal").modal('hide');
-                jQuery('#wrap-loading').hide();
-                get_data_pegawai();
-            })
-            .catch(function(err) {
-                console.log('err', err);
-                alert('Ada kesalahan sistem!');
-                jQuery('#wrap-loading').hide();
-            });
+        if (!confirm('Apakah anda yakin akan copy data Pegawai? \nData yang sudah ada akan ditimpa oleh data baru hasil copy data!')) {
+            return;
         }
 
-        function ajax_copy_data(options){
-            return new Promise(function(resolve, reject){
-                jQuery.ajax({
-                    method: 'post',
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                    dataType: 'json',
-                    data:{
-                        action: 'copy_data_pegawai',
-                        api_key: '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                        tahun_sumber: options.tahun,
-                        tahun_tujuan: <?php echo $input['tahun_anggaran']; ?>
-                    },
-                    success: function(response) {
-                        resolve();
-                    },
-                    error: function(xhr, status, error) {
-                        console.log('error', error);
-                        resolve();
-                    }
-                });
+        var tahun = jQuery("#tahunAnggaranCopy").val();
+
+        jQuery('#wrap-loading').show();
+
+        ajax_copy_data({
+            tahun: tahun
+        })
+        .then(function() {
+            alert('Berhasil Copy Data Pegawai.');
+            jQuery("#modal").modal('hide');
+            jQuery('#wrap-loading').hide();
+            get_data_pegawai();
+        })
+        .catch(function(err) {
+            console.log('err', err);
+            alert('Ada kesalahan sistem!');
+            jQuery('#wrap-loading').hide();
+        });
+    }
+
+    function ajax_copy_data(options){
+        return new Promise(function(resolve, reject){
+            jQuery.ajax({
+                method: 'post',
+                url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                dataType: 'json',
+                data:{
+                    action: 'copy_data_pegawai',
+                    api_key: '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                    tahun_sumber: options.tahun,
+                    tahun_tujuan: <?php echo $input['tahun_anggaran']; ?>
+                },
+                success: function(response) {
+                    resolve();
+                },
+                error: function(xhr, status, error) {
+                    console.log('error', error);
+                    resolve();
+                }
             });
-        }
+        });
+    }
 
     function load_master_data(callback){
         jQuery('#wrap-loading').show();
@@ -555,35 +555,38 @@ $current_user_id = $current_user->ID;
                     var is_non_active = status_kerja == 0;
                     
                     jQuery('#id_data').val(res.data.id);
-                    jQuery('#nik').val(res.data.nik);
+                    jQuery('#nik').val(res.data.nik).prop('readonly', true).prop('disabled', true);
                     jQuery('#nama').val(res.data.nama);
                     jQuery('#tempat_lahir').val(res.data.tempat_lahir);
                     jQuery('#tanggal_lahir').val(res.data.tanggal_lahir);
                     jQuery('#lulus').val(res.data.lulus);
                     jQuery('#email').val(res.data.email);
                     jQuery('#admin_instansi').val(res.data.id_instansi);
-
+                    jQuery('#no_hp').val(res.data.no_hp);
 
                     jQuery('#tahun').val(res.data.tahun);
 
+                    if (isAdminInstansi) {
+                        jQuery('#admin_instansi').val(res.data.id_instansi).prop('disabled', true).prop('readonly', true);
+                    }
                     
                     jQuery('#modalTambahDataPegawai').modal('show');
                     
-                    setTimeout(function(){
-                        if(is_non_active){
-                            jQuery('#modalTambahDataPegawai input').prop('disabled', true).prop('readonly', true);
-                            jQuery('#modalTambahDataPegawai select').prop('disabled', true);
-                            jQuery('#modalTambahDataPegawai textarea').prop('disabled', true).prop('readonly', true);
-                            jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').hide();
-                            jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai (Non Active - Hanya Baca)');
-                        } else {
-                            jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
-                            jQuery('#modalTambahDataPegawai select').prop('disabled', false);
-                            jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
-                            jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
-                            jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
-                        }
-                    }, 300);
+                    // setTimeout(function(){
+                    //     if(is_non_active){
+                    //         jQuery('#modalTambahDataPegawai input').prop('disabled', true).prop('readonly', true);
+                    //         jQuery('#modalTambahDataPegawai select').prop('disabled', true);
+                    //         jQuery('#modalTambahDataPegawai textarea').prop('disabled', true).prop('readonly', true);
+                    //         jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').hide();
+                    //         jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai (Non Active - Hanya Baca)');
+                    //     } else {
+                    //         jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
+                    //         jQuery('#modalTambahDataPegawai select').prop('disabled', false);
+                    //         jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
+                    //         jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
+                    //         jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
+                    //     }
+                    // }, 300);
                 }else{
                     alert(res.message);
                 }
@@ -595,43 +598,38 @@ $current_user_id = $current_user->ID;
     function tambah_data_pegawai(){
         jQuery('#id_data').val('');
         jQuery('#admin_instansi').val('');
-        jQuery('#nik').val('');
-
-        if(isAdminInstansi){
-             jQuery('#admin_instansi').val(currentUserId).trigger('change');
-        }
-
-
+        jQuery('#no_hp').val('');
         jQuery('#nama').val('');
         jQuery('#tempat_lahir').val('');
         jQuery('#tanggal_lahir').val('');
         jQuery('#email').val('');
-
+        jQuery('#nik').val('').prop('readonly', false).prop('disabled', false);
+        
+        if (isAdminInstansi) {
+            jQuery('#admin_instansi').val(currentUserId).trigger('change').prop('disabled', true).prop('readonly', true);
+        }
         
         // status_pegawai_teks(); (Removed)
 
         
         jQuery('#modalTambahDataPegawai').modal('show');
         
-        setTimeout(function(){
-            jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
-            jQuery('#modalTambahDataPegawai select').prop('disabled', false);
-            jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
+        // setTimeout(function(){
+        //     jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
+        //     jQuery('#modalTambahDataPegawai select').prop('disabled', false);
+        //     jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
             
-            if(isAdminInstansi){
-                jQuery('#admin_instansi').prop('disabled', true);
-            }
+        //     if(isAdminInstansi){
+        //         jQuery('#admin_instansi').prop('disabled', true);
+        //     }
 
-            jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
-            jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
-        }, 300);
+        //     jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
+        //     jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
+        // }, 300);
 
     }
 
     function submitTambahDataFormPegawai() {
-        if(jQuery('#nik').prop('readonly') || jQuery('#nik').prop('disabled')){
-            return alert('Data pegawai Non Active tidak dapat diedit!');
-        }
         
         var id_data = jQuery('#id_data').val();
         var admin_instansi = jQuery('#admin_instansi').val();

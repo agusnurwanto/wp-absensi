@@ -2,3 +2,6 @@ public/media/absen/*.pdf
 public/media/absen/*.png
 public/media/absen/*.jpg
 public/media/absen/*.jpeg
+
+wp.bat
+wp-cli.phar

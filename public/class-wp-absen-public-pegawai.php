@@ -207,6 +207,16 @@ class Wp_Absen_Public_Pegawai {
     }
 
     public function get_master_admin_instansi() {
+        $current_user = wp_get_current_user();
+        $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+
+        if ($is_admin_instansi) {
+             return array(array(
+                'value' => $current_user->ID,
+                'label' => $current_user->display_name
+            ));
+        }
+
         $users = get_users(array('role' => 'admin_instansi'));
         $data = array();
         foreach($users as $user){
@@ -305,12 +315,7 @@ class Wp_Absen_Public_Pegawai {
                 $current_user = wp_get_current_user();
                 $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
                 if ($is_admin_instansi) {
-                    $instansi_data = $wpdb->get_row($wpdb->prepare("SELECT id FROM absensi_data_instansi WHERE id_user = %d AND active=1", $current_user->ID));
-                    if ($instansi_data) {
-                        $where_first .= $wpdb->prepare(" AND id_instansi = %d", $instansi_data->id);
-                    } else {
-                        $where_first .= " AND 1=0"; // No instansi assigned, show nothing
-                    }
+                    $where_first .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
                 }
 
 	            $sqlTot .= $sql_tot.$where_first;
@@ -340,7 +345,65 @@ class Wp_Absen_Public_Pegawai {
 	            $queryRecords = $wpdb->get_results($sqlRec, ARRAY_A);
 
 	            foreach($queryRecords as $recKey => $recVal){
-	                
+                // SYNC DATA WITH WORDPRESS USER
+                $wp_user = false;
+                $user_data_changed = false;
+                $update_data = array();
+
+                // 1. Try to get user by id_user
+                if (!empty($recVal['id_user'])) {
+                    $wp_user = get_user_by('id', $recVal['id_user']);
+                }
+
+                // 2. If not found, try by NIK (username)
+                if (!$wp_user && !empty($recVal['nik'])) {
+                    $wp_user = get_user_by('login', $recVal['nik']);
+                    if ($wp_user) {
+                        $update_data['id_user'] = $wp_user->ID;
+                        $user_data_changed = true;
+                    }
+                }
+
+                // 3. If still not found, try by Email
+                if (!$wp_user && !empty($recVal['email'])) {
+                    $wp_user = get_user_by('email', $recVal['email']);
+                    if ($wp_user) {
+                        $update_data['id_user'] = $wp_user->ID;
+                        $user_data_changed = true;
+                    }
+                }
+
+                // 4. If User Found, Compare and Sync
+                if ($wp_user) {
+                    // Check NIK (Username)
+                    if ($recVal['nik'] !== $wp_user->user_login) {
+                        $update_data['nik'] = $wp_user->user_login;
+                        $recVal['nik'] = $wp_user->user_login; // Update local var for display
+                        $user_data_changed = true;
+                    }
+
+                    // Check Nama (First Name)
+                    // Note: WP first_name might be empty, if so keep DB name? 
+                    // Prompt says "Nama (first name user wordpress)". We assume WP is master.
+                    if (!empty($wp_user->first_name) && $recVal['nama'] !== $wp_user->first_name) {
+                        $update_data['nama'] = $wp_user->first_name;
+                        $recVal['nama'] = $wp_user->first_name;
+                        $user_data_changed = true;
+                    }
+
+                    // Check Email
+                    if ($recVal['email'] !== $wp_user->user_email) {
+                        $update_data['email'] = $wp_user->user_email;
+                        $recVal['email'] = $wp_user->user_email;
+                        $user_data_changed = true;
+                    }
+
+                    // Execute Update if needed
+                    if ($user_data_changed && !empty($update_data)) {
+                        $wpdb->update('absensi_data_pegawai', $update_data, array('id' => $recVal['id']));
+                    }
+                }
+
 	                $btn = '<a class="btn btn-sm btn-warning" onclick="edit_data(\''.$recVal['id'].'\'); return false;" href="#" title="Edit Data"><i class="dashicons dashicons-edit"></i></a>';
 	                $btn .= ' <a class="btn btn-sm btn-danger" onclick="hapus_data(\''.$recVal['id'].'\'); return false;" href="#" title="Hapus Data"><i class="dashicons dashicons-trash"></i></a>';
 	                $queryRecords[$recKey]['aksi'] = $btn;
@@ -379,6 +442,21 @@ class Wp_Absen_Public_Pegawai {
         );
         if(!empty($_POST)){
             if(!empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
+                
+                // Check Ownership for Admin Instansi
+                $current_user = wp_get_current_user();
+                $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+
+                if ($is_admin_instansi) {
+                    $existing_data = $wpdb->get_row($wpdb->prepare("SELECT id_instansi FROM absensi_data_pegawai WHERE id = %d", $_POST['id']));
+                    
+                    if (!$existing_data || $existing_data->id_instansi != $current_user->ID) {
+                        $ret['status'] = 'error';
+                        $ret['message'] = 'Anda tidak memiliki hak akses untuk menghapus data ini!';
+                        die(json_encode($ret)); // Stop execution
+                    }
+                }
+
                 // Hapus data (set active = 0)
                 $ret['data'] = $wpdb->update('absensi_data_pegawai', 
                     array('active' => 0), 
@@ -507,6 +585,37 @@ class Wp_Absen_Public_Pegawai {
                     );
                     
                     if(!empty($_POST['id_data'])){
+                        // UPDATE MODE
+                        
+                        // Check Ownership for Admin Instansi
+                        $existing_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM absensi_data_pegawai WHERE id = %d", $_POST['id_data']));
+                        
+                        $current_user = wp_get_current_user();
+                        $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+                        
+                        if ($is_admin_instansi) {
+                            if ($existing_data->id_instansi != $current_user->ID) {
+                                $ret['status'] = 'error';
+                                $ret['message'] = 'Anda tidak memiliki hak akses untuk mengedit data ini!';
+                                die(json_encode($ret));
+                            }
+                        }
+
+                        // SYNC TO WORDPRESS USER
+                        if (!empty($existing_data->id_user)) {
+                            // Update Email and Name
+                            wp_update_user(array(
+                                'ID' => $existing_data->id_user,
+                                'user_email' => $email,
+                                'first_name' => $nama
+                            ));
+
+                            // Update Username (NIK) if changed
+                            if ($existing_data->nik !== $nik) {
+                                $wpdb->update($wpdb->users, array('user_login' => $nik), array('ID' => $existing_data->id_user));
+                            }
+                        }
+
                         $wpdb->update('absensi_data_pegawai', $data, array(
                             'id' => $_POST['id_data']
                         ));
@@ -553,8 +662,7 @@ class Wp_Absen_Public_Pegawai {
                                     update_user_meta($user_id, 'id_admin_instansi', $id_instansi);
 
                                     // Proceed to insert into custom table
-                                    // Optional: If you wanted to link the new user_id to absensi_data_pegawai, you'd add it here.
-                                    // Example: $data['id_user'] = $user_id; (Only if column exists)
+                                    $data['id_user'] = $user_id;
                                     
                                     $wpdb->insert('absensi_data_pegawai', $data);
                                 }

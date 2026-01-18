@@ -54,6 +54,7 @@ CREATE TABLE `absensi_data_pegawai` (
   `nama_sekolah` text DEFAULT NULL, 
   `lulus` year(4) DEFAULT NULL, 
   `email` text DEFAULT NULL, 
+  `id_user` int(11) DEFAULT NULL,
   `id_instansi` int(11) DEFAULT NULL,
   `user_role` text DEFAULT NULL COMMENT 'kepala dan pegawai', 
   `status_kerja` int(11) DEFAULT NULL COMMENT '0=Tidak Aktif, 1=Aktif', 
