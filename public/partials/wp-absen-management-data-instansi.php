@@ -28,6 +28,8 @@ $input = shortcode_atts(array(
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
 ></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style type="text/css">
     .wrap-table {
@@ -62,6 +64,7 @@ $input = shortcode_atts(array(
                         <th class="text-center">Alamat</th>
                         <th class="text-center">Username Admin</th>
                         <th class="text-center">Email Instansi</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center" style="width: 200px">Aksi</th>
                     </tr>
                 </thead>
@@ -120,6 +123,10 @@ $input = shortcode_atts(array(
                         class="form-control"
                         placeholder=""
                     />
+                </div>
+                <div class="form-group">
+                    <label for="nama_kerja" style="display: inline-block">Nama Kode Kerja</label>
+                    <input type="text" id="nama_kerja" name="nama_kerja" class="form-control" />
                 </div>
                 <div class="form-group">
                     <label for="koordinat" style="display: inline-block"
@@ -244,6 +251,10 @@ $input = shortcode_atts(array(
                         className: "text-center"
                     },
                     {
+                        "data": 'status_badge',
+                        className: "text-center"
+                    },
+                    {
                         "data": 'aksi',
                         className: "text-center"
                     }
@@ -260,28 +271,103 @@ $input = shortcode_atts(array(
     }
 
     function hapus_data(id) {
-        let confirmDelete = confirm("Apakah anda yakin akan menghapus data ini?");
-        if (confirmDelete) {
-            jQuery('#wrap-loading').show();
-            jQuery.ajax({
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                type: 'post',
-                data: {
-                    'action' : 'hapus_data_instansi_by_id',
-                    'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                    'id'     : id
-                },
-                dataType: 'json',
-                success: (response) => {
-                    jQuery('#wrap-loading').hide();
-                    if (response.status == 'success') {
-                        get_data_instansi();
-                    } else {
-                        alert(`GAGAL! \n${response.message}`);
+        Swal.fire({
+            title: 'Apakah anda yakin?',
+            text: "Data instansi beserta user dan kode kerja akan dihapus permanen!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                jQuery('#wrap-loading').show();
+                jQuery.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    data: {
+                        'action' : 'hapus_data_instansi_by_id',
+                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'id'     : id
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                        jQuery('#wrap-loading').hide();
+                        if (response.status == 'success') {
+                            Swal.fire(
+                                'Terhapus!',
+                                response.message,
+                                'success'
+                            )
+                            get_data_instansi();
+                        } else {
+                            Swal.fire(
+                                'Gagal!',
+                                response.message,
+                                'error'
+                            )
+                        }
                     }
-                }
-            });
-        }
+                });
+            }
+        })
+    }
+
+    function toggle_status_instansi(id, status) {
+        var actionText = (status == 1) ? "Aktifkan" : "Nonaktifkan";
+        var confirmText = (status == 1) ? "Data Instansi akan diaktifkan kembali." : "Data Instansi akan dinonaktifkan.";
+        
+        Swal.fire({
+            title: 'Konfirmasi ' + actionText,
+            text: confirmText,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, ' + actionText + '!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                jQuery('#wrap-loading').show();
+                jQuery.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    dataType: 'json',
+                    data: {
+                        'action': 'toggle_status_instansi',
+                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'id': id,
+                        'status': status
+                    },
+                    success: (res) => {
+                        jQuery('#wrap-loading').hide();
+                        if (res.status == 'success') {
+                            Swal.fire(
+                                'Berhasil!',
+                                res.message,
+                                'success'
+                            );
+                            get_data_instansi(); // Refresh table
+                        } else {
+                            Swal.fire(
+                                'Gagal!',
+                                res.message,
+                                'error'
+                            );
+                        }
+                    },
+                    error: function() {
+                        jQuery('#wrap-loading').hide();
+                        Swal.fire(
+                            'Error!',
+                            'Terjadi kesalahan server.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
     }
 
     function edit_data(_id) {
@@ -299,6 +385,7 @@ $input = shortcode_atts(array(
                 if (res.status == 'success') {
                     jQuery('#id_data').val(res.data.id);
                     jQuery('#nama_instansi').val(res.data.nama_instansi);
+                    jQuery('#nama_kerja').val(res.data.nama_kerja); // Populate nama_kerja
                     jQuery('#alamat_instansi').val(res.data.alamat_instansi);
                     jQuery('#koordinat').val(res.data.koordinat);
                     jQuery('#radius_meter').val(res.data.radius_meter);
@@ -380,6 +467,7 @@ $input = shortcode_atts(array(
     function tambah_data_instansi() {
         jQuery('#id_data').val('');
         jQuery('#nama_instansi').val('').attr('disabled', false);
+        jQuery('#nama_kerja').val('');
         jQuery('#alamat_instansi').val('');
         jQuery('#koordinat').val('');
         jQuery('#radius_meter').val('100');
@@ -522,6 +610,11 @@ $input = shortcode_atts(array(
         if (nama_instansi == '') {
             return alert('Data nama Instansi tidak boleh kosong!');
         }
+        
+        var nama_kerja = jQuery('#nama_kerja').val();
+        if (nama_kerja == '') {
+            return alert('Nama Kode Kerja tidak boleh kosong!');
+        }
 
         var koordinat = jQuery('#koordinat').val();
         var radius_meter = jQuery('#radius_meter').val();
@@ -558,6 +651,7 @@ $input = shortcode_atts(array(
                 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
                 'id_data': id_data,
                 'nama_instansi': nama_instansi,
+                'nama_kerja': nama_kerja,
                 'alamat_instansi': alamat_instansi,
                 'tahun': '<?php echo $input['tahun_anggaran']; ?>',
 

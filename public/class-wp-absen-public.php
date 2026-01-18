@@ -20,7 +20,9 @@
  * @subpackage Wp_Absen/public
  * @author     Agus Nurwanto <agusnurwantomuslim@gmail.com>
  */
+
 require_once ABSEN_PLUGIN_PATH . "/public/trait/CustomTrait.php";
+
 class Wp_Absen_Public {
 
 	use CustomTraitAbsen;
@@ -170,6 +172,15 @@ class Wp_Absen_Public {
             }
         }
 
+		$management_data_kerja = $this->functions->generatePage(array(
+			'nama_page' => 'Data Kode Kerja',
+			'content' => '[manajemen_data_kerja]',
+			'show_header' => 1,
+			'no_key' => 1,
+			'post_status' => 'publish'
+		));
+		$get_data_kerja = '<li><a target="_blank" href="' . $management_data_kerja['url'] . '">' . esc_html($management_data_kerja['title']) . '</a></li>';
+
         if (in_array('admin_instansi', $user_meta->roles) || in_array('administrator', $user_meta->roles)) {
             $html = '
             <h3>Menu Admin Instansi</h3>
@@ -184,6 +195,11 @@ class Wp_Absen_Public {
                         <span class="dashicons dashicons-clipboard"></span> Manajemen Data Pegawai
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="data-kerja-tab" data-toggle="tab" href="#data-kerja" role="tab" aria-controls="data-kerja" aria-selected="false">
+                        <span class="dashicons dashicons-clock"></span> Manajemen Data Kode Kerja
+                    </a>
+                </li>
             </ul>
             <div class="tab-content" id="myTabContent" style="padding: 20px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
                 <div class="tab-pane fade show active" id="data-instansi" role="tabpanel" aria-labelledby="data-instansi-tab">
@@ -192,7 +208,11 @@ class Wp_Absen_Public {
                 <div class="tab-pane fade" id="absensi-pegawai" role="tabpanel" aria-labelledby="absensi-pegawai-tab">
                     <ul>' . $get_absensi_pegawai . '</ul>
                 </div>
-            </div>';
+                <div class="tab-pane fade" id="data-kerja" role="tabpanel" aria-labelledby="data-kerja-tab">
+                    <ul>' . $get_data_kerja . '</ul>
+                </div>
+            </div>
+			';
             return $html;
         }
 

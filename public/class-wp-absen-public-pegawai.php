@@ -17,10 +17,11 @@
  * @subpackage Wp_Absen/public
  * @author     Agus Nurwanto <agusnurwantomuslim@gmail.com>
  */
+
 require_once ABSEN_PLUGIN_PATH . "/public/trait/CustomTrait.php";
 
-class Wp_Absen_Public_Pegawai {
-
+class Wp_Absen_Public_Pegawai
+{
 	use CustomTraitAbsen;
 
 	private $plugin_name;
@@ -28,11 +29,9 @@ class Wp_Absen_Public_Pegawai {
 	private $functions;
 
 	public function __construct( $plugin_name, $version, $functions ) {
-
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 		$this->functions = $functions;
-
 	}
 
     public function management_data_pegawai_absensi($atts){
@@ -446,23 +445,33 @@ class Wp_Absen_Public_Pegawai {
                 // Check Ownership for Admin Instansi
                 $current_user = wp_get_current_user();
                 $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+                
+                $existing_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM absensi_data_pegawai WHERE id = %d", $_POST['id']));
+                
+                if (!$existing_data) {
+                    $ret['status'] = 'error';
+                    $ret['message'] = 'Data tidak ditemukan!';
+                    die(json_encode($ret));
+                }
 
                 if ($is_admin_instansi) {
-                    $existing_data = $wpdb->get_row($wpdb->prepare("SELECT id_instansi FROM absensi_data_pegawai WHERE id = %d", $_POST['id']));
-                    
-                    if (!$existing_data || $existing_data->id_instansi != $current_user->ID) {
+                    if ($existing_data->id_instansi != $current_user->ID) {
                         $ret['status'] = 'error';
                         $ret['message'] = 'Anda tidak memiliki hak akses untuk menghapus data ini!';
                         die(json_encode($ret)); // Stop execution
                     }
                 }
 
-                // Hapus data (set active = 0)
-                $ret['data'] = $wpdb->update('absensi_data_pegawai', 
-                    array('active' => 0), 
-                    array('id' => $_POST['id'])
-                );
-                $ret['message'] = 'Data pegawai berhasil dihapus!';
+                // Hapus Data WordPress User if exists
+                if (!empty($existing_data->id_user)) {
+                    require_once(ABSPATH.'wp-admin/includes/user.php');
+                    wp_delete_user($existing_data->id_user);
+                }
+
+                // Hapus data hard delete
+                $ret['data'] = $wpdb->delete('absensi_data_pegawai', array('id' => $_POST['id']));
+                
+                $ret['message'] = 'Data pegawai dan akun user berhasil dihapus secara permanen!';
             }else{
                 $ret['status']  = 'error';
                 $ret['message'] = 'Api key tidak ditemukan!';

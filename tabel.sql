@@ -175,12 +175,10 @@ CREATE TABLE `absensi_data_kerja` (
   `hari_kerja` TEXT DEFAULT NULL,
   `koordinat` VARCHAR(100) DEFAULT NULL,
   `radius_meter` INT(11) DEFAULT 100,
-  `tahun` year(4) NOT NULL,
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `id_instansi` (`id_instansi`),
-  KEY `tahun` (`tahun`),
   KEY `active` (`active`)
 );

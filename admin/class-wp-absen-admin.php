@@ -180,14 +180,40 @@ class Wp_Absen_Admin {
             ->add_tab('⚙️ Konfigurasi Umum', $this->generate_fields_options_konfigurasi_umum())
             ->add_tab('🔌 API WP SIPD', $this->generate_fields_options_api_wpsipd());
 
+		Container::make('theme_options', __('Menu Instansi'))
+			->set_page_parent($basic_options_container)
+			->add_tab('⚙️ Data Instansi', $this->generate_fields_options_data_instansi($get_data_instansi));
+
         Container::make('theme_options', __('Menu Pegawai'))
             ->set_page_parent($basic_options_container)
             ->add_tab('⚙️ Data Pegawai', $this->generate_fields_options_konfigurasi_umum_pegawai($get_data))
             ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai));
-
-        Container::make('theme_options', __('Data Instansi'))
+        
+		Container::make('theme_options', __('Menu Data Kerja'))
             ->set_page_parent($basic_options_container)
-            ->add_tab('⚙️ Data Instansi', $this->generate_fields_options_data_instansi($get_data_instansi));
+            ->add_tab('⚙️ Data Kerja', $this->generate_fields_options_data_kerja());
+
+    }
+
+    public function generate_fields_options_data_kerja()
+    {
+		$management_data_kerja = $this->functions->generatePage(array(
+			'nama_page' => 'Data Kode Kerja',
+			'content' => '[manajemen_data_kerja]',
+			'show_header' => 1,
+			'no_key' => 1,
+			'post_status' => 'publish'
+		));
+
+        return [
+            Field::make('html', 'crb_absen_halaman_data_kerja')
+            ->set_html('
+            <h5>HALAMAN TERKAIT</h5>
+            <ol>
+                <li><a target="_blank" href="' . $management_data_kerja['url'] . '">' . esc_html($management_data_kerja['title']) . '</a></li>
+            </ol>
+            '),
+        ];
     }
 
     public function generate_fields_options_data_instansi($get_data_instansi)
@@ -541,12 +567,12 @@ class Wp_Absen_Admin {
                 ->set_default_value(true)
                 ->set_option_value('yes'),
 
-             Field::make('html', 'crb_absen_pegawai_upload_html')
-                    ->set_html('<h3>Import EXCEL data Pegawai</h3>Pilih file excel .xlsx : <input type="file" id="file-excel" onchange="filePickedAbsen(event);"><br>Contoh format file excel bisa <a target="_blank" href="' . ABSEN_PLUGIN_URL . 'public/media/absen/contoh_data_pegawai.xlsx' . '">download di sini</a>. Sheet file excel yang akan diimport harus diberi nama <b>data</b>. Untuk kolom nilai angka ditulis tanpa tanda titik.'),
-                Field::make('html', 'crb_absen_pegawai')
-                    ->set_html('Data JSON : <textarea id="data-excel" class="cf-select__input"></textarea>'),
-                Field::make('html', 'crb_absen_pegawai_save_button')
-                    ->set_html('<a onclick="import_excel_absen_pegawai(); return false" href="javascript:void(0);" class="button button-primary">Import WP</a>')
+            // Field::make('html', 'crb_absen_pegawai_upload_html')
+            //     ->set_html('<h3>Import EXCEL data Pegawai</h3>Pilih file excel .xlsx : <input type="file" id="file-excel" onchange="filePickedAbsen(event);"><br>Contoh format file excel bisa <a target="_blank" href="' . ABSEN_PLUGIN_URL . 'public/media/absen/contoh_data_pegawai.xlsx' . '">download di sini</a>. Sheet file excel yang akan diimport harus diberi nama <b>data</b>. Untuk kolom nilai angka ditulis tanpa tanda titik.'),
+            // Field::make('html', 'crb_absen_pegawai')
+            //     ->set_html('Data JSON : <textarea id="data-excel" class="cf-select__input"></textarea>'),
+            // Field::make('html', 'crb_absen_pegawai_save_button')
+            //     ->set_html('<a onclick="import_excel_absen_pegawai(); return false" href="javascript:void(0);" class="button button-primary">Import WP</a>')
         ];
     }
 
