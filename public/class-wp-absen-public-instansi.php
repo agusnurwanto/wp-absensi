@@ -135,9 +135,21 @@ class Wp_Absen_Public_Instansi
                 $sql =
                     "SELECT " .
                     implode(", ", $columns) .
-                    " FROM `absensi_data_instansi`";
+                    ", id_user FROM `absensi_data_instansi`";
+
 
                 $where_first = " WHERE 1=1 AND active=1";
+                
+                if (!empty($params['tahun'])) {
+                    $where_first .= $wpdb->prepare(" AND tahun = %d", $params['tahun']);
+                } else {
+                     $active_year = $wpdb->get_var("SELECT tahun_anggaran FROM absensi_data_unit WHERE active=1 ORDER BY id DESC LIMIT 1");
+                     if($active_year) {
+                         $where_first .= $wpdb->prepare(" AND tahun = %d", $active_year);
+                     }
+                }
+
+
                 
                 // Get current user and check roles
                 $current_user = wp_get_current_user();
@@ -181,16 +193,43 @@ class Wp_Absen_Public_Instansi
                         '<a class="btn btn-sm btn-warning" style="margin:2px;" onclick="edit_data(\'' .
                         $recVal["id"] .
                         '\'); return false;" href="#" title="Edit Data"><i class="dashicons dashicons-edit"></i></a>';
-                    $btn .=
-                        '<a class="btn btn-sm btn-info" style="margin:2px;" onclick="mutakhirkan_user(\'' .
-                        $recVal["id"] . '\', \'' . $recVal["username"] .
-                        '\'); return false;" href="#" title="Mutakhirkan User"><i class="dashicons dashicons-admin-users"></i></a>';
+
                     $btn .=
                         '<a class="btn btn-sm btn-danger" style="margin:2px;" onclick="hapus_data(\'' .
                         $recVal["id"] .
                         '\'); return false;" href="#" title="Hapus Data"><i class="dashicons dashicons-trash"></i></a>';
                     $queryRecords[$recKey]["aksi"] = $btn;
+
+                     // Override email from WP User if available
+                     if (!empty($recVal['id_user'])) {
+                        $user_check = get_user_by('id', $recVal['id_user']);
+                        
+                        if ($user_check) {
+                            $need_update = false;
+                            $update_data = array();
+
+                            // Check Name mismatch
+                            if ($recVal['nama_instansi'] !== $user_check->first_name) {
+                                $update_data['nama_instansi'] = $user_check->first_name;
+                                $queryRecords[$recKey]['nama_instansi'] = $user_check->first_name;
+                                $need_update = true;
+                            }
+
+                            // Check Email mismatch
+                            if ($recVal['email_instansi'] !== $user_check->user_email) {
+                                $update_data['email_instansi'] = $user_check->user_email;
+                                $queryRecords[$recKey]['email_instansi'] = $user_check->user_email;
+                                $need_update = true;
+                            }
+                            
+                            // Perform DB Update if needed
+                            if ($need_update && !empty($update_data)) {
+                                $wpdb->update('absensi_data_instansi', $update_data, array('id' => $recVal['id']));
+                            }
+                        }
+                    }
                 }
+
 
                 $json_data = [
                     "draw" => intval($params["draw"]),
@@ -231,13 +270,23 @@ class Wp_Absen_Public_Instansi
                 !empty($_POST["api_key"]) &&
                 $_POST["api_key"] == get_option(ABSEN_APIKEY)
             ) {
-                $ret["data"] = $wpdb->update(
-                    "absensi_data_instansi",
-                    ["active" => 0],
-                    [
-                        "id" => $_POST["id"],
-                    ],
-                );
+                // Check if current user is admin instansi
+                $current_user = wp_get_current_user();
+                $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+
+                if ($is_admin_instansi) {
+                    $ret['status'] = 'error';
+                    $ret['message'] = 'Akses Ditolak! Anda tidak memiliki izin untuk menghapus data Instansi.';
+                    die(json_encode($ret));
+                }
+
+                // Hard Delete Instansi
+                $ret['data'] = $wpdb->delete('absensi_data_instansi', array('id' => $_POST['id']));
+                
+                // Also delete related Data Kerja (Work Codes)
+                $wpdb->delete('absensi_data_kerja', array('id_instansi' => $_POST['id']));
+                
+                $ret['message'] = 'Data Instansi berhasil dihapus permanent!';
             } else {
                 $ret["status"] = "error";
                 $ret["message"] = "Api key tidak ditemukan!";
@@ -266,16 +315,64 @@ class Wp_Absen_Public_Instansi
             ) {
                 $ret["data"] = $wpdb->get_row(
                     $wpdb->prepare(
-                        '
-                    SELECT 
-                        *
-                    FROM absensi_data_instansi
-                    WHERE id=%d
-                ',
-                        $_POST["id"],
+                        'SELECT * FROM absensi_data_instansi WHERE id=%d',
+                        $_POST["id"]
                     ),
-                    ARRAY_A,
+                    ARRAY_A
                 );
+
+                if ($ret["data"]) {
+                    // Fetch Primary Work Code Info (Strictly by Year)
+                    $tahun = $ret["data"]["tahun"];
+
+                    
+                    $work_code = $wpdb->get_row($wpdb->prepare(
+                        "SELECT jam_masuk, jam_pulang, hari_kerja, koordinat, radius_meter FROM absensi_data_kerja WHERE id_instansi = %d AND tahun = %d AND jenis = 'Primary' AND active = 1 ORDER BY id DESC LIMIT 1",
+                        $_POST["id"], $tahun
+                    ), ARRAY_A);
+
+
+                    if ($work_code) {
+                        $ret["data"] = array_merge($ret["data"], $work_code);
+                    }
+
+                    // Override with WP User Data if id_user exists
+                    if (!empty($ret['data']['id_user'])) {
+                        $user_check = get_user_by('id', $ret['data']['id_user']);
+                        
+                        if ($user_check) {
+                            $need_update = false;
+                            $update_data = array();
+
+                            // Sync Name
+                            if ($ret['data']['nama_instansi'] !== $user_check->first_name) {
+                                $update_data['nama_instansi'] = $user_check->first_name;
+                                $ret['data']['nama_instansi'] = $user_check->first_name;
+                                $need_update = true;
+                            }
+                            
+                            // Sync Email
+                            if ($ret['data']['email_instansi'] !== $user_check->user_email) {
+                                $update_data['email_instansi'] = $user_check->user_email;
+                                $ret['data']['email_instansi'] = $user_check->user_email;
+                                $need_update = true;
+                            }
+
+                            // Sync Username (just display, no db update usually needed for this column in custom tables unless strict)
+                            // But let's check if we store username in our table? Yes we do: 'username' column.
+                            if ($ret['data']['username'] !== $user_check->user_login) {
+                                 $update_data['username'] = $user_check->user_login;
+                                 $ret['data']['username'] = $user_check->user_login;
+                                 $need_update = true;
+                            }
+
+                            if ($need_update && !empty($update_data)) {
+                                $wpdb->update('absensi_data_instansi', $update_data, array('id' => $ret['data']['id']));
+                            }
+                        }
+                    }
+                }
+
             } else {
                 $ret["status"] = "error";
                 $ret["message"] = "Api key tidak ditemukan!";
@@ -302,6 +399,16 @@ class Wp_Absen_Public_Instansi
                 !empty($_POST["api_key"]) &&
                 $_POST["api_key"] == get_option(ABSEN_APIKEY)
             ) {
+                // Check permissions: Admin Instansi cannot create NEW data
+                $current_user = wp_get_current_user();
+                $is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles);
+                
+                if (empty($_POST["id_data"]) && $is_admin_instansi) {
+                     $ret["status"] = "error";
+                     $ret["message"] = "Akses Ditolak! Anda tidak memiliki izin untuk menambah data Instansi baru.";
+                     die(json_encode($ret));
+                }
+
                 if (empty($_POST["nama_instansi"])) {
                     $ret["status"] = "error";
                     $ret["message"] = "Data nama Instansi tidak boleh kosong!";
@@ -330,119 +437,158 @@ class Wp_Absen_Public_Instansi
                         : "";
 
                     $tahun = $_POST["tahun"];
+                    $id_user = isset($_POST["id_user"]) ? $_POST["id_user"] : 0;
+                    
+                    // --- HANDLE WP USER CREATION / RETRIEVAL FIRST ---
+                    if (!empty($username)) {
+                        $user_id = 0;
+                        
+                        // Check if role exists
+                        if (empty(get_role('admin_instansi'))) {
+                            add_role('admin_instansi', 'Admin Instansi', array('read' => true));
+                        }
+
+                        $existing_user = get_user_by('login', $username);
+                        if ($existing_user) {
+                            $user_id = $existing_user->ID;
+                            $u = new WP_User($user_id);
+                            if (!in_array('admin_instansi', (array) $u->roles)) {
+                                $u->add_role('admin_instansi');
+                            }
+                        } else {
+                             // Validate email
+                            if (!empty($email_instansi) && email_exists($email_instansi)) {
+                                $ret['status'] = 'error';
+                                $ret['message'] = 'Email sudah digunakan user lain!';
+                                die(json_encode($ret));
+                            }
+                            
+                            $user_id = wp_create_user($username, $username, $email_instansi);
+                            if (is_wp_error($user_id)) {
+                                $ret['status'] = 'error';
+                                $ret['message'] = 'Gagal membuat user: ' . $user_id->get_error_message();
+                                die(json_encode($ret));
+                            }
+                            
+                            $u = new WP_User($user_id);
+                            $u->remove_role('subscriber');
+                            $u->add_role('admin_instansi');
+                            update_user_meta($user_id, 'absen_force_password_change', 1);
+                        }
+
+                        if ($user_id) {
+                            // Update Profile Name
+                            wp_update_user(array(
+                                'ID' => $user_id,
+                                'first_name' => $nama_instansi,
+                                'display_name' => $nama_instansi
+                            ));
+                            
+                            // Set id_user for Instansi Data
+                            $id_user = $user_id;
+                        }
+                    }
+
                     $data = [
                         "nama_instansi" => $nama_instansi,
                         "alamat_instansi" => $alamat_instansi,
-                        "koordinat" => $koordinat,
-                        "radius_meter" => $radius_meter,
                         "username" => $username,
                         "email_instansi" => $email_instansi,
                         "id_user" => $id_user,
-                        "tahun_anggaran" => $tahun,
+                        "tahun" => $tahun,
                         "active" => 1,
                         "update_at" => current_time("mysql"),
                     ];
 
                     if (!empty($_POST["id_data"])) {
+                        // UPDATE LOGIC
                         $wpdb->update("absensi_data_instansi", $data, [
                             "id" => $_POST["id_data"],
                         ]);
+                        $new_instansi_id = $_POST["id_data"];
+                        
+                        // Sync Email Check (retained from previous logic but simplified)
+                        if ($id_user) {
+                            $user_data = get_userdata($id_user);
+                            if ($user_data && $user_data->user_email !== $email_instansi) {
+                                if (email_exists($email_instansi)) {
+                                    $ret['message'] .= ' (Email User WP gagal update: Email sudah dipakai)';
+                                } else {
+                                    wp_update_user(array('ID' => $id_user, 'user_email' => $email_instansi));
+                                }
+                            }
+                        }
+
                         $ret["message"] = "Berhasil update data!";
                     } else {
+                        // INSERT LOGIC
                         $cek_id = $wpdb->get_row(
                             $wpdb->prepare(
-                                '
-                            SELECT
-                                id,
-                                active
-                            FROM absensi_data_instansi
-                            WHERE id=%s
-                            AND tahun_anggaran=%d
-                        ',
-                                $_POST["id_data"],
-                                $tahun,
-                            ),
-                            ARRAY_A,
+                                'SELECT id, active FROM absensi_data_instansi WHERE id=%s AND tahun=%d',
+                                $_POST["id_data"], $tahun
+                            ), ARRAY_A
                         );
 
                         if (empty($cek_id)) {
                             $wpdb->insert("absensi_data_instansi", $data);
                             $new_instansi_id = $wpdb->insert_id;
                         } else {
-                             $new_instansi_id = $cek_id["id"];
-                            if ($cek_id["active"] == 0) {
-                                $wpdb->update("absensi_data_instansi", $data, [
-                                    "id" => $cek_id["id"],
-                                ]);
-                            } else {
-                                $ret["status"] = "error";
-                                $ret["message"] =
-                                    'Gagal disimpan. Data Instansi dengan id Instansi="' .
-                                    $_POST["id_data"] .
-                                    '" sudah ada!';
-                            }
-                        }
-
-                        // Create WordPress user automatically if username is provided
-                        if (!empty($username) && $ret["status"] !== "error") {
-                            // Check if role exists, if not create it
-                            if (empty(get_role('admin_instansi'))) {
-                                add_role('admin_instansi', 'Admin Instansi', array('read' => true));
-                            }
-
-                            // Check if user already exists
-                            $existing_user = get_user_by('login', $username);
-
-                            if ($existing_user) {
-                                // User already exists, just assign role and update id_user
-                                $user_id = $existing_user->ID;
-                                $u = new WP_User($user_id);
-                                if (!in_array('admin_instansi', (array) $u->roles)) {
-                                    $u->add_role('admin_instansi');
-                                }
-                            } else {
-                                // Validate email
-                                if (!empty($email_instansi) && email_exists($email_instansi)) {
-                                    $ret['status'] = 'error';
-                                    $ret['message'] = 'Email sudah digunakan user lain!';
-                                    die(json_encode($ret));
-                                }
-
-                                // Create new user with password = username
-                                $user_id = wp_create_user($username, $username, $email_instansi);
-
-                                if (is_wp_error($user_id)) {
-                                    $ret['status'] = 'error';
-                                    $ret['message'] = 'Gagal membuat user: ' . $user_id->get_error_message();
-                                    die(json_encode($ret));
-                                }
-
-                                // Remove default subscriber role and add admin_instansi
-                                $u = new WP_User($user_id);
-                                $u->remove_role('subscriber');
-                                $u->add_role('admin_instansi');
-
-                                // Set meta to force password change on first login
-                                update_user_meta($user_id, 'absen_force_password_change', 1);
-                            }
-
-                            // Update instansi with user id
-                            if (isset($new_instansi_id) && $user_id) {
-                                $wpdb->update(
-                                    'absensi_data_instansi',
-                                    array('id_user' => $user_id),
-                                    array('id' => $new_instansi_id)
-                                );
-                            }
-                        } elseif ($id_user > 0) {
-                            // Legacy: Assign role if id_user was manually provided
-                            $user = new WP_User($id_user);
-                            if (empty(get_role('admin_instansi'))) {
-                                add_role('admin_instansi', 'Admin Instansi', array('read' => true));
-                            }
-                            $user->add_role('admin_instansi');
+                             // This block handles a weird edge case where id_data is sent but logic falls here? 
+                             // Usually if id_data is present, we hit the first if. 
+                             // But checking for 'id_data' in POST vs empty check above.
+                             // Actually, line 432 checked !empty($_POST["id_data"]).
+                             // So this else block is for empty($_POST["id_data"]).
+                             // Thus the $cek_id query using $_POST['id_data'] (empty) is likely wrong or for safety?
+                             // Wait, looking at original code... Line 471 used $_POST["id_data"] which was empty?
+                             // Ah, original code had `if (!empty($_POST["id_data"]))` ... `else` ...
+                             // Inside else: `$cek_id = ... WHERE id=%s ... $_POST['id_data']`
+                             // If $_POST['id_data'] is empty, the query WHERE id='' usually returns nothing.
+                             // So it proceeds to insert.
+                            
+                             // I will simplify: Just Insert.
+                            $wpdb->insert("absensi_data_instansi", $data);
+                            $new_instansi_id = $wpdb->insert_id;
                         }
                     }
+
+                     // --- SAVE PRIMARY WORK CODE ---
+                        if ($ret['status'] !== 'error' && isset($new_instansi_id)) {
+                            // Check if inputs are arrays (from new frontend) or strings (fallback)
+                            // We expect arrays from the new frontend form for per-day validation
+                            $jam_masuk_input = isset($_POST['jam_masuk']) ? $_POST['jam_masuk'] : '08:00';
+                            $jam_pulang_input = isset($_POST['jam_pulang']) ? $_POST['jam_pulang'] : '16:00';
+                            $hari_kerja_input = isset($_POST['hari_kerja']) ? $_POST['hari_kerja'] : [];
+
+                            // Process into JSON Strings
+                            $jam_masuk = is_array($jam_masuk_input) ? json_encode($jam_masuk_input) : $jam_masuk_input;
+                            $jam_pulang = is_array($jam_pulang_input) ? json_encode($jam_pulang_input) : $jam_pulang_input;
+                            $hari_kerja = is_array($hari_kerja_input) ? json_encode($hari_kerja_input) : $hari_kerja_input;
+                            
+                            // Check if Primary code exists
+                            $existing_code = $wpdb->get_row($wpdb->prepare(
+                                "SELECT id FROM absensi_data_kerja WHERE id_instansi = %d AND jenis = 'Primary' AND tahun = %d",
+                                $new_instansi_id, $tahun
+                            ));
+
+                            $code_data = array(
+                                'id_instansi' => $new_instansi_id,
+                                'jenis' => 'Primary',
+                                'nama_kerja' => 'Lokasi Utama',
+                                'jam_masuk' => $jam_masuk,
+                                'jam_pulang' => $jam_pulang,
+                                'hari_kerja' => $hari_kerja,
+                                'koordinat' => $koordinat,
+                                'radius_meter' => $radius_meter,
+                                'tahun' => $tahun,
+                                'active' => 1
+                            );
+
+                            if ($existing_code) {
+                                $wpdb->update('absensi_data_kerja', $code_data, array('id' => $existing_code->id));
+                            } else {
+                                $wpdb->insert('absensi_data_kerja', $code_data);
+                            }
+                        }
                 }
             } else {
                 $ret["status"] = "error";
@@ -455,99 +601,11 @@ class Wp_Absen_Public_Instansi
 
         die(json_encode($ret));
     }
-    public function mutakhirkan_user_instansi(){
-        global $wpdb;
-        $ret = array(
-            'status' => 'success',
-            'message' => 'User berhasil dimutakhirkan!',
-            'data' => array()
-        );
+    // mutakhirkan_user_instansi removed
 
-        if(!empty($_POST)){
-            if(!empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
-                
-                $id_instansi = $_POST['id_instansi'];
-                $password = !empty($_POST['password']) ? $_POST['password'] : '';
-                
-                if(empty($id_instansi)){
-                     $ret['status'] = 'error';
-                     $ret['message'] = 'ID Instansi tidak valid!';
-                } else {
-                    $instansi = $wpdb->get_row($wpdb->prepare("SELECT * FROM absensi_data_instansi WHERE id = %d", $id_instansi));
-                    if(!$instansi){
-                         $ret['status'] = 'error';
-                         $ret['message'] = 'Instansi tidak ditemukan!';
-                    } else if(empty($instansi->username)) {
-                         $ret['status'] = 'error';
-                         $ret['message'] = 'Username Instansi belum diset!';
-                    } else {
-                        $username = $instansi->username;
-                        $email = $instansi->email_instansi;
-                        $default_pass = $username; 
-                        $new_pass = !empty($password) ? $password : $default_pass;
 
-                        $user = get_user_by('login', $username);
-                        $user_id = 0;
 
-                        if($user){
-                            // User exists, update password
-                            $user_id = $user->ID;
-                            if(!empty($password)){ // Only update password if provided
-                                wp_set_password($new_pass, $user_id);
-                            }
-                            
-                            // Ensure role is admin_instansi
-                            $u = new WP_User( $user_id );
-                            if ( !in_array( 'admin_instansi', (array) $u->roles ) ) {
-                                $u->add_role( 'admin_instansi' );
-                            }
-
-                        } else {
-                            // Create new user
-                            if(email_exists($email)){
-                                 // Email exists but username distinct? Or handle if email empty?
-                                 // For now if email collision, create user might fail or we skip email.
-                                 // Let's rely on username primarily.
-                                 $ret['status'] = 'error';
-                                 $ret['message'] = 'Email sudah digunakan user lain!';
-                                 die(json_encode($ret));
-                            }
-                            
-                            $user_id = wp_create_user( $username, $new_pass, $email );
-                            if ( is_wp_error( $user_id ) ) {
-                                $ret['status'] = 'error';
-                                $ret['message'] = 'Gagal membuat user: ' . $user_id->get_error_message();
-                                die(json_encode($ret));
-                            }
-                            
-                            $u = new WP_User( $user_id );
-                            $u->remove_role( 'subscriber' );
-                            $u->add_role( 'admin_instansi' );
-                        }
-
-                        // Update instansi with user id
-                        if($user_id){
-                            $wpdb->update(
-                                'absensi_data_instansi',
-                                array('id_user' => $user_id),
-                                array('id' => $id_instansi)
-                            );
-                        }
-                    }
-                }
-                
-            } else {
-                $ret['status'] = 'error';
-                $ret['message'] = 'Api Key tidak sesuai!';
-            }
-        } else {
-            $ret['status'] = 'error';
-            $ret['message'] = 'Format tidak sesuai!';
-        }
-        die(json_encode($ret));
-    }
-
-    public function get_master_instansi(){
+    public function get_master_instansi() {
         global $wpdb;
         $ret = array(
             'status' => 'success',

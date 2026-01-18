@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(bash --version:*)",
+      "Bash(php -v:*)",
+      "Bash(curl -O:*)",
+      "Bash(php wp-cli.phar --info:*)",
+      "Bash(php wp-cli.phar --version:*)"
     ]
   }
 }

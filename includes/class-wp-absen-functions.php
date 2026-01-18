@@ -200,6 +200,8 @@ class ABSEN_Functions
 			if(empty($options['show_header'])){
 				update_post_meta($custom_post->ID, 'ast-main-header-display', 'disabled');
 				update_post_meta($custom_post->ID, 'footer-sml-layout', 'disabled');
+			} else if (empty($options['show_footer'])) {
+				update_post_meta($custom_post->ID, 'footer-sml-layout', 'disabled');
 			}
 			update_post_meta($custom_post->ID, 'ast-breadcrumbs-content', 'disabled');
 			update_post_meta($custom_post->ID, 'ast-featured-img', 'disabled');
@@ -210,6 +212,8 @@ class ABSEN_Functions
 		}else if(!empty($options['update'])){
 			if(empty($options['show_header'])){
 				update_post_meta($custom_post->ID, 'ast-main-header-display', 'disabled');
+				update_post_meta($custom_post->ID, 'footer-sml-layout', 'disabled');
+			} else if (empty($options['show_footer'])) {
 				update_post_meta($custom_post->ID, 'footer-sml-layout', 'disabled');
 			}
 			$_post['ID'] = $custom_post->ID;

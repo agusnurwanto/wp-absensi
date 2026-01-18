@@ -108,33 +108,6 @@ class Wp_Absen_Admin {
 
 	}
 
-	// https://www.wpbeginner.com/wp-tutorials/how-to-create-custom-post-types-in-wordpress/
-	// function absen_create_posttype() {
-	// 	register_post_type( 'Instansi',
-	// 		array(
-	// 			'labels' => array(
-	// 				'name' => __( 'Instansi' ),
-	// 				'singular_name' => __( 'Instansi' )
-	// 			),
-	// 			'hierarchical'        => false,
-	// 			'public'              => true,
-	// 			'show_ui'             => true,
-	// 			'show_in_menu'        => true,
-	// 			'show_in_nav_menus'   => true,
-	// 			'show_in_admin_bar'   => true,
-	// 			'menu_position'       => 5,
-	// 			'can_export'          => true,
-	// 			'has_archive'         => true,
-	// 			'exclude_from_search' => false,
-	// 			'publicly_queryable'  => true,
-	// 			'capability_type'     => 'post',
-	// 			'show_in_rest' 		  => true,
-	// 			'rewrite' 			  => array('slug' => 'instansi'),
-	// 			'supports'            => array( 'title', 'editor', 'author', 'thumbnail', 'comments', 'revisions', 'custom-fields', ),
-	// 		)
-	// 	);
-	// }
-
 	public function crb_absen_options()
     {      
         $laporan_bulanan_absensi = $this->functions->generatePage(array(

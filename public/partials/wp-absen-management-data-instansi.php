@@ -1,4 +1,5 @@
 <?php
+
 global $wpdb;
 
 if (!defined('WPINC')) {
@@ -6,8 +7,9 @@ if (!defined('WPINC')) {
 }
 
 $input = shortcode_atts(array(
-    'tahun_anggaran' => '2025',
+    'tahun_anggaran' => '2026',
 ), $atts);
+
 ?>
 
 <link
@@ -40,12 +42,18 @@ $input = shortcode_atts(array(
         <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key" />
         <h1 class="text-center" style="margin: 3rem">
             Manajemen Data Instansi<br />Tahun <?php echo $input['tahun_anggaran']; ?>
+
         </h1>
+        <?php
+        $current_user = wp_get_current_user();
+        $is_admin = in_array( 'administrator', (array) $current_user->roles );
+        if ($is_admin) : ?>
         <div style="margin-bottom: 25px">
             <button class="btn btn-primary" onclick="tambah_data_instansi()">
                 <span class="dashicons dashicons-plus"></span> Tambah Data
             </button>
         </div>
+        <?php endif; ?>
         <div class="wrap-table">
             <table id="management_data_table" cellpadding="2" cellspacing="0">
                 <thead>
@@ -135,10 +143,47 @@ $input = shortcode_atts(array(
                         type="number"
                         id="radius_meter"
                         name="radius_meter"
-                        class="form-control"
-                        value="100"
-                        placeholder="100"
-                    />
+                <div class="form-group">
+                    <label style="display: block; font-weight: bold; margin-bottom: 10px;">Jadwal Kerja Per Hari</label>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead>
+                                <tr>
+                                    <th width="10" class="text-center"><input type="checkbox" id="check_all_days" onclick="toggleAllDays(this)"></th>
+                                    <th>Hari</th>
+                                    <th width="150">Jam Masuk</th>
+                                    <th width="150">Jam Pulang</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedule_body">
+                                <?php
+                                $days = [
+                                    'Monday' => 'Senin',
+                                    'Tuesday' => 'Selasa',
+                                    'Wednesday' => 'Rabu',
+                                    'Thursday' => 'Kamis',
+                                    'Friday' => 'Jumat',
+                                    'Saturday' => 'Sabtu',
+                                    'Sunday' => 'Minggu'
+                                ];
+                                foreach ($days as $key => $label) :
+                                ?>
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" class="day-check" name="hari_kerja[]" value="<?php echo $key; ?>" id="check_<?php echo $key; ?>" onchange="toggleTimeInputs('<?php echo $key; ?>')">
+                                    </td>
+                                    <td><label for="check_<?php echo $key; ?>" style="font-weight: normal; cursor: pointer; margin:0;"><?php echo $label; ?></label></td>
+                                    <td>
+                                        <input type="time" class="form-control time-input time-in" id="jam_masuk_<?php echo $key; ?>" disabled value="08:00">
+                                    </td>
+                                    <td>
+                                        <input type="time" class="form-control time-input time-out" id="jam_pulang_<?php echo $key; ?>" disabled value="16:00">
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -172,6 +217,8 @@ $input = shortcode_atts(array(
                     data: {
                         'action': 'get_datatable_instansi',
                         'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'tahun': '<?php echo $input['tahun_anggaran']; ?>',
+
                     }
                 },
                 lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
@@ -205,6 +252,11 @@ $input = shortcode_atts(array(
         } else {
             datainstansi.draw();
         }
+        
+        // Hide delete buttons via CSS if not admin (cleaner than JS row callback)
+        <?php if (!$is_admin) : ?>
+        jQuery('body').append('<style>#management_data_table .btn-danger { display: none !important; }</style>');
+        <?php endif; ?>
     }
 
     function hapus_data(id) {
@@ -250,8 +302,67 @@ $input = shortcode_atts(array(
                     jQuery('#alamat_instansi').val(res.data.alamat_instansi);
                     jQuery('#koordinat').val(res.data.koordinat);
                     jQuery('#radius_meter').val(res.data.radius_meter);
-                    jQuery('#username').val(res.data.username);
+                    jQuery('#username').val(res.data.username).attr('disabled', true);
                     jQuery('#email_instansi').val(res.data.email_instansi);
+                    
+                    // Populate Days & Time
+                    // Reset first
+                    jQuery('.day-check').prop('checked', false);
+                    jQuery('.time-input').prop('disabled', true);
+
+                    try {
+                        // Safe JSON Parse helper
+                        var parseSchedule = function(str) {
+                            try { return JSON.parse(str); } catch(e) { return str; }
+                        };
+
+                        var days = parseSchedule(res.data.hari_kerja);
+                        var jamMasuk = parseSchedule(res.data.jam_masuk);
+                        var jamPulang = parseSchedule(res.data.jam_pulang);
+
+                        // Handle legacy (string) or empty days
+                        if (!Array.isArray(days)) {
+                            if (typeof days === 'string' && days.indexOf('[') === 0) {
+                                days = JSON.parse(days);
+                            } else if (typeof days === 'string' && days.includes(',')) {
+                                days = days.split(',');
+                            } else if (typeof days === 'string' && days.length > 0) {
+                                days = [days];
+                            } else {
+                                days = [];
+                            }
+                        }
+
+                        days.forEach(function(d) {
+                            // Trim in case of weird whitespace
+                            d = d.trim();
+                            
+                            // Check the day
+                            jQuery('#check_' + d).prop('checked', true);
+                            
+                            // Enable inputs
+                            jQuery('#jam_masuk_' + d).prop('disabled', false);
+                            jQuery('#jam_pulang_' + d).prop('disabled', false);
+
+                            // Set Times
+                            // Case 1: New JSON format (Object: Day -> Time)
+                            if (typeof jamMasuk === 'object' && jamMasuk !== null && jamMasuk[d]) {
+                                jQuery('#jam_masuk_' + d).val(jamMasuk[d]);
+                            } 
+                            // Case 2: Legacy/Global String (Apply to all)
+                            else if (typeof jamMasuk === 'string') {
+                                jQuery('#jam_masuk_' + d).val(jamMasuk);
+                            }
+
+                            if (typeof jamPulang === 'object' && jamPulang !== null && jamPulang[d]) {
+                                jQuery('#jam_pulang_' + d).val(jamPulang[d]);
+                            } else if (typeof jamPulang === 'string') {
+                                jQuery('#jam_pulang_' + d).val(jamPulang);
+                            }
+                        });
+
+                    } catch(e) { console.log('Error parsing schedule', e); }
+
                     jQuery('#modalTambahDataInstansi').modal('show');
 
                     setTimeout(() => {
@@ -268,12 +379,25 @@ $input = shortcode_atts(array(
     //show tambah data
     function tambah_data_instansi() {
         jQuery('#id_data').val('');
-        jQuery('#nama_instansi').val('');
+        jQuery('#nama_instansi').val('').attr('disabled', false);
         jQuery('#alamat_instansi').val('');
         jQuery('#koordinat').val('');
         jQuery('#radius_meter').val('100');
-        jQuery('#username').val('');
-        jQuery('#email_instansi').val('');
+        jQuery('#username').val('').attr('disabled', false);
+        jQuery('#email_instansi').val('').attr('disabled', false);
+        
+        // Reset Days & Time
+        var defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        jQuery('.day-check').prop('checked', false);
+        jQuery('.time-input').prop('disabled', true).val('08:00'); // Reset all to default time first
+        jQuery('.time-out').val('16:00');
+
+        defaultDays.forEach(function(d) {
+            jQuery('#check_' + d).prop('checked', true);
+            jQuery('#jam_masuk_' + d).prop('disabled', false);
+            jQuery('#jam_pulang_' + d).prop('disabled', false);
+        });
+
         jQuery('#modalTambahDataInstansi').modal('show');
 
         setTimeout(() => {
@@ -372,6 +496,16 @@ $input = shortcode_atts(array(
         map.panTo([lat, lng]);
     }
 
+    function toggleAllDays(el) {
+        jQuery('.day-check').prop('checked', el.checked).trigger('change');
+    }
+
+    function toggleTimeInputs(day) {
+        let isChecked = jQuery('#check_' + day).is(':checked');
+        jQuery('#jam_masuk_' + day).prop('disabled', !isChecked);
+        jQuery('#jam_pulang_' + day).prop('disabled', !isChecked);
+    }
+
     function updateInput(lat, lng) {
         jQuery('#koordinat').val(lat + ", " + lng);
     }
@@ -391,28 +525,51 @@ $input = shortcode_atts(array(
 
         var koordinat = jQuery('#koordinat').val();
         var radius_meter = jQuery('#radius_meter').val();
+        
         var username = jQuery('#username').val();
         var email_instansi = jQuery('#email_instansi').val();
 
         if (username == '') { return alert('Username tidak boleh kosong!'); }
         if (email_instansi == '') { return alert('Email Instansi tidak boleh kosong!'); }
         
+        // GATHER SCHEDULE DATA
+        var hari_kerja = [];
+        var jam_masuk = {};
+        var jam_pulang = {};
+
+        jQuery('.day-check:checked').each(function() {
+            var day = jQuery(this).val();
+            hari_kerja.push(day);
+            jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
+            jam_pulang[day] = jQuery('#jam_pulang_' + day).val();
+        });
+
+        if (hari_kerja.length == 0) {
+            return alert('Pilih minimal satu hari kerja!');
+        }
+
         jQuery('#wrap-loading').show();
         jQuery.ajax({
-            method: 'post',
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            type: 'post',
             dataType: 'json',
             data: {
                 'action': 'tambah_data_instansi',
                 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                'id': id_data,
-                'tahun': <?php echo $input['tahun_anggaran']; ?>,
-                'alamat_instansi': alamat_instansi,
+                'id_data': id_data,
                 'nama_instansi': nama_instansi,
+                'alamat_instansi': alamat_instansi,
+                'tahun': '<?php echo $input['tahun_anggaran']; ?>',
+
                 'koordinat': koordinat,
                 'radius_meter': radius_meter,
                 'username': username,
-                'email_instansi': email_instansi
+                'email_instansi': email_instansi,
+                
+                // Pass arrays/objects directly (jQuery handles serialization)
+                'jam_masuk': jam_masuk,
+                'jam_pulang': jam_pulang,
+                'hari_kerja': hari_kerja
             },
             error: (res) => {
                 alert(res.message);
@@ -432,38 +589,6 @@ $input = shortcode_atts(array(
         });
     }
 
-    function mutakhirkan_user(id_instansi, username) {
-        if (!username) {
-            return alert('Username belum diset untuk instansi ini!');
-        }
 
-        let confirmAction = confirm("Apakah Anda yakin ingin memutakhirkan user '" + username + "'? \n\nJika user belum ada, akan dibuat user baru dengan password sama dengan username.");
-        if (!confirmAction) {
-            return;
-        }
-
-        jQuery('#wrap-loading').show();
-        jQuery.ajax({
-            method: 'post',
-            url: '<?php echo admin_url('admin-ajax.php'); ?>',
-            dataType: 'json',
-            data: {
-                'action': 'mutakhirkan_user_instansi',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                'id_instansi': id_instansi
-            },
-            success: (res) => {
-                jQuery('#wrap-loading').hide();
-                alert(res.message);
-                if (res.status == 'success') {
-                    get_data_instansi();
-                }
-            },
-            error: () => {
-                jQuery('#wrap-loading').hide();
-                alert('Terjadi kesalahan. Silakan coba lagi.');
-            }
-        });
-    }
 </script>
 

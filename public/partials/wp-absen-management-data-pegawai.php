@@ -6,12 +6,13 @@ if (!defined('WPINC')) {
 }
 
 $input = shortcode_atts(array(
-    'tahun_anggaran' => '2025',
+    'tahun_anggaran' => '2026',
 ), $atts);
+
 $idtahun = $wpdb->get_results("
-    SELECT DISTINCT
-        tahun_anggaran
-    FROM absensi_data_unit
+    SELECT DISTINCT 
+        tahun_anggaran 
+    FROM absensi_data_unit        
     ORDER BY tahun_anggaran DESC
 ",ARRAY_A);
 $tahun = '<option value="0">Pilih Tahun</option>';
@@ -37,6 +38,12 @@ $hide_pendidikan_sekarang = carbon_get_theme_option('crb_hide_pendidikan_sekaran
 $hide_nama_sekolah = carbon_get_theme_option('crb_hide_nama_sekolah');
 $hide_lulus = carbon_get_theme_option('crb_hide_lulus');
 $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
+
+$current_user = wp_get_current_user();
+$is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles);
+$current_user_id = $current_user->ID;
+
+
 ?>
 <style type="text/css">
     .wrap-table{
@@ -103,40 +110,21 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
             
             <button class="btn btn-danger" onclick="copy_data();"><i class="dashicons dashicons-admin-page"></i> Copy Data</button>
             
-            <div style="display: flex; align-items: center; gap: 10px; margin-left: 20px;">
-                <label class="filter-label">Filter Status Akun Pegawai:</label>
-                <select id="status_kerja_filter" class="form-control" onchange="filter_status_pegawai();">
-                    <option value="">-</option>
-                    <option value="1">Pegawai Aktif</option>
-                    <option value="0">Pegawai Non Aktif</option>
-                </select>
-            </div>
+
         </div>
         <div class="wrap-table">
         <table id="management_data_table" cellpadding="2" cellspacing="0"  class="table table-bordered">
             <thead>
                 <tr>
-                    <th class="text-center">NIP</th>
+                    <th class="text-center">NIP / NIK</th>
                     <th class="text-center">Nama</th>
-                    <th class="text-center">Tempat Lahir</th>
-                    <th class="text-center">Tanggal Lahir</th>
-                    <th class="text-center">Jenis Kelamin</th>
-                    <th class="text-center">Jabatan</th>
-                    <th class="text-center">Agama</th>
                     <th class="text-center">No Handphone</th>
-                    <th class="text-center">Alamat</th>
-                    <th class="text-center">Pendidikan Terakhir</th>
-                    <th class="text-center">Pendidikan Sekarang</th>
-                    <th class="text-center">Nama Sekolah</th>
-                    <th class="text-center">Lulus</th>
+
                     <th class="text-center">Email</th>
-                    <th class="text-center">Kartu Pegawai</th>
-                    <th class="text-center">Tanggal Mulai</th>
-                    <th class="text-center">Tanggal Selesai</th>
-                    <th class="text-center">Gaji</th>
-                    <th class="text-center">Admin Instansi</th>
-                    <th class="text-center">Status Pegawai</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
+
+
+
                 </tr>
             </thead>
             <tbody>
@@ -163,7 +151,7 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                 <div class="row">
 
                     <div class="col-md-4 form-group">
-                        <label>NIK <span class="text-danger">*</span></label>
+                        <label>NIP / NIK <span class="text-danger">*</span></label>
                         <input type="number" id="nik" class="form-control">
                     </div>
 
@@ -183,7 +171,7 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                     </div>
 
                     <div class="col-md-4 form-group"<?php if($hide_jenis_kelamin) echo ' style="display:none;"'; ?>>
-                        <label>Jenis Kelamin</label>
+                        <label>Jenis Kelamin <span class="text-danger">*</span></label>
                         <select id="jenis_kelamin" class="form-control">
                             <option value="">-- Pilih Jenis Kelamin --</option>
                         </select>
@@ -195,6 +183,7 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                             <option value="">-- Pilih Agama --</option>
                         </select>
                     </div>
+
 
                     <div class="col-md-4 form-group">
                         <label>No Handphone</label>
@@ -226,7 +215,7 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                     </div>
 
                     <div class="col-md-4 form-group">
-                        <label>Email</label>
+                        <label>Email <span class="text-danger">*</span></label>
                         <input type="email" id="email" class="form-control">
                     </div>
 
@@ -234,57 +223,15 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                         <label>Alamat</label>
                         <textarea id="alamat" class="form-control"></textarea>
                     </div>
-
+                    
                     <div class="col-md-4 form-group">
-                        <label>Status Pegawai</label>
-                        <select id="status" class="form-control" onchange="status_pegawai_teks();">
-                            <option value="">-- Pilih Status --</option>
+                        <label>Admin Instansi (Parent Role) <span class="text-danger">*</span></label>
+                        <select id="admin_instansi" class="form-control">
+                            <option value="">-- Pilih Admin Instansi --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group hidden" id="status_teks_wrapper">
-                        <label>Status Pegawai Lainnya</label>
-                        <input type="text" id="status_teks" class="form-control" placeholder="Sebutkan status lainnya">
-                    </div>
 
-                    <div class="col-md-4 form-group hidden" id="jabatan_wrapper">
-                        <label>Jabatan</label>
-                        <input type="text" id="jabatan" class="form-control">
-                    </div>
-
-                    <div class="col-md-4 form-group hidden" id="karpeg_wrapper">
-                        <label>Kartu Pegawai</label>
-                        <input type="text" id="karpeg" class="form-control">
-                    </div>
-
-                    <div class="col-md-4 form-group hidden" id="tanggal_mulai_wrapper">
-                        <label>Tanggal Mulai</label>
-                        <input type="date" id="tanggal_mulai" class="form-control">
-                    </div>
-
-                    <div class="col-md-4 form-group hidden" id="tanggal_selesai_wrapper">
-                        <label>Tanggal Selesai</label>
-                        <input type="date" id="tanggal_selesai" class="form-control">
-                    </div>
-
-                    <div class="col-md-4 form-group hidden" id="gaji_wrapper">
-                        <label>Gaji</label>
-                        <input type="number" id="gaji" class="form-control" step="0.01">
-                    </div>
-
-                    <div class="col-md-4 form-group">
-                        <label>Admin Instansi <span class="text-danger">*</span></label>
-                        <select id="id_instansi" class="form-control">
-                            <option value="">-- Pilih Instansi --</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-4 form-group">
-                        <label>User Role</label>
-                        <select id="user_role" class="form-control">
-                            <option value="">-- Pilih Role (Opsional) --</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
@@ -314,6 +261,9 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
 </div>
 <script>
     var masterData = {};
+    var isAdminInstansi = <?php echo $is_admin_instansi ? 'true' : 'false'; ?>;
+    var currentUserId = '<?php echo $current_user_id; ?>';
+
 
     jQuery(document).ready(function(){
         jQuery('.mg-card-box').parent().removeClass('col-md-8').addClass('col-md-12');
@@ -424,41 +374,6 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                 jQuery('#wrap-loading').hide();
             }
         });
-
-        // Load Master Instansi (Parent Role)
-        jQuery.ajax({
-            method: 'post',
-            url: '<?php echo admin_url('admin-ajax.php'); ?>',
-            dataType: 'json',
-            data:{
-                'action': 'get_master_instansi',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
-            },
-            success: function(res){
-                if(res.status == 'success'){
-                    var instansi_select = jQuery('#id_instansi');
-                    instansi_select.find('option:not(:first)').remove();
-                    
-                    var count = 0;
-                    var last_val = '';
-                    jQuery.each(res.data, function(i, item){
-                        instansi_select.append(jQuery('<option>', {
-                            value: item.value,
-                            text: item.label
-                        }));
-                        count++;
-                        last_val = item.value;
-                    });
-                    
-                    // If only one option (e.g. Admin Instansi logged in), auto select and disable?
-                    // Actually let's check roles in PHP (which we did in get_master_instansi)
-                    // But if there is only 1 result, we might want to auto select.
-                    if (count === 1) {
-                         instansi_select.val(last_val);
-                    }
-                }
-            }
-        });
     }
 
     function get_master_options(){
@@ -500,74 +415,38 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
             }));
         });
         
-        var status_select = jQuery('#status');
-        status_select.find('option:not(:first)').remove();
-        jQuery.each(masterData.status_pegawai, function(i, item){
-            status_select.append(jQuery('<option>', {
-                value: item.value,
-                text: item.label
-            }));
-        });
         
-        var role_select = jQuery('#user_role');
-        role_select.find('option:not(:first)').remove();
-        jQuery.each(masterData.user_role, function(i, item){
-            role_select.append(jQuery('<option>', {
-                value: item.value,
-                text: item.label
-            }));
-        });
-    }
-
-    function status_pegawai_teks(){
-        var status = jQuery('#status').val();
-        
-        jQuery('#status_teks_wrapper').addClass('hidden');
-        jQuery('#jabatan_wrapper').addClass('hidden');
-        jQuery('#karpeg_wrapper').addClass('hidden');
-        jQuery('#tanggal_mulai_wrapper').addClass('hidden');
-        jQuery('#tanggal_selesai_wrapper').addClass('hidden');
-        jQuery('#gaji_wrapper').addClass('hidden');
-        
-        if(status != ''){
-            jQuery('#jabatan_wrapper').removeClass('hidden');
-            jQuery('#karpeg_wrapper').removeClass('hidden');
-            jQuery('#tanggal_mulai_wrapper').removeClass('hidden');
-            jQuery('#gaji_wrapper').removeClass('hidden');
-            
-            if(status == '5'){
-                jQuery('#status_teks_wrapper').removeClass('hidden');
-            }
-            
-            if(status != '1'){
-                jQuery('#tanggal_selesai_wrapper').removeClass('hidden');
-            }
+        var admin_instansi = jQuery('#admin_instansi');
+        admin_instansi.find('option:not(:first)').remove();
+        if(masterData.admin_instansi){
+            jQuery.each(masterData.admin_instansi, function(i, item){
+                admin_instansi.append(jQuery('<option>', {
+                    value: item.value,
+                    text: item.label
+                }));
+            });
         }
+
     }
 
-
-    function filter_status_pegawai(){
-        if(typeof datapegawai != 'undefined'){
-            datapegawai.draw();
-        }
-    }
+    // status_pegawai_teks function removed
 
     function get_data_pegawai(){
         if(typeof datapegawai == 'undefined'){
-            window.datapegawai = jQuery('#management_data_table').on('preXhr.dt', function(e, settings, data){
+            window.datapegawai = jQuery('#management_data_table').on('preXhr.dt', function ( e, settings, data ) {
                 jQuery("#wrap-loading").show();
             }).DataTable({
-                "processing": true,
+                "processing": true, 
                 "serverSide": true,
                 "ajax": {
                     url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                    type: 'post',
+                    type:'post',
                     dataType: 'json',
                     data: function(d){
                         d.action = 'get_datatable_pegawai';
                         d.api_key = '<?php echo get_option( ABSEN_APIKEY ); ?>';
                         d.tahun = '<?php echo $input['tahun_anggaran']; ?>';
-                        d.status_kerja_filter = jQuery('#status_kerja_filter').val();
+                        return d;
                     }
                 },
                 lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
@@ -585,81 +464,22 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                         className: "text-center"
                     },
                     {
-                        "data": 'tempat_lahir',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'tanggal_lahir',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'jenis_kelamin',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'jabatan',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'agama',
-                        className: "text-center"
-                    },
-                    {
                         "data": 'no_hp',
                         className: "text-center"
                     },
-                    {
-                        "data": 'alamat',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'pendidikan_terakhir',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'pendidikan_sekarang',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'nama_sekolah',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'lulus',
-                        className: "text-center"
-                    },
+
                     {
                         "data": 'email',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'karpeg',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'tanggal_mulai',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'tanggal_selesai',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'gaji',
-                        className: "text-right"
-                    },
-                    {
-                        "data": 'nama_instansi',
-                        className: "text-center"
-                    },
-                    {
-                        "data": 'status_display',
+
                         className: "text-center"
                     },
                     {
                         "data": 'aksi',
                         className: "text-center"
                     }
+
+
+
                 ]
             });
         }else{
@@ -667,47 +487,21 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
         }
     }
 
-    function hapus_data(id, status_kerja){
-        status_kerja = parseInt(status_kerja);
-        
-        if(status_kerja == 0){
-            // Jika sudah non active, hanya tampilkan opsi Hapus Data
-            Swal.fire({
-                title: 'Hapus Data',
-                text: "Apakah Anda yakin ingin menghapus data pegawai ini?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Hapus Data',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    proses_hapus_data(id, 'hapus');
-                }
-            });
-        } else {
-            // Jika masih active, tampilkan 2 opsi
-            Swal.fire({
-                title: 'Pilih Aksi',
-                text: "Pilih tindakan yang ingin dilakukan pada pegawai ini:",
-                icon: 'question',
-                showCancelButton: true,
-                showDenyButton: true,
-                confirmButtonColor: '#dc3545',
-                denyButtonColor: '#ffc107',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Hapus Data',
-                denyButtonText: 'Nonaktifkan Pegawai',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    proses_hapus_data(id, 'hapus');
-                } else if (result.isDenied) {
-                    proses_hapus_data(id, 'nonaktif');
-                }
-            });
-        }
+    function hapus_data(id){
+        Swal.fire({
+            title: 'Hapus Data',
+            text: "Apakah Anda yakin ingin menghapus data pegawai ini?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus Data',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                proses_hapus_data(id, 'hapus');
+            }
+        });
     }
 
     function proses_hapus_data(id, tipe){
@@ -765,27 +559,13 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                     jQuery('#nama').val(res.data.nama);
                     jQuery('#tempat_lahir').val(res.data.tempat_lahir);
                     jQuery('#tanggal_lahir').val(res.data.tanggal_lahir);
-                    jQuery('#jenis_kelamin').val(res.data.jenis_kelamin);
-                    jQuery('#status').val(res.data.status);
-                    jQuery('#status_teks').val(res.data.status_teks);
-                    jQuery('#jabatan').val(res.data.jabatan);
-                    jQuery('#agama').val(res.data.agama);
-                    jQuery('#no_hp').val(res.data.no_hp);
-                    jQuery('#alamat').val(res.data.alamat);
-                    jQuery('#pendidikan_terakhir').val(res.data.pendidikan_terakhir);
-                    jQuery('#pendidikan_sekarang').val(res.data.pendidikan_sekarang);
-                    jQuery('#nama_sekolah').val(res.data.nama_sekolah);
                     jQuery('#lulus').val(res.data.lulus);
                     jQuery('#email').val(res.data.email);
-                    jQuery('#karpeg').val(res.data.karpeg);
-                    jQuery('#tanggal_mulai').val(res.data.tanggal_mulai);
-                    jQuery('#tanggal_selesai').val(res.data.tanggal_selesai);
-                    jQuery('#gaji').val(res.data.gaji);
-                    jQuery('#id_instansi').val(res.data.id_instansi);
-                    jQuery('#user_role').val(res.data.user_role);
+                    jQuery('#admin_instansi').val(res.data.id_instansi);
+
+
                     jQuery('#tahun').val(res.data.tahun);
-                    
-                    status_pegawai_teks();
+
                     
                     jQuery('#modalTambahDataPegawai').modal('show');
                     
@@ -814,38 +594,22 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
 
     function tambah_data_pegawai(){
         jQuery('#id_data').val('');
+        jQuery('#admin_instansi').val('');
         jQuery('#nik').val('');
+
+        if(isAdminInstansi){
+             jQuery('#admin_instansi').val(currentUserId).trigger('change');
+        }
+
+
         jQuery('#nama').val('');
         jQuery('#tempat_lahir').val('');
         jQuery('#tanggal_lahir').val('');
-        jQuery('#jenis_kelamin').val('');
-        jQuery('#status').val('');
-        jQuery('#status_teks').val('');
-        jQuery('#jabatan').val('');
-        jQuery('#agama').val('');
-        jQuery('#no_hp').val('');
-        jQuery('#alamat').val('');
-        jQuery('#pendidikan_terakhir').val('');
-        jQuery('#pendidikan_sekarang').val('');
-        jQuery('#nama_sekolah').val('');
-        jQuery('#lulus').val('');
         jQuery('#email').val('');
-        jQuery('#karpeg').val('');
-        jQuery('#tanggal_mulai').val('');
-        jQuery('#tanggal_selesai').val('');
-        jQuery('#gaji').val('');
-        jQuery('#user_role').val('');
 
-        // Reset instansi but keep if only 1 option (Admin Instansi context)
-        if (jQuery('#id_instansi option').length > 2) {
-             jQuery('#id_instansi').val('');
-        } else if (jQuery('#id_instansi option').length == 2) {
-             jQuery('#id_instansi').val(jQuery('#id_instansi option:eq(1)').val());
-        } else {
-             jQuery('#id_instansi').val('');
-        }
         
-        status_pegawai_teks();
+        // status_pegawai_teks(); (Removed)
+
         
         jQuery('#modalTambahDataPegawai').modal('show');
         
@@ -853,18 +617,29 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
             jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
             jQuery('#modalTambahDataPegawai select').prop('disabled', false);
             jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
+            
+            if(isAdminInstansi){
+                jQuery('#admin_instansi').prop('disabled', true);
+            }
+
             jQuery('#modalTambahDataPegawai .modal-footer .btn-primary').show();
             jQuery('#modalTambahDataPegawaiLabel').text('Data Pegawai');
         }, 300);
+
     }
 
-    function submitTambahDataFormPegawai(){
+    function submitTambahDataFormPegawai() {
         if(jQuery('#nik').prop('readonly') || jQuery('#nik').prop('disabled')){
             return alert('Data pegawai Non Active tidak dapat diedit!');
         }
         
         var id_data = jQuery('#id_data').val();
+        var admin_instansi = jQuery('#admin_instansi').val();
+        if(admin_instansi == ''){
+            return alert('Admin Instansi (Parent Role) tidak boleh kosong!');
+        }
         var nik = jQuery('#nik').val();
+
         if(nik == ''){
             return alert('Data NIK tidak boleh kosong!');
         }
@@ -874,23 +649,11 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
         }
         
         var jenis_kelamin = jQuery('#jenis_kelamin').val();
-
-        var status = jQuery('#status').val();
-
-        var status_teks = jQuery('#status_teks').val();
-
-        var jabatan = jQuery('#jabatan').val();
-
-        var tanggal_mulai = jQuery('#tanggal_mulai').val();
-
-        var tanggal_selesai = jQuery('#tanggal_selesai').val();
-        
-        var gaji = jQuery('#gaji').val();
-        var id_instansi = jQuery('#id_instansi').val();
-        var user_role = jQuery('#user_role').val();
-        if(nik == '' || nama == '' || id_instansi == ''){
-            return alert('Harap lengkapi semua field bertanda bintang (*) !');
+        if(jQuery('#jenis_kelamin').is(':visible') && jenis_kelamin == ''){
+            return alert('Jenis Kelamin tidak boleh kosong!');
         }
+        
+
         
         var tempat_lahir = jQuery('#tempat_lahir').val();
         var tanggal_lahir = jQuery('#tanggal_lahir').val();
@@ -902,8 +665,11 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
         var nama_sekolah = jQuery('#nama_sekolah').val();
         var lulus = jQuery('#lulus').val();
         var email = jQuery('#email').val();
-        var karpeg = jQuery('#karpeg').val();
-        var gaji = jQuery('#gaji').val();
+        if(email == ''){
+            return alert('Email tidak boleh kosong!');
+        }
+        var email = jQuery('#email').val();
+
 
         jQuery('#wrap-loading').show();
         jQuery.ajax({
@@ -914,28 +680,26 @@ $hide_alamat = carbon_get_theme_option('crb_hide_alamat');
                 'action': 'tambah_data_pegawai',
                 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
                 'id_data': id_data,
+                'admin_instansi': admin_instansi,
                 'nik': nik,
+
                 'nama': nama,
                 'tempat_lahir': tempat_lahir,
                 'tanggal_lahir': tanggal_lahir,
                 'jenis_kelamin': jenis_kelamin,
-                'status': status,
-                'status_teks': status_teks,
-                'jabatan': jabatan,
                 'agama': agama,
                 'no_hp': no_hp,
+
                 'alamat': alamat,
                 'pendidikan_terakhir': pendidikan_terakhir,
                 'pendidikan_sekarang': pendidikan_sekarang,
                 'nama_sekolah': nama_sekolah,
                 'lulus': lulus,
                 'email': email,
-                'karpeg': karpeg,
-                'tanggal_mulai': tanggal_mulai,
-                'tanggal_selesai': tanggal_selesai,
-                'gaji': gaji,
-                'id_instansi': id_instansi,
-                'user_role': user_role,
+                'email': email,
+
+
+
                 'tahun': <?php echo $input['tahun_anggaran']; ?>
             },
             success: function(res){

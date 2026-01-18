@@ -144,13 +144,6 @@ class Wp_Absen {
 
 		$this->loader->add_action('template_redirect', $this->functions, 'allow_access_private_post', 0);
 
-		// Force password change on first login
-		$this->loader->add_action('template_redirect', $this->functions, 'check_force_password_change', 1);
-		$this->loader->add_action('wp_ajax_absen_change_password', $this->functions, 'ajax_change_password');
-
-		// Shortcode for password change page
-		add_shortcode('ubah_password_absen', array($this->functions, 'shortcode_ubah_password'));
-
 	}
 
 	/**
@@ -183,7 +176,6 @@ class Wp_Absen {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
-		// $this->loader->add_action( 'init', $plugin_admin, 'absen_create_posttype' );
 		$this->loader->add_action('carbon_fields_register_fields', $plugin_admin, 'crb_absen_options');
 
 		$this->loader->add_action('wp_ajax_import_excel_absen_pegawai',  $plugin_admin, 'import_excel_absen_pegawai');
@@ -232,7 +224,6 @@ class Wp_Absen {
 		$this->loader->add_action('wp_ajax_get_datatable_instansi',  $plugin_public_instansi, 'get_datatable_instansi');
 		$this->loader->add_action('wp_ajax_get_users_for_instansi',  $plugin_public_instansi, 'get_users_for_instansi');
 		$this->loader->add_action('wp_ajax_get_master_instansi',  $plugin_public_instansi, 'get_master_instansi');
-		$this->loader->add_action('wp_ajax_mutakhirkan_user_instansi',  $plugin_public_instansi, 'mutakhirkan_user_instansi');
 		
 		$this->loader->add_action('wp_ajax_get_datatable_pegawai',  $plugin_public_pegawai, 'get_datatable_pegawai');
 		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public_pegawai, 'tambah_data_pegawai');

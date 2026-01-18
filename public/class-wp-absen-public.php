@@ -171,7 +171,29 @@ class Wp_Absen_Public {
         }
 
         if (in_array('admin_instansi', $user_meta->roles) || in_array('administrator', $user_meta->roles)) {
-            return $get_data_instansi . $get_absensi_pegawai;
+            $html = '
+            <h3>Menu Admin Instansi</h3>
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="data-instansi-tab" data-toggle="tab" href="#data-instansi" role="tab" aria-controls="data-instansi" aria-selected="true">
+                        <span class="dashicons dashicons-admin-generic"></span> Manajemen Data Instansi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="absensi-pegawai-tab" data-toggle="tab" href="#absensi-pegawai" role="tab" aria-controls="absensi-pegawai" aria-selected="false">
+                        <span class="dashicons dashicons-clipboard"></span> Manajemen Data Pegawai
+                    </a>
+                </li>
+            </ul>
+            <div class="tab-content" id="myTabContent" style="padding: 20px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
+                <div class="tab-pane fade show active" id="data-instansi" role="tabpanel" aria-labelledby="data-instansi-tab">
+                    <ul>' . $get_data_instansi . '</ul>
+                </div>
+                <div class="tab-pane fade" id="absensi-pegawai" role="tabpanel" aria-labelledby="absensi-pegawai-tab">
+                    <ul>' . $get_absensi_pegawai . '</ul>
+                </div>
+            </div>';
+            return $html;
         }
 
     }
