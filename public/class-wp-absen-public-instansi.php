@@ -178,15 +178,14 @@ class Wp_Absen_Public_Instansi
 
                     // Toggle Status Button
                     if ($recVal["active"] == 1) {
-                         $status_badge = '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 5px 10px; border-radius: 4px;">Aktif</span>';
-                         $btn .= '<a class="btn btn-sm btn-secondary" style="margin:2px;" onclick="toggle_status_instansi(\'' . $recVal["id"] . '\', 0); return false;" href="#" title="Nonaktifkan"><i class="dashicons dashicons-hidden"></i></a>';
+                        $status_badge = '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 5px 10px; border-radius: 4px;">Aktif</span>';
+                        $btn .= '<a class="btn btn-sm btn-secondary" style="margin:2px;" onclick="toggle_status_instansi(\'' . $recVal["id"] . '\', 0); return false;" href="#" title="Nonaktifkan"><i class="dashicons dashicons-hidden"></i></a>';
                     } else {
-                         $status_badge = '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px;">Tidak Aktif</span>';
-                         $btn .= '<a class="btn btn-sm btn-success" style="margin:2px;" onclick="toggle_status_instansi(\'' . $recVal["id"] . '\', 1); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
+                        $status_badge = '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px;">Tidak Aktif</span>';
+                        $btn .= '<a class="btn btn-sm btn-success" style="margin:2px;" onclick="toggle_status_instansi(\'' . $recVal["id"] . '\', 1); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
                     }
                     
                     $queryRecords[$recKey]["status_badge"] = $status_badge;
-
 
                     $btn .=
                         '<a class="btn btn-sm btn-danger" style="margin:2px;" onclick="hapus_data(\'' .
@@ -197,7 +196,6 @@ class Wp_Absen_Public_Instansi
                      // Override email from WP User if available
                     if (!empty($recVal['id_user'])) {
                         $user_check = get_user_by('id', $recVal['id_user']);
-                        
                         if ($user_check) {
                             $need_update = false;
                             $update_data = array();
@@ -215,7 +213,7 @@ class Wp_Absen_Public_Instansi
                                 $queryRecords[$recKey]['email_instansi'] = $user_check->user_email;
                                 $need_update = true;
                             }
-                            
+
                             // Perform DB Update if needed
                             if ($need_update && !empty($update_data)) {
                                 $wpdb->update('absensi_data_instansi', $update_data, array('id' => $recVal['id']));
@@ -674,26 +672,26 @@ class Wp_Absen_Public_Instansi
                 $_POST["api_key"] == get_option(ABSEN_APIKEY)
             ) {
                 // Check capability
-                 $current_user = wp_get_current_user();
-                 $is_admin = in_array('administrator', (array) $current_user->roles);
-                 $is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles);
+                $current_user = wp_get_current_user();
+                $is_admin = in_array('administrator', (array) $current_user->roles);
+                $is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles);
 
-                 if (!$is_admin && !$is_admin_instansi) {
-                      $ret['status'] = 'error';
-                      $ret['message'] = 'Akses Ditolak!';
-                      die(json_encode($ret));
-                 }
+                if (!$is_admin && !$is_admin_instansi) {
+                    $ret['status'] = 'error';
+                    $ret['message'] = 'Akses Ditolak!';
+                    die(json_encode($ret));
+                }
 
                 $id = $_POST['id'];
                 
                 // If not admin, verify ownership
                 if (!$is_admin) {
-                     $instansi = $wpdb->get_row($wpdb->prepare("SELECT id_user FROM absensi_data_instansi WHERE id = %d", $id));
-                     if (!$instansi || $instansi->id_user != $current_user->ID) {
-                          $ret['status'] = 'error';
-                          $ret['message'] = 'Akses Ditolak! Data ini bukan milik anda.';
-                          die(json_encode($ret));
-                     }
+                    $instansi = $wpdb->get_row($wpdb->prepare("SELECT id_user FROM absensi_data_instansi WHERE id = %d", $id));
+                    if (!$instansi || $instansi->id_user != $current_user->ID) {
+                        $ret['status'] = 'error';
+                        $ret['message'] = 'Akses Ditolak! Data ini bukan milik anda.';
+                        die(json_encode($ret));
+                    }
                 }
                 $new_status = $_POST['status']; 
                 

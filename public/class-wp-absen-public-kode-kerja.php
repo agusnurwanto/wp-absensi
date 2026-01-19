@@ -105,20 +105,20 @@ class Wp_Absen_Public_Kode_Kerja
                 $totalRecords = $queryTot[0]['jml'];
                 $queryRecords = $wpdb->get_results($sqlRec, ARRAY_A);
 
-                foreach($queryRecords as $recKey => $recVal){
+                foreach ($queryRecords as $recKey => $recVal) {
                     $btn = '<a class="btn btn-sm btn-warning" onclick="edit_data(\''.$recVal['id'].'\'); return false;" href="#" title="Edit Data"><i class="dashicons dashicons-edit"></i></a>';
                     $btn .= ' <a class="btn btn-sm btn-danger" onclick="hapus_kode_kerja(\''.$recVal['id'].'\'); return false;" href="#" title="Hapus Data"><i class="dashicons dashicons-trash"></i></a>';
-                    
-                    if($recVal['active'] == 1){
+
+                    if ($recVal['active'] == 1) {
                         $btn .= ' <a class="btn btn-sm btn-secondary" onclick="toggle_status_kode_kerja_js(\''.$recVal['id'].'\', 1); return false;" href="#" title="Nonaktifkan"><i class="dashicons dashicons-hidden"></i></a>';
                         $status_badge = '<span class="badge badge-success" style="background-color:#28a745; color:white; padding:5px 10px; border-radius:10px;">Aktif</span>';
                     } else {
                         $btn .= ' <a class="btn btn-sm btn-success" onclick="toggle_status_kode_kerja_js(\''.$recVal['id'].'\', 0); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
                         $status_badge = '<span class="badge badge-secondary" style="background-color:#6c757d; color:white; padding:5px 10px; border-radius:10px;">Nonaktif</span>';
                     }
-                    
-                    $queryRecords[$recKey]['aksi'] = $btn;
+
                     $queryRecords[$recKey]['status_badge'] = $status_badge;
+                    $queryRecords[$recKey]['aksi'] = $btn;
                 }
 
                 $json_data = array(
@@ -129,7 +129,7 @@ class Wp_Absen_Public_Kode_Kerja
                 );
 
                 die(json_encode($json_data));
-            }else{
+            } else {
                 $ret['status'] = 'error'; $ret['message'] = 'Api Key tidak sesuai!';
             }
         }

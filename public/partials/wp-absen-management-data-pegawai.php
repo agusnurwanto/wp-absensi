@@ -121,6 +121,8 @@ $current_user_id = $current_user->ID;
                     <th class="text-center">No Handphone</th>
 
                     <th class="text-center">Email</th>
+                    <th class="text-center">Admin Instansi</th>
+                    <th class="text-center">Status</th>
                     <th class="text-center" style="width: 150px;">Aksi</th>
 
 
@@ -470,7 +472,14 @@ $current_user_id = $current_user->ID;
 
                     {
                         "data": 'email',
-
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'admin_instansi_name',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'status_badge',
                         className: "text-center"
                     },
                     {
@@ -534,6 +543,62 @@ $current_user_id = $current_user->ID;
                         text: response.message
                     });
                 }
+            }
+        });
+    }
+
+    function toggle_status_pegawai(id, status) {
+        var actionText = (status == 1) ? "Aktifkan" : "Nonaktifkan";
+        var confirmText = (status == 1) ? "Data Pegawai akan diaktifkan kembali." : "Data Pegawai akan dinonaktifkan.";
+        
+        Swal.fire({
+            title: 'Konfirmasi ' + actionText,
+            text: confirmText,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, ' + actionText + '!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                jQuery('#wrap-loading').show();
+                jQuery.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    dataType: 'json',
+                    data: {
+                        'action': 'toggle_status_pegawai',
+                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'id': id,
+                        'status': status
+                    },
+                    success: (res) => {
+                        jQuery('#wrap-loading').hide();
+                        if (res.status == 'success') {
+                            Swal.fire(
+                                'Berhasil!',
+                                res.message,
+                                'success'
+                            );
+                            get_data_pegawai(); // Refresh table
+                        } else {
+                            Swal.fire(
+                                'Gagal!',
+                                res.message,
+                                'error'
+                            );
+                        }
+                    },
+                    error: function() {
+                        jQuery('#wrap-loading').hide();
+                        Swal.fire(
+                            'Error!',
+                            'Terjadi kesalahan server.',
+                            'error'
+                        );
+                    }
+                });
             }
         });
     }
