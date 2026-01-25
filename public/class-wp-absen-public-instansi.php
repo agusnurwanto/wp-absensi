@@ -23,23 +23,23 @@
 
 require_once ABSEN_PLUGIN_PATH . "/public/trait/CustomTrait.php";
 
-class Wp_Absen_Public_Instansi
-{
+class Wp_Absen_Public_Instansi {
+
     use CustomTraitAbsen;
 
     private $plugin_name;
 	private $version;
 	private $functions;
 
-    public function __construct($plugin_name, $version, $functions)
-    {
+    public function __construct($plugin_name, $version, $functions) {
+
         $this->plugin_name = $plugin_name;
         $this->version = $version;
         $this->functions = $functions;
+
     }
 
-    public function management_data_instansi($atts)
-    {
+    public function management_data_instansi($atts) {
         if (!empty($_GET) && !empty($_GET["post"])) {
             return "";
         }
@@ -70,12 +70,13 @@ class Wp_Absen_Public_Instansi
             $ret['status'] = 'error';
             $ret['message'] = 'Format Salah!';
         }
+
         die(json_encode($ret));
     }
 
-    public function get_datatable_instansi()
-    {
+    public function get_datatable_instansi() {
         global $wpdb;
+
         $ret = [
             "status" => "success",
             "message" => "Berhasil get data!",
@@ -122,7 +123,7 @@ class Wp_Absen_Public_Instansi
                     ", id_user FROM `absensi_data_instansi`";
 
                 $where_first = " WHERE 1=1";
-                
+
                 if (!empty($params['tahun'])) {
                     $where_first .= $wpdb->prepare(" AND tahun = %d", $params['tahun']);
                 } else {
@@ -132,11 +133,10 @@ class Wp_Absen_Public_Instansi
                     }
                 }
 
-                
                 // Get current user and check roles
                 $current_user = wp_get_current_user();
                 $is_admin = in_array( 'administrator', (array) $current_user->roles );
-                
+
                 // If NOT administrator, filter by id_user
                 if ( ! $is_admin ) {
                     $where_first .= " AND id_user = " . $current_user->ID;
@@ -184,7 +184,7 @@ class Wp_Absen_Public_Instansi
                         $status_badge = '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px;">Tidak Aktif</span>';
                         $btn .= '<a class="btn btn-sm btn-success" style="margin:2px;" onclick="toggle_status_instansi(\'' . $recVal["id"] . '\', 1); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
                     }
-                    
+
                     $queryRecords[$recKey]["status_badge"] = $status_badge;
 
                     $btn .=
@@ -247,9 +247,9 @@ class Wp_Absen_Public_Instansi
         die(json_encode($return));
     }
 
-    public function hapus_data_instansi_by_id()
-    {
+    public function hapus_data_instansi_by_id() {
         global $wpdb;
+
         $ret = [
             "status" => "success",
             "message" => "Berhasil hapus data!",
@@ -273,7 +273,7 @@ class Wp_Absen_Public_Instansi
 
                 // Get Data First
                 $instansi = $wpdb->get_row($wpdb->prepare("SELECT id_user FROM absensi_data_instansi WHERE id = %d", $_POST['id']));
-                
+
                 if ($instansi) {
                     // Hapus Data WordPress User if exists
                     if (!empty($instansi->id_user)) {
@@ -283,7 +283,7 @@ class Wp_Absen_Public_Instansi
                         // Delete related Data Kerja (Work Codes) linked by id_user
                         $wpdb->delete('absensi_data_kerja', array('id_instansi' => $instansi->id_user));
                     }
-                    
+
                     // Hard Delete Instansi
                     $ret['data'] = $wpdb->delete('absensi_data_instansi', array('id' => $_POST['id']));
                     $ret['message'] = 'Data Instansi dan akun User berhasil dihapus permanent!';
@@ -303,9 +303,9 @@ class Wp_Absen_Public_Instansi
         die(json_encode($ret));
     }
 
-    public function get_data_instansi_by_id()
-    {
+    public function get_data_instansi_by_id() {
         global $wpdb;
+
         $ret = [
             "status" => "success",
             "message" => "Berhasil get data!",
@@ -329,7 +329,6 @@ class Wp_Absen_Public_Instansi
                     // Fetch Primary Work Code Info (Strictly by Year)
                     $tahun = $ret["data"]["tahun"];
 
-                    
                     if (!empty($ret["data"]["id_user"])) {
                         $work_code = $wpdb->get_row($wpdb->prepare(
                             "SELECT nama_kerja, jam_masuk, jam_pulang, hari_kerja, koordinat, radius_meter FROM absensi_data_kerja WHERE id_instansi = %d AND jenis = 'Primary' AND active = 1 ORDER BY id DESC LIMIT 1",
@@ -346,7 +345,6 @@ class Wp_Absen_Public_Instansi
                     // Override with WP User Data if id_user exists
                     if (!empty($ret['data']['id_user'])) {
                         $user_check = get_user_by('id', $ret['data']['id_user']);
-                        
                         if ($user_check) {
                             $need_update = false;
                             $update_data = array();
@@ -395,6 +393,7 @@ class Wp_Absen_Public_Instansi
     public function tambah_data_instansi()
     {
         global $wpdb;
+
         $ret = [
             "status" => "success",
             "message" => "Berhasil simpan data!",
@@ -445,7 +444,7 @@ class Wp_Absen_Public_Instansi
 
                     $tahun = $_POST["tahun"];
                     $id_user = isset($_POST["id_user"]) ? $_POST["id_user"] : 0;
-                    
+
                     // --- HANDLE WP USER CREATION / RETRIEVAL FIRST ---
                     if (!empty($username)) {
                         $user_id = 0;
@@ -463,7 +462,7 @@ class Wp_Absen_Public_Instansi
                                 $u->add_role('admin_instansi');
                             }
                         } else {
-                             // Validate email
+                            // Validate email
                             if (!empty($email_instansi) && email_exists($email_instansi)) {
                                 $ret['status'] = 'error';
                                 $ret['message'] = 'Email sudah digunakan user lain!';
@@ -513,7 +512,7 @@ class Wp_Absen_Public_Instansi
                             "id" => $_POST["id_data"],
                         ]);
                         $new_instansi_id = $_POST["id_data"];
-                        
+
                         // Sync Email Check (retained from previous logic but simplified)
                         if ($id_user) {
                             $user_data = get_userdata($id_user);
@@ -528,7 +527,6 @@ class Wp_Absen_Public_Instansi
 
                         $ret["message"] = "Berhasil update data!";
                     } else {
-                        // INSERT LOGIC
                         $cek_id = $wpdb->get_row(
                             $wpdb->prepare(
                                 'SELECT id, active FROM absensi_data_instansi WHERE id=%s AND tahun=%d',
@@ -570,9 +568,8 @@ class Wp_Absen_Public_Instansi
                             $jam_masuk = is_array($jam_masuk_input) ? json_encode($jam_masuk_input) : $jam_masuk_input;
                             $jam_pulang = is_array($jam_pulang_input) ? json_encode($jam_pulang_input) : $jam_pulang_input;
                             $hari_kerja = is_array($hari_kerja_input) ? json_encode($hari_kerja_input) : $hari_kerja_input;
-                            
                             $nama_kerja = !empty($_POST['nama_kerja']) ? sanitize_text_field($_POST['nama_kerja']) : 'Lokasi Utama';
-                            
+
                             // Check if Primary code exists
                             $existing_code = null;
                             if ($id_user) {
@@ -617,6 +614,7 @@ class Wp_Absen_Public_Instansi
 
     public function get_master_instansi() {
         global $wpdb;
+
         $ret = array(
             'status' => 'success',
             'message' => 'Berhasil get data!',
@@ -628,25 +626,25 @@ class Wp_Absen_Public_Instansi
                 // Check if current user is admin instansi
                 $current_user = wp_get_current_user();
                 $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
-                
+
                 $where = " WHERE active=1";
                 if ($is_admin_instansi) {
                     $where .= " AND id_user = " . $current_user->ID;
                 }
 
                 $results = $wpdb->get_results("SELECT id, nama_instansi as label FROM absensi_data_instansi $where ORDER BY nama_instansi ASC", ARRAY_A);
-                
+
                 $data = array();
                 if (!empty($results)) {
-                    foreach($results as $row){
+                    foreach ($results as $row) {
                         $data[] = array(
                             'value' => $row['id'],
                             'label' => $row['label']
                         );
                     }
                 }
+
                 $ret['data'] = $data;
-                
             } else {
                 $ret['status']  = 'error';
                 $ret['message'] = 'Api key tidak ditemukan!';
@@ -655,12 +653,13 @@ class Wp_Absen_Public_Instansi
             $ret['status']  = 'error';
             $ret['message'] = 'Format Salah!';
         }
-        
+
         die(json_encode($ret));
     }
 
     public function toggle_status_instansi() {
         global $wpdb;
+
         $ret = [
             "status" => "success",
             "message" => "Status berhasil diubah!",
@@ -679,11 +678,12 @@ class Wp_Absen_Public_Instansi
                 if (!$is_admin && !$is_admin_instansi) {
                     $ret['status'] = 'error';
                     $ret['message'] = 'Akses Ditolak!';
+
                     die(json_encode($ret));
                 }
 
                 $id = $_POST['id'];
-                
+
                 // If not admin, verify ownership
                 if (!$is_admin) {
                     $instansi = $wpdb->get_row($wpdb->prepare("SELECT id_user FROM absensi_data_instansi WHERE id = %d", $id));
@@ -693,24 +693,21 @@ class Wp_Absen_Public_Instansi
                         die(json_encode($ret));
                     }
                 }
+
                 $new_status = $_POST['status']; 
-                
                 $wpdb->update(
                     'absensi_data_instansi',
                     array('active' => $new_status),
                     array('id' => $id)
                 );
-                
-                // Toggle User status as well? Usually active=0 instansi means user cannot login or similar.
-                // But for now just the instansi record logic.
 
                 $ret['message'] = ($new_status == 1) ? 'Instansi berhasil Diaktifkan!' : 'Instansi berhasil Dinonaktifkan!';
-
             } else {
                 $ret["status"] = "error";
                 $ret["message"] = "Api Key tidak sesuai!";
             }
         }
+
         die(json_encode($ret));
     }
 }

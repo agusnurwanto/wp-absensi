@@ -263,7 +263,7 @@ $input = shortcode_atts(array(
         } else {
             datainstansi.draw();
         }
-        
+
         // Hide delete buttons via CSS if not admin (cleaner than JS row callback)
         <?php if (!$is_admin) : ?>
         jQuery('body').append('<style>#management_data_table .btn-danger { display: none !important; }</style>');
@@ -315,9 +315,9 @@ $input = shortcode_atts(array(
     }
 
     function toggle_status_instansi(id, status) {
-        var actionText = (status == 1) ? "Aktifkan" : "Nonaktifkan";
-        var confirmText = (status == 1) ? "Data Instansi akan diaktifkan kembali." : "Data Instansi akan dinonaktifkan.";
-        
+        let actionText = (status == 1) ? "Aktifkan" : "Nonaktifkan";
+        let confirmText = (status == 1) ? "Data Instansi akan diaktifkan kembali." : "Data Instansi akan dinonaktifkan.";
+
         Swal.fire({
             title: 'Konfirmasi ' + actionText,
             text: confirmText,
@@ -357,7 +357,7 @@ $input = shortcode_atts(array(
                             );
                         }
                     },
-                    error: function() {
+                    error: () => {
                         jQuery('#wrap-loading').hide();
                         Swal.fire(
                             'Error!',
@@ -372,6 +372,7 @@ $input = shortcode_atts(array(
 
     function edit_data(_id) {
         jQuery('#wrap-loading').show();
+
         jQuery.ajax({
             method: 'post',
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
@@ -391,7 +392,7 @@ $input = shortcode_atts(array(
                     jQuery('#radius_meter').val(res.data.radius_meter);
                     jQuery('#username').val(res.data.username).attr('disabled', true);
                     jQuery('#email_instansi').val(res.data.email_instansi);
-                    
+
                     // Populate Days & Time
                     // Reset first
                     jQuery('.day-check').prop('checked', false);
@@ -399,13 +400,17 @@ $input = shortcode_atts(array(
 
                     try {
                         // Safe JSON Parse helper
-                        var parseSchedule = function(str) {
-                            try { return JSON.parse(str); } catch(e) { return str; }
+                        let parseSchedule = (str) => {
+                            try {
+                                return JSON.parse(str); 
+                            } catch(e) { 
+                                return str; 
+                            }
                         };
 
-                        var days = parseSchedule(res.data.hari_kerja);
-                        var jamMasuk = parseSchedule(res.data.jam_masuk);
-                        var jamPulang = parseSchedule(res.data.jam_pulang);
+                        let days = parseSchedule(res.data.hari_kerja);
+                        let jamMasuk = parseSchedule(res.data.jam_masuk);
+                        let jamPulang = parseSchedule(res.data.jam_pulang);
 
                         // Handle legacy (string) or empty days
                         if (!Array.isArray(days)) {
@@ -420,13 +425,13 @@ $input = shortcode_atts(array(
                             }
                         }
 
-                        days.forEach(function(d) {
+                        days.forEach((d) => {
                             // Trim in case of weird whitespace
                             d = d.trim();
-                            
+
                             // Check the day
                             jQuery('#check_' + d).prop('checked', true);
-                            
+
                             // Enable inputs
                             jQuery('#jam_masuk_' + d).prop('disabled', false);
                             jQuery('#jam_pulang_' + d).prop('disabled', false);
@@ -448,7 +453,9 @@ $input = shortcode_atts(array(
                             }
                         });
 
-                    } catch(e) { console.log('Error parsing schedule', e); }
+                    } catch(e) {
+                        console.log('Error parsing schedule', e); 
+                    }
 
                     jQuery('#modalTambahDataInstansi').modal('show');
 
@@ -456,8 +463,13 @@ $input = shortcode_atts(array(
                         initMap(res.data.koordinat);
                     }, 500);
                 } else {
-                    alert(res.message);
+                    Swal.fire(
+                        'Gagal!',
+                        res.message,
+                        'error'
+                    )
                 }
+
                 jQuery('#wrap-loading').hide();
             }
         });
@@ -475,12 +487,12 @@ $input = shortcode_atts(array(
         jQuery('#email_instansi').val('').attr('disabled', false);
         
         // Reset Days & Time
-        var defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        let defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         jQuery('.day-check').prop('checked', false);
         jQuery('.time-input').prop('disabled', true).val('08:00'); // Reset all to default time first
         jQuery('.time-out').val('16:00');
 
-        defaultDays.forEach(function(d) {
+        defaultDays.forEach((d) => {
             jQuery('#check_' + d).prop('checked', true);
             jQuery('#jam_masuk_' + d).prop('disabled', false);
             jQuery('#jam_pulang_' + d).prop('disabled', false);
@@ -503,9 +515,9 @@ $input = shortcode_atts(array(
                 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
             },
             success: (res) => {
-                if(res.status == 'success'){
-                    var options = '<option value="0">-- Pilih User --</option>';
-                    res.data.forEach(function(user){
+                if (res.status == 'success') {
+                    let options = '<option value="0">-- Pilih User --</option>';
+                    res.data.forEach((user) => {
                         options += '<option value="'+user.ID+'">'+user.display_name+' ('+user.user_login+')</option>';
                     });
                     jQuery('#id_user').html(options);
@@ -514,16 +526,16 @@ $input = shortcode_atts(array(
         });
     }
 
-    var map;
-    var marker;
+    let map;
+    let marker;
 
     function initMap(initialCoords) {
-        var defaultLat = -7.589537668248559;
-        var defaultLng = 111.41982078552246;
-        var zoomLevel = 16;
+        let defaultLat = -7.589537668248559;
+        let defaultLng = 111.41982078552246;
+        let zoomLevel = 16;
 
         if (initialCoords) {
-            var parts = initialCoords.split(',');
+            let parts = initialCoords.split(',');
             if (parts.length == 2) {
                 defaultLat = parseFloat(parts[0].trim());
                 defaultLng = parseFloat(parts[1].trim());
@@ -532,10 +544,10 @@ $input = shortcode_atts(array(
         } else {
             // Try getting user location if no coords provided
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
+                navigator.geolocation.getCurrentPosition((position) => {
                     if (!marker) { // Only if marker not already set (e.g. largely by manual input race condition)
-                        var lat = position.coords.latitude;
-                        var lng = position.coords.longitude;
+                        let lat = position.coords.latitude;
+                        let lng = position.coords.longitude;
                         map.setView([lat, lng], 16);
                         updateMarker(lat, lng);
                     }
@@ -575,7 +587,7 @@ $input = shortcode_atts(array(
         } else {
             marker = L.marker([lat, lng], {draggable: true}).addTo(map);
             marker.on('dragend', (e) => {
-                var position = marker.getLatLng();
+                let position = marker.getLatLng();
                 updateInput(position.lat, position.lng);
             });
         }
@@ -599,46 +611,74 @@ $input = shortcode_atts(array(
     }
 
     function submitTambahDataFormInstansi() {
-        var id_data = jQuery('#id_data').val();
+        let id_data = jQuery('#id_data').val();
 
-        var alamat_instansi = jQuery('#alamat_instansi').val();
+        let alamat_instansi = jQuery('#alamat_instansi').val();
         if (alamat_instansi == '') {
-            return alert('Data alamat Instansi tidak boleh kosong!');
+            return Swal.fire(
+                'Gagal!',
+                'Data alamat Instansi tidak boleh kosong!',
+                'error'
+            );
         }
 
-        var nama_instansi = jQuery('#nama_instansi').val();
+        let nama_instansi = jQuery('#nama_instansi').val();
         if (nama_instansi == '') {
-            return alert('Data nama Instansi tidak boleh kosong!');
+            return Swal.fire(
+                'Gagal!',
+                'Data nama Instansi tidak boleh kosong!',
+                'error'
+            );
         }
         
-        var nama_kerja = jQuery('#nama_kerja').val();
+        let nama_kerja = jQuery('#nama_kerja').val();
         if (nama_kerja == '') {
-            return alert('Nama Kode Kerja tidak boleh kosong!');
+            return Swal.fire(
+                'Gagal!',
+                'Nama Kode Kerja tidak boleh kosong!',
+                'error'
+            );
         }
 
-        var koordinat = jQuery('#koordinat').val();
-        var radius_meter = jQuery('#radius_meter').val();
-        
-        var username = jQuery('#username').val();
-        var email_instansi = jQuery('#email_instansi').val();
+        let koordinat = jQuery('#koordinat').val();
+        let radius_meter = jQuery('#radius_meter').val();
 
-        if (username == '') { return alert('Username tidak boleh kosong!'); }
-        if (email_instansi == '') { return alert('Email Instansi tidak boleh kosong!'); }
+        let username = jQuery('#username').val();
+        let email_instansi = jQuery('#email_instansi').val();
+
+        if (username == '') {
+            return Swal.fire(
+                'Gagal!',
+                'Username tidak boleh kosong!',
+                'error'
+            );
+        }
+        if (email_instansi == '') {
+            return Swal.fire(
+                'Gagal!',
+                'Email Instansi tidak boleh kosong!',
+                'error'
+            );
+        }
         
         // GATHER SCHEDULE DATA
-        var hari_kerja = [];
-        var jam_masuk = {};
-        var jam_pulang = {};
+        let hari_kerja = [];
+        let jam_masuk = {};
+        let jam_pulang = {};
 
-        jQuery('.day-check:checked').each(function() {
-            var day = jQuery(this).val();
+        jQuery('.day-check:checked').each(() => {
+            let day = jQuery(this).val();
             hari_kerja.push(day);
             jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
             jam_pulang[day] = jQuery('#jam_pulang_' + day).val();
         });
 
         if (hari_kerja.length == 0) {
-            return alert('Pilih minimal satu hari kerja!');
+            return Swal.fire(
+                'Gagal!',
+                'Pilih minimal satu hari kerja!',
+                'error'
+            );
         }
 
         jQuery('#wrap-loading').show();
@@ -659,20 +699,27 @@ $input = shortcode_atts(array(
                 'radius_meter': radius_meter,
                 'username': username,
                 'email_instansi': email_instansi,
-                
+
                 // Pass arrays/objects directly (jQuery handles serialization)
                 'jam_masuk': jam_masuk,
                 'jam_pulang': jam_pulang,
                 'hari_kerja': hari_kerja
             },
             error: (res) => {
-                alert(res.message);
+                Swal.fire(
+                    'Gagal!',
+                    res.message,
+                    'error'
+                );
                 jQuery('#wrap-loading').hide();
             },
             success: (res) => {
-                alert(res.message);
+                Swal.fire(
+                    'Berhasil!',
+                    res.message,
+                    'success'
+                );
                 jQuery('#modalTambahDataInstansi').modal('hide');
-
 
                 if (res.status == 'success') {
                     get_data_instansi();
@@ -682,7 +729,6 @@ $input = shortcode_atts(array(
             }
         });
     }
-
 
 </script>
 

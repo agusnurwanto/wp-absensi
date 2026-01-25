@@ -6,24 +6,12 @@ if (!defined('WPINC')) {
 }
 
 $input = shortcode_atts(array(
-    'tahun_anggaran' => '2025',
+    'tahun_anggaran' => '2026',
 ), $atts);
 
 $date = date('d-m-Y');
-$get_data_unit = $wpdb->get_results($wpdb->prepare('
-    SELECT 
-        *
-    FROM absensi_data_unit
-    WHERE tahun_anggaran=%d
-        AND active=1
-        AND is_skpd=1
-', $input['tahun_anggaran']), ARRAY_A);
-// print_r($ret['data']); die($wpdb->last_query);
-$get_skpd = '<option value="">Pilih SKPD</option>';
-foreach($get_data_unit as $skpd){
-    $get_skpd .= '<option value="'.$skpd['id_skpd'].'">'.$skpd['kode_skpd'].' '.$skpd['nama_skpd'].' ( ID = '.$skpd['id_skpd'].')</option>';
-}
 ?>
+
 <style type="text/css">
     .wrap-table{
         overflow: auto;
@@ -31,25 +19,37 @@ foreach($get_data_unit as $skpd){
         width: 100%; 
     }
 </style>
+
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <div class="cetak">
     <div style="padding: 10px;margin:0 0 3rem 0;">
         <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key">
     <h1 class="text-center" style="margin:3rem;">Manajemen Data Absensi<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
         <div style="margin-bottom: 25px;">
-            <button class="btn btn-primary" onclick="tambah_data_absensi();"><i class="dashicons dashicons-plus"></i> Tambah Data</button>
+            <?php 
+            $current_user = wp_get_current_user();
+            $is_pegawai = in_array('pegawai', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles) && !in_array('admin_instansi', (array) $current_user->roles);
+            
+            if (!$is_pegawai): ?>
+            <button class="btn btn-primary" onclick="tambah_data_absensi();"><i class="dashicons dashicons-plus"></i> Tambah Data Manual</button>
+            <?php endif; ?>
         </div>
         <div class="wrap-table">
-        <table id="management_data_table" cellpadding="2" cellspacing="0">
+        <table id="management_data_table" cellpadding="2" cellspacing="0" class="table table-striped table-bordered" style="width:100%">
             <thead>
                 <tr>
-                    <th class="text-center">No</th>
+                    <!-- <th class="text-center">No</th> -->
                     <th class="text-center">Nama Pegawai</th>
                     <th class="text-center">Tanggal</th>
-                    <th class="text-center">Keterangan Absensi</th>
-                    <th class="text-center">Jam Kerja / Shift</th>
-                    <th class="text-center">Nama Pasar</th>
-                    <th class="text-center" style="width: 150px;">Aksi</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Waktu (Masuk - Pulang)</th>
+                    <th class="text-center">Kode Kerja</th>
+                    <th class="text-center" style="width: 100px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,252 +58,361 @@ foreach($get_data_unit as $skpd){
         </div>
     </div>          
 </div>
+
+<!-- Modal Tambah Data Manual -->
 <div class="modal fade mt-4" id="modalTambahDataAbsensi" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataAbsensiLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTambahDataAbsensiLabel">Data Absensi</h5>
+                <h5 class="modal-title" id="modalTambahDataAbsensiLabel">Input Absensi Manual</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <input type='hidden' id='id_data' name="id_data" placeholder=''>
+                
                 <div class="form-group">
-                    <label for='tanggal_absensi' style='display:inline-block'>Tanggal</label>
-                    <input type="text" id='tanggal_absensi' name="tanggal_absensi" class="form-control" disabled placeholder='<?php echo $date; ?>'/>                    
-                </div>
-                <div class="form-group">
-                    <label for='id_skpd' style='display:inline-block'>Pilih SKPD</label>
-                    <select id='id_skpd' name="id_skpd" class="form-control">
-                        <?php echo $get_skpd; ?>
+                    <label for='id_pegawai_manual'>Pilih Pegawai</label>
+                    <select id='id_pegawai_manual' name="id_pegawai_manual" class="form-control" style="width:100%">
+                        <option value="">-- Cari Pegawai --</option>
                     </select>
                 </div>
+
                 <div class="form-group">
-                    <label for='nama_pegawai' style='display:inline-block'>Nama Pegawai</label>
-                    <select id='nama_pegawai' name="nama_pegawai" class="form-control">
+                    <label for='id_kode_kerja_manual'>Pilih Kode Kerja</label>
+                    <select id='id_kode_kerja_manual' name="id_kode_kerja_manual" class="form-control" style="width:100%">
+                        <option value="">-- Pilih Kode Kerja --</option>
                     </select>
                 </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for='tanggal_manual'>Tanggal</label>
+                            <input type="date" id='tanggal_manual' name="tanggal_manual" class="form-control" value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for='waktu_masuk_manual'>Jam Masuk</label>
+                            <input type="time" id='waktu_masuk_manual' name="waktu_masuk_manual" class="form-control">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for='waktu_pulang_manual'>Jam Pulang</label>
+                            <input type="time" id='waktu_pulang_manual' name="waktu_pulang_manual" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Removed -->
+
             </div> 
             <div class="modal-footer">
                 <button class="btn btn-primary submitBtn" onclick="submitTambahDataFormAbsensi()">Simpan</button>
-                <button type="submit" class="components-button btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
 </div>
+
 <script>    
-jQuery(document).ready(function(){
-    // penyesuaian thema wp full width page
-    jQuery('.mg-card-box').parent().removeClass('col-md-8').addClass('col-md-12');
-    jQuery('#secondary').parent().remove();
+jQuery(document).ready(() => {
+    // Define AJAX vars manually to be safe
+    let ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+    let apikey = jQuery('#api_key').val();
+
+    // Initialize DataTable
     get_data_absensi();
-    jQuery('#id_skpd').select2({ width: '100%' });
-});
 
-function get_data_absensi(){
-    if(typeof dataabsensi == 'undefined'){
-        window.dataabsensi = jQuery('#management_data_table').on('preXhr.dt', function(e, settings, data){
-            jQuery("#wrap-loading").show();
-        }).DataTable({
-            "processing": true,
-            "serverSide": true,
-            "ajax": {
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                type: 'post',
-                dataType: 'json',
-                data:{
-                    'action': 'get_datatable_absensi',
-                    'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                }
+    // Initialize Select2 for Pegawai
+    jQuery('#id_pegawai_manual').select2({
+        ajax: {
+            url: ajaxurl,
+            dataType: 'json',
+            delay: 250,
+            data: (params) => {
+                return {
+                    q: params.term, // search term
+                    action: 'get_master_pegawai_search',
+                    api_key: apikey
+                };
             },
-            lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-            order: [[0, 'asc']],
-            "drawCallback": function( settings ){
-                jQuery("#wrap-loading").hide();
+            processResults: (data) => {
+                return {
+                    results: data.items
+                };
             },
-            "columns": [
-                {
-                    "data": '',
-                    className: "text-center"
-                },
-                {
-                    "data": '',
-                    className: "text-center"
-                },
-                {
-                    "data": '',
-                    className: "text-center"
-                },
-                {
-                    "data": '',
-                    className: "text-center"
-                },
-                {
-                    "data": '',
-                    className: "text-center"
-                },
-                {
-                    "data": '',
-                    className: "text-center"
-                },
-                {
-                    "data": 'aksi',
-                    className: "text-center"
-                }
-            ]
-        });
-    }else{
-        dataabsensi.draw();
-    }
-}
-
-function get_pegawai(no_loading=false) {
-    return new Promise(function(resolve, reject){
-        var id_skpd = jQuery('#id_skpd').val();
-        if(id_skpd == ''){
-            jQuery('#daftar_pegawai tbody').html('');
-            return;
-        }
-        if(typeof global_response_pegawai == 'undefined'){
-            global_response_pegawai = {};
-        }
-        if(!global_response_pegawai[id_skpd]){
-            if(!no_loading){
-                jQuery("#wrap-loading").show();
-            }
-            jQuery.ajax({
-                url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                type:'post',
-                data:{
-                    'action' : 'get_pegawai_absensi',
-                    'api_key': '<?php echo get_option( SIMPEG_APIKEY ); ?>',
-                    'id_skpd': id_skpd,
-                    'tahun_anggaran': jQuery('#tahun_anggaran').val()
-                },
-                dataType: 'json',
-                success:function(response){
-                    if(!no_loading){
-                        jQuery("#wrap-loading").hide();
-                    }
-                    if(response.status == 'success'){
-                        window.global_response_pegawai[id_skpd] = response;
-                        var html = html_pegawai({
-                            id: 1, 
-                            html: global_response_pegawai[id_skpd].html
-                        });
-                        jQuery('#daftar_pegawai tbody').html(html);
-                        jQuery('#id_pegawai_1').html(global_response_pegawai[id_skpd].html);
-                        jQuery('#id_pegawai_1').select2({'width': '100%'});
-                        return resolve();
-                    }else{
-                        alert(`GAGAL! \n${response.message}`);
-                    }
-                }
-            });
-        }else{
-            var html = html_pegawai({
-                id: 1, 
-                html: global_response_pegawai[id_skpd].html
-            });
-            jQuery('#daftar_pegawai tbody').html(html);
-            jQuery('#id_pegawai_1').html(global_response_pegawai[id_skpd].html);
-            jQuery('#id_pegawai_1').select2({'width': '100%'});
-            return resolve();
+            cache: true
+        },
+        placeholder: 'Cari Pegawai...',
+        minimumInputLength: 0, // Allow showing list on click
+    });
+    
+    // Listener: When Pegawai Selected -> Load Kode Kerja
+    jQuery('#id_pegawai_manual').on('select2:select', (e) => {
+        let data = e.params.data;
+        if (data.id_instansi) {
+            loadKodeKerjaManual(data.id_instansi);
         }
     });
-}
-function hapus_data(id){
-    let confirmDelete = confirm("Apakah anda yakin akan menghapus data ini?");
-    if(confirmDelete){
-        jQuery('#wrap-loading').show();
+
+    // Helper: Get Data Table
+    function get_data_absensi() {
+        if (typeof dataabsensi == 'undefined') {
+            window.dataabsensi = jQuery('#management_data_table').on('preXhr.dt', (e, settings, data) => {
+                jQuery("#wrap-loading").show();
+            }).DataTable({
+                "processing": true,
+                "serverSide": true,
+                "ajax": {
+                    url: ajaxurl,
+                    type: 'post',
+                    dataType: 'json',
+                    data:{
+                        'action': 'get_datatable_absensi',
+                        'api_key': apikey,
+                    }
+                },
+                lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
+                order: [[2, 'desc'], [4, 'desc']],
+                "drawCallback": (settings) => {
+                    jQuery("#wrap-loading").hide();
+                },
+                "columns": [
+                    // { "data": 'no', className: "text-center" },
+                    { "data": 'nama_pegawai' },
+                    { "data": 'tanggal', className: "text-center" },
+                    { "data": 'status', className: "text-center" },
+                    { "data": 'waktu', className: "text-center" },
+                    { "data": 'nama_kerja', className: "text-center" },
+                    { "data": 'aksi', className: "text-center" }
+                ]
+            });
+        } else {
+            dataabsensi.draw();
+        }
+    }
+
+    // Load Kode Kerja (Specific to Instansi)
+    function loadKodeKerjaManual(id_instansi, selected_id = 0) {
+        if (!id_instansi) return;
+
         jQuery.ajax({
-            url: '<?php echo admin_url('admin-ajax.php'); ?>',
-            type:'post',
-            data:{
-                'action' : 'hapus_data_absensi_by_id',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                'id'     : id
+            url: ajaxurl,
+            type: 'post',
+            data: {
+                action: 'get_valid_kode_kerja',
+                api_key: apikey,
+                id_instansi: id_instansi // Pass specific instansi
             },
             dataType: 'json',
-            success:function(response){
-                jQuery('#wrap-loading').hide();
-                if(response.status == 'success'){
-                    get_data_absensi(); 
-                }else{
-                    alert(`GAGAL! \n${response.message}`);
+            success: (response) => {
+                if (response.status == 'success') {
+                    let options = '<option value="">-- Pilih Kode Kerja --</option>';
+                    jQuery.each(response.data, (i, item) => {
+                        let selected = (item.id == selected_id) ? 'selected' : '';
+                        options += `<option value="${item.id}" ${selected}>${item.nama_kerja}</option>`;
+                    });
+                    jQuery('#id_kode_kerja_manual').html(options);
+                } else {
+                    jQuery('#id_kode_kerja_manual').html('<option value="">-- Tidak Ada Jadwal --</option>');
                 }
             }
         });
     }
-}
-
-function edit_data(_id){
-    jQuery('#wrap-loading').show();
-    jQuery.ajax({
-        method: 'post',
-        url: '<?php echo admin_url('admin-ajax.php'); ?>',
-        dataType: 'json',
-        data:{
-            'action': 'get_data_absensi_by_id',
-            'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-            'id': _id,
-        },
-        success: function(res){
-            if(res.status == 'success'){
-                jQuery('#id_data').val(res.data.id);
-                jQuery('#nama_absensi').val(res.data.nama_absensi);
-                jQuery('#alamat_absensi').val(res.data.alamat_absensi);
-                jQuery('#modalTambahDataAbsensi').modal('show');
-            }else{
-                alert(res.message);
-            }
-            jQuery('#wrap-loading').hide();
-        }
-    });
-}
-
-//show tambah data
-function tambah_data_absensi(){
-    jQuery('#id_data').val('');
-    jQuery('#nama_absensi').val('');
-    jQuery('#alamat_absensi').val('');
-    jQuery('#modalTambahDataAbsensi').modal('show');
-}
-
-function submitTambahDataFormAbsensi(){
-    var id_data = jQuery('#id_data').val();
-    var alamat_absensi = jQuery('#alamat_absensi').val();
-    if(alamat_absensi == ''){
-        return alert('Data alamat absensi tidak boleh kosong!');
-    }
-    var nama_absensi = jQuery('#nama_absensi').val();
-    if(nama_absensi == ''){
-        return alert('Data nama absensi tidak boleh kosong!');
+    
+    // Global function for onclick button
+    window.tambah_data_absensi = () => {
+        jQuery('#id_data').val('');
+        jQuery('#modalTambahDataAbsensiLabel').text('Input Absensi Manual');
+        
+        // Default to Current Time
+        let now = new Date();
+        let hours = String(now.getHours()).padStart(2, '0');
+        let minutes = String(now.getMinutes()).padStart(2, '0');
+        let timeValue = hours + ":" + minutes;
+        
+        jQuery('#waktu_masuk_manual').val(timeValue);
+        jQuery('#waktu_pulang_manual').val(timeValue);
+        
+        jQuery('#modalTambahDataAbsensi').modal('show');
     }
 
-    jQuery('#wrap-loading').show();
-    jQuery.ajax({
-        method: 'post',
-        url: '<?php echo admin_url('admin-ajax.php'); ?>',
-        dataType: 'json',
-        data:{
-            'action': 'tambah_data_absensi',
-            'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-            'id_data': id_data,
-            'tahun': <?php echo $input['tahun_anggaran']; ?>,
-            'alamat_absensi': alamat_absensi,
-            'nama_absensi': nama_absensi,
-        },
-        success: function(res){
-            alert(res.message);
-            jQuery('#modalTambahDataAbsensi').modal('hide');
-            if(res.status == 'success'){
-                get_data_absensi();
-            }else{
-                jQuery('#wrap-loading').hide();
+    // Edit Function
+    window.edit_data_absensi = (id) => {
+        jQuery('#id_data').val(id);
+        jQuery('#modalTambahDataAbsensiLabel').text('Edit Absensi Manual');
+
+        jQuery("#wrap-loading").show();
+        jQuery.ajax({
+            url: ajaxurl,
+            type: 'post',
+            data: {
+                action: 'get_data_absensi_by_id',
+                api_key: apikey,
+                id: id
+            },
+            dataType: 'json',
+            success: (response) => {
+                jQuery("#wrap-loading").hide();
+                if (response.status == 'success') {
+                    let data = response.data;
+
+                    // Populate Date & Time
+                    jQuery('#tanggal_manual').val(data.tanggal);
+                    jQuery('#waktu_masuk_manual').val(data.jam_masuk);
+                    jQuery('#waktu_pulang_manual').val(data.jam_pulang);
+
+                    // Populate Select2 Pegawai
+                    if (jQuery('#id_pegawai_manual').find("option[value='" + data.id_pegawai + "']").length) {
+                        jQuery('#id_pegawai_manual').val(data.id_pegawai).trigger('change');
+                    } else { 
+                        // Create a DOM Option and pre-select it
+                        let newOption = new Option(data.pegawai_text, data.id_pegawai, true, true);
+                        jQuery('#id_pegawai_manual').append(newOption).trigger('change');
+                    }
+
+                    // Trigger Code Load manually properly after setting ID instansi
+                    // We need id_instansi to load codes. It comes from backend.
+                    if (data.id_instansi) {
+                        loadKodeKerjaManual(data.id_instansi, data.id_kode_kerja);
+                    }
+
+                    jQuery('#modalTambahDataAbsensi').modal('show');
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: response.message,
+                    });
+                }
+            },
+            error: () => {
+                jQuery("#wrap-loading").hide();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'Terjadi kesalahan koneksi!',
+                });
             }
+        });
+    }
+
+    // Delete Function
+    window.hapus_data_absensi = (id) => {
+        Swal.fire({
+            title: 'Hapus Data',
+            text: "Apakah Anda yakin ingin menghapus data absensi ini?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                jQuery("#wrap-loading").show();
+                jQuery.ajax({
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    data: {
+                        action: 'hapus_data_absensi',
+                        api_key: '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        id: id
+                    },
+                    dataType: 'json',
+                    success: (response) => {
+                        jQuery("#wrap-loading").hide();
+                        if (response.status == 'success') {
+                            Swal.fire(
+                                'Terhapus!',
+                                response.message,
+                                'success'
+                            );
+                            dataabsensi.ajax.reload(); // Refresh Table
+                        } else {
+                            Swal.fire(
+                                'Gagal!',
+                                response.message,
+                                'error'
+                            );
+                        }
+                    },
+                    error: () => {
+                        jQuery("#wrap-loading").hide();
+                        Swal.fire(
+                            'Error!',
+                            'Terjadi kesalahan server.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        })
+    }
+
+    // Submit Logic
+    window.submitTambahDataFormAbsensi = () => {
+        let id_pegawai = jQuery('#id_pegawai_manual').val();
+        let id_kode_kerja = jQuery('#id_kode_kerja_manual').val();
+        let tanggal = jQuery('#tanggal_manual').val();
+        let jam_masuk = jQuery('#waktu_masuk_manual').val();
+        let jam_pulang = jQuery('#waktu_pulang_manual').val();
+        // let status = jQuery('#status_manual').val();
+
+        if (id_pegawai == '' || id_kode_kerja == '' || tanggal == '') {
+            return Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Pegawai, Kode Kerja, dan Tanggal WAJIB diisi!',
+            });
         }
-    });
-}
+
+        jQuery("#wrap-loading").show();
+        jQuery.ajax({
+            url: ajaxurl,
+            type: 'post',
+            data: {
+                action: 'tambah_data_absensi_manual',
+                api_key: apikey,
+                id_pegawai: id_pegawai,
+                id_kode_kerja: id_kode_kerja,
+                tanggal: tanggal,
+                jam_masuk: jam_masuk,
+                jam_pulang: jam_pulang
+                // status: status
+            },
+            dataType: 'json',
+            success: (response) => {
+                jQuery("#wrap-loading").hide();
+                if(response.status == 'success'){
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: response.message,
+                    });
+                    jQuery('#modalTambahDataAbsensi').modal('hide');
+                    get_data_absensi();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: response.message,
+                    });
+                }
+            },
+            error: () => {
+                jQuery("#wrap-loading").hide();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: 'Terjadi kesalahan koneksi!',
+                });
+            }
+        });
+    }
+});
 </script>

@@ -1,6 +1,7 @@
-#data-excel{
+#data-excel {
     min-height: 200px;
 }
+
 #wrap-loading {
     display: none;
     width: 100%;
@@ -10,6 +11,7 @@
     background: #00000073;
     top: 0;
 }
+
 .lds-hourglass {
     position: fixed;
     width: 64px;
@@ -19,6 +21,7 @@
     z-index: 99999;
     margin-left: -32px;
 }
+
 .lds-hourglass:after {
     content: " ";
     display: block;
@@ -31,7 +34,8 @@
     border-color: #fff transparent #fff transparent;
     animation: lds-hourglass 1.2s infinite;
 }
-@keyframes    lds-hourglass {
+
+@keyframes lds-hourglass {
   0% {
     transform: rotate(0);
     animation-timing-function: cubic-bezier(0.55, 0.055, 0.675, 0.19);

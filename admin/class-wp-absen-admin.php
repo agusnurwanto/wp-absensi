@@ -108,8 +108,9 @@ class Wp_Absen_Admin {
 
 	}
 
-	public function crb_absen_options()
-    {      
+	public function crb_absen_options() {
+		global $wpdb;
+
         $laporan_bulanan_absensi = $this->functions->generatePage(array(
             'nama_page' => 'Laporan Bulanan Absensi',
             'content' => '[laporan_bulanan_absensi]',
@@ -127,24 +128,23 @@ class Wp_Absen_Admin {
         ));
 
         $api_key = get_option(ABSEN_APIKEY);
-        if(empty($api_key)){
+        if (empty($api_key)) {
             $api_key = $this->functions->generateRandomString();
             update_option(ABSEN_APIKEY, $api_key);
         }
-        
-        global $wpdb;
-        
+
         $table_name = 'absensi_data_unit';
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
-        
+
         $get_data = '';
         $get_data_instansi = '';
         $get_absensi_pegawai = '';
-        if($table_exists){
+
+        if ($table_exists) {
             $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
-            
-            if(!empty($get_tahun) && is_array($get_tahun)){
-                foreach ($get_tahun as $k => $v){
+
+            if (!empty($get_tahun) && is_array($get_tahun)) {
+                foreach ($get_tahun as $k => $v) {
                     $management_data_pegawai = $this->functions->generatePage(array(
                         'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
                         'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
@@ -152,6 +152,7 @@ class Wp_Absen_Admin {
                         'no_key' => 1,
                         'post_status' => 'private'
                     ));
+
                     $get_data .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
                     $management_data_instansi = $this->functions->generatePage(array(
                         'nama_page' => 'Management Data Instansi | ' . $v['tahun_anggaran'],
@@ -160,6 +161,7 @@ class Wp_Absen_Admin {
                         'no_key' => 1,
                         'post_status' => 'published'
                     ));
+
                     $get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
                     $management_data_absensi = $this->functions->generatePage(array(
                         'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun_anggaran'],
@@ -174,7 +176,7 @@ class Wp_Absen_Admin {
         } else {
             $get_data = '<li style="color: red; font-weight: bold;">Tabel belum dibuat. Silakan jalankan SQL Migrate terlebih dahulu.</li>';
         }
-        
+
         $basic_options_container = Container::make('theme_options', 'Absensi Options')
             ->set_page_menu_position(3)
             ->add_tab('⚙️ Konfigurasi Umum', $this->generate_fields_options_konfigurasi_umum())
@@ -188,15 +190,13 @@ class Wp_Absen_Admin {
             ->set_page_parent($basic_options_container)
             ->add_tab('⚙️ Data Pegawai', $this->generate_fields_options_konfigurasi_umum_pegawai($get_data))
             ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai));
-        
-		Container::make('theme_options', __('Menu Data Kerja'))
+
+        Container::make('theme_options', __('Menu Data Kerja'))
             ->set_page_parent($basic_options_container)
             ->add_tab('⚙️ Data Kerja', $this->generate_fields_options_data_kerja());
-
     }
 
-    public function generate_fields_options_data_kerja()
-    {
+    public function generate_fields_options_data_kerja() {
 		$management_data_kerja = $this->functions->generatePage(array(
 			'nama_page' => 'Data Kode Kerja',
 			'content' => '[manajemen_data_kerja]',
@@ -207,49 +207,50 @@ class Wp_Absen_Admin {
 
         return [
             Field::make('html', 'crb_absen_halaman_data_kerja')
-            ->set_html('
-            <h5>HALAMAN TERKAIT</h5>
-            <ol>
-                <li><a target="_blank" href="' . $management_data_kerja['url'] . '">' . esc_html($management_data_kerja['title']) . '</a></li>
-            </ol>
-            '),
+				->set_html('
+					<h5>HALAMAN TERKAIT</h5>
+					<ol>
+						<li><a target="_blank" href="' . $management_data_kerja['url'] . '">' . esc_html($management_data_kerja['title']) . '</a></li>
+					</ol>
+				'),
         ];
     }
 
-    public function generate_fields_options_data_instansi($get_data_instansi)
-    {
+    public function generate_fields_options_data_instansi($get_data_instansi) {
         return [
             Field::make('html', 'crb_absen_halaman_terkait_instansi')
-            ->set_html('
-            <h5>HALAMAN TERKAIT</h5>
-            <ol>
-                ' . $get_data_instansi . '
-            </ol>
-            '),
+				->set_html('
+					<h5>HALAMAN TERKAIT</h5>
+					<ol>
+						' . $get_data_instansi . '
+					</ol>
+				'),
         ];
     }
 
-	public function import_excel_absen_pegawai(){
+	public function import_excel_absen_pegawai() {
         global $wpdb;
+
         $ret = array(
             'status' => 'success',
             'message' => 'Berhasil import excel!'
         );
-        
+
         if (!empty($_POST)) {
             $ret['data'] = array(
                 'insert' => array(),
                 'update' => array(),
                 'error' => array()
             );
-            
+
             foreach ($_POST['data'] as $k => $data) {
                 $newData = array();
-                foreach($data as $kk => $vv){
+
+                foreach ($data as $kk => $vv) {
                     $cleanKey = trim(strtolower(preg_replace('/\s+/', '_', $kk)));
                     $newData[$cleanKey] = trim(preg_replace('/\s+/', ' ', $vv));
                 }
-                
+
                 $data_db = array(
                     'id_skpd' => $newData['id_skpd'],
                     'nip' => $newData['nip'],
@@ -287,7 +288,7 @@ class Wp_Absen_Admin {
                     'tahun' => $newData['tahun'],
                     'user_role' => $newData['user_role'],
                 );
-                
+
                 $wpdb->last_error = "";
                 $cek_id = $wpdb->get_var($wpdb->prepare("
                     SELECT id 
@@ -296,7 +297,7 @@ class Wp_Absen_Admin {
                     AND nik = %s 
                     AND tahun = %s
                 ", $newData['nip'], $newData['nik'], $newData['tahun']));
-                
+
                 if (empty($cek_id)) {
                     $wpdb->insert("absensi_data_pegawai", $data_db);
                     $ret['data']['insert'][] = $data_db;
@@ -306,7 +307,7 @@ class Wp_Absen_Admin {
                     ));
                     $ret['data']['update'][] = $data_db;
                 }
-                
+
                 if (!empty($wpdb->last_error)) {
                     $ret['data']['error'][] = array($wpdb->last_error, $data_db);
                 }
@@ -315,51 +316,51 @@ class Wp_Absen_Admin {
             $ret['status'] = 'error';
             $ret['message'] = 'Format Salah!';
         }
-        
+
         die(json_encode($ret));
     }
 
-	function sql_migrate_absen()
-    {
+	function sql_migrate_absen() {
         global $wpdb;
+
         $ret = array(
             'status'    => 'success',
             'message'   => 'Berhasil menjalankan SQL migrate!'
         );
-        
+
         $file = 'tabel.sql';
         $path = ABSEN_PLUGIN_PATH . '/' . $file;
-        
+
         if (!file_exists($path)) {
             $ret['status'] = 'error';
             $ret['message'] = 'File ' . $path . ' tidak ditemukan!';
             die(json_encode($ret));
         }
-        
+
         $sql = file_get_contents($path);
         if (empty($sql)) {
             $ret['status'] = 'error';
             $ret['message'] = 'File SQL kosong atau tidak dapat dibaca!';
             die(json_encode($ret));
         }
-        
+
         $ret['value'] = $file . ' (tgl: ' . date('Y-m-d H:i:s') . ')';
         $ret['sql'] = $sql;
-        
+
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         $wpdb->hide_errors();
-        
+
         try {
             $rows_affected = dbDelta($sql);
-            
+
             if (empty($rows_affected)) {
                 $ret['status'] = 'error';
                 $ret['message'] = !empty($wpdb->last_error) ? $wpdb->last_error : 'Tidak ada perubahan pada database atau query gagal dieksekusi.';
             } else {
                 $ret['message'] = 'Berhasil menjalankan SQL migrate: ' . implode(' | ', $rows_affected);
                 $ret['rows_affected'] = $rows_affected;
-                
                 $ret['version'] = $this->version;
+
                 update_option('_last_update_sql_migrate_absen', $ret['value']);
                 update_option('_wp_absen_db_version', $this->version);
             }
@@ -367,11 +368,13 @@ class Wp_Absen_Admin {
             $ret['status'] = 'error';
             $ret['message'] = 'Error: ' . $e->getMessage();
         }
-        
+
         die(json_encode($ret));
     }
 
-	function generate_user_absen($user = array()){
+	function generate_user_absen($user = array()) {
+		global $wpdb;
+
 		$ret = array(
 			'status' => 'success',
 			'message' => 'Berhasil generate user',
@@ -380,7 +383,7 @@ class Wp_Absen_Admin {
 				'update' => array()
 			)
 		);
-		global $wpdb;
+
 		$user_all = $wpdb->get_results("
 			SELECT
 				p.*,
@@ -392,29 +395,34 @@ class Wp_Absen_Admin {
 			where p.active=1
 			group by p.nik, p.nip
 		", ARRAY_A);
-		foreach($user_all as $user){
+
+		foreach ($user_all as $user) {
 			$username = $user['nip'];
-			if(empty($username)){
+			if (empty($username)) {
 				$username = $user['nik'];
 			}
+
 			$email = $user['email'];
-			if(empty($email)){
-				$email = $username.'@absenlocal.com';
+			if (empty($email)) {
+				$email = $username . '@absenlocal.com';
 			}
-			if(empty($user['user_role'])){
+
+			if (empty($user['user_role'])) {
 				continue;
 			}
+
 			$all_roles = explode('|', $user['user_role']);
-			foreach($all_roles as $user_role){
+			foreach ($all_roles as $user_role) {
 				$role = get_role($user_role);
-				if(empty($role)){
-					add_role( $user_role, $user_role, array( 
+				if (empty($role)) {
+					add_role($user_role, $user_role, array(
 						'read' => true,
 						'edit_posts' => false,
 						'delete_posts' => false
-					) );
+					));
 				}
 			}
+
 			$id_user = username_exists($username);
 			$options = array(
 				'user_login' => $username,
@@ -424,23 +432,24 @@ class Wp_Absen_Admin {
 				'display_name' => $user['nama'],
 				'role' => $all_roles[0]
 			);
-			if(empty($id_user)){
+
+			if (empty($id_user)) {
 				$id_user = wp_insert_user($options);
 				$ret['data']['insert'][] = $options;
-			}else{
+			} else {
 				$options['ID'] = $id_user;
 				// wp_update_user($options);
 				$ret['data']['update'][] = $options;
 			}
 
-			$user_meta = get_userdata( $id_user );
-			foreach($all_roles as $user_role){
-				if(
-					empty($user_meta->roles) 
+			$user_meta = get_userdata($id_user);
+			foreach ($all_roles as $user_role) {
+				if (
+					empty($user_meta->roles)
 					|| !in_array($user_role, $user_meta->roles)
-				){
+				) {
 					$theUser = new WP_User($id_user);
-		 			$theUser->add_role( $user_role );
+					$theUser->add_role($user_role);
 				}
 			}
 
@@ -451,82 +460,82 @@ class Wp_Absen_Admin {
 				where id_skpd=".$user['id_skpd']." 
 					AND active=1
 			");
+
 			$meta = array(
-			    '_crb_nama_skpd' => $skpd,
-			    '_id_sub_skpd' => $user['id_skpd'],
-			    '_nip' => $user['nip'],
-			    'id_pegawai' => $user['id'],
-			    'description' => 'User dibuat dari autogenerate sistem'
+				'_crb_nama_skpd' => $skpd,
+				'_id_sub_skpd' => $user['id_skpd'],
+				'_nip' => $user['nip'],
+				'id_pegawai' => $user['id'],
+				'description' => 'User dibuat dari autogenerate sistem'
 			);
-		    foreach( $meta as $key => $val ) {
-		      	update_user_meta( $id_user, $key, $val ); 
-		    }
+
+			foreach ($meta as $key => $val) {
+				update_user_meta($id_user, $key, $val);
+			}
 		}
+
 		die(json_encode($ret));
 	}
 
-	function get_user_roles_by_user_id( $user_id ) {
-	    $user = get_userdata( $user_id );
-	    return empty( $user ) ? array() : $user->roles;
+	function get_user_roles_by_user_id($user_id) {
+		$user = get_userdata($user_id);
+		return empty($user) ? array() : $user->roles;
 	}
 
-	function is_user_in_role( $user_id, $role  ) {
-	    return in_array( $role, get_user_roles_by_user_id( $user_id ) );
+	function is_user_in_role($user_id, $role) {
+		return in_array($role, get_user_roles_by_user_id($user_id));
 	}
 
-	public function generate_fields_options_konfigurasi_umum()
-    {
+	public function generate_fields_options_konfigurasi_umum() {
         return [
             Field::make('text', 'crb_apikey_absen', 'API KEY')
                 ->set_default_value($this->functions->generateRandomString())
                 ->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),
 
-             Field::make('html', 'crb_sql_fte_absen_buttons')
-					->set_html('
-	                <div>
-	                    <a onclick="sql_migrate_absen(); return false;" href="#" class="button button-primary button-large">SQL Migrate</a>
-	                </div>
-	            ')
+            Field::make('html', 'crb_sql_fte_absen_buttons')
+                ->set_html(<<<HTML
+                    <div>
+                        <a onclick="confirm('Apakah anda yakin ingin menjalankan SQL Migrate?') ? sql_migrate_absen() : return false;" href="#" class="button button-primary button-large">SQL Migrate</a>
+                    </div>
+                HTML)
                 ->set_width(33.33)
                 ->set_help_text('Tombol untuk menjalankan database migration.'),
-                
+
             Field::make('html', 'crb_gen_user_absen')
                 ->set_html('<a target="_blank" onclick="generate_user_absen(); return false;" href="#" class="button button-primary button-large">Generate User Pegawai</a>')
                 ->set_help_text('Generate user dari tabel <b>data_pegawai</b>.')
         ];
     }
 
-    public function generate_fields_options_api_wpsipd()
-    {
+    public function generate_fields_options_api_wpsipd() {
         return [
             Field::make('text', 'crb_url_server_wpsipd', 'URL Server WP-SIPD')
                 ->set_default_value(admin_url('admin-ajax.php'))
                 ->set_required(true),
-                
+
             Field::make('text', 'crb_apikey_wpsipd', 'API KEY WP-SIPD')
                 ->set_default_value($this->functions->generateRandomString())
                 ->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),
-                
+
             Field::make('text', 'crb_tahun_wpsipd', 'Tahun Anggaran WP-SIPD')
                 ->set_default_value(date('Y'))
                 ->set_help_text('Wajib diisi.'),
-                
+
             Field::make('html', 'crb_html_data_unit')
                 ->set_html('<a href="#" class="button button-primary" onclick="get_data_unit_wpsipd(); return false;">Tarik Data Unit dari WP SIPD</a>')
                 ->set_help_text('Tombol untuk menarik data Unit dari WP SIPD.')
         ];
     }
 
-	public function generate_fields_options_konfigurasi_umum_pegawai($get_data)
-    {
+	public function generate_fields_options_konfigurasi_umum_pegawai($get_data) {
         return [
             Field::make('html', 'crb_absen_pegawai_hide_sidebar')
-            ->set_html('
-            <h5>HALAMAN TERKAIT</h5>
-            <ol>
-                ' . $get_data . '
-            </ol>
-            '),
+				->set_html('
+					<h5>HALAMAN TERKAIT</h5>
+					<ol>
+						' . $get_data . '
+					</ol>
+				'),
 
             Field::make('html', 'crb_absen_pegawai_field_visibility_header')
                 ->set_html('<h5>PENGATURAN FIELD FORM PEGAWAI</h5><p>Centang field yang ingin disembunyikan pada form tambah/edit data pegawai:</p>'),
@@ -576,26 +585,26 @@ class Wp_Absen_Admin {
         ];
     }
 
-    public function generate_fields_options_absensi_pegawai($get_absensi_pegawai)
-    {
+    public function generate_fields_options_absensi_pegawai($get_absensi_pegawai) {
         return [
             Field::make('html', 'crb_options_absen_pegawai')
-            ->set_html('
-            <h5>HALAMAN TERKAIT</h5>
-            <ol>
-                ' . $get_absensi_pegawai . '
-            </ol>
-            ')
+				->set_html('
+					<h5>HALAMAN TERKAIT</h5>
+					<ol>
+						' . $get_absensi_pegawai . '
+					</ol>
+				')
         ];
     }
 
-    function get_data_unit_wpsipd()
-	{
+    function get_data_unit_wpsipd() {
 		global $wpdb;
+
 		$ret = array(
 			'status'  => 'success',
 			'message' => 'Berhasil Get Data Unit WP-SIPD!'
 		);
+
 		if (empty($_POST['server'])) {
 			$ret['status'] 	= 'error';
 			$ret['message'] = 'URL Server Tidak Boleh Kosong';
@@ -666,7 +675,7 @@ class Wp_Absen_Admin {
 		$data_get_satuan	= json_decode($response_get_satuan);
 
 		$absensi_data_unit 			= $data_get_skpd->data;
-		$absensi_data_rekening_akun 	= $data_get_rekening->items;
+		$absensi_data_rekening_akun = $data_get_rekening->items;
 		$absensi_data_satuan 		= $data_get_satuan->data;
 
 		if ($data_get_skpd->status == 'success' && !empty($absensi_data_unit)) {
@@ -675,15 +684,17 @@ class Wp_Absen_Admin {
 				array('active' => 0),
 				array('tahun_anggaran' => $api_params_get_skpd['tahun_anggaran'])
 			);
+
 			foreach ($absensi_data_unit as $vdata) {
 				$cek = $wpdb->get_var(
 					$wpdb->prepare('
 						SELECT id 
 						FROM absensi_data_unit 
 						WHERE id_skpd = %d
-						  AND tahun_anggaran = %d
+						AND tahun_anggaran = %d
 					', $vdata->id_skpd, $vdata->tahun_anggaran)
 				);
+
 				$data = array(
 					'id_setup_unit'  => $vdata->id_setup_unit,
 					'id_unit' 		 => $vdata->id_unit,
@@ -716,6 +727,7 @@ class Wp_Absen_Admin {
 					'tahun_anggaran' => $vdata->tahun_anggaran,
 					'active' 		 => $vdata->active
 				);
+
 				if (empty($cek)) {
 					$wpdb->insert(
 						'absensi_data_unit',
@@ -741,16 +753,18 @@ class Wp_Absen_Admin {
 				array('active' => 0),
 				array('tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'])
 			);
+
 			foreach ($absensi_data_rekening_akun as $vdata) {
 				$cek = $wpdb->get_var(
 					$wpdb->prepare('
 						SELECT id 
 						FROM absensi_data_rekening_akun 
 						WHERE id_akun = %d
-						  AND kode_akun = %s
-						  AND tahun_anggaran = %d
+						AND kode_akun = %s
+						AND tahun_anggaran = %d
 					', $vdata->id_akun, $vdata->kode_akun, $vdata->tahun_anggaran)
 				);
+
 				$data = array(
 					'id_akun'		 => $vdata->id_akun,
 					'kode_akun'		 => $vdata->kode_akun,
@@ -758,6 +772,7 @@ class Wp_Absen_Admin {
 					'tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'],
 					'active' 		 => 1
 				);
+
 				if (empty($cek)) {
 					$wpdb->insert(
 						'absensi_data_rekening_akun',
@@ -783,14 +798,16 @@ class Wp_Absen_Admin {
 				array('active' => 0),
 				array('tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'])
 			);
+
 			foreach ($absensi_data_satuan as $vdata) {
 				$cek = $wpdb->get_var(
 					$wpdb->prepare('
 						SELECT id 
 						FROM absensi_data_satuan 
 						WHERE tahun_anggaran = %d
-						  AND id_satuan = %d
-					', $vdata->id_satuan, $vdata->tahun_anggaran)
+						AND id_satuan = %d
+					', $vdata->id_satuan, $vdata->tahun_anggaran
+					)
 				);
 
 				$data = array(
@@ -799,6 +816,7 @@ class Wp_Absen_Admin {
 					'tahun_anggaran' => $api_params_get_rekening['tahun_anggaran'],
 					'active' 		 => 1
 				);
+
 				if (empty($cek)) {
 					$wpdb->insert(
 						'absensi_data_satuan',

@@ -43,6 +43,7 @@ CREATE TABLE `absensi_data_pegawai` (
   `id` int(11) NOT NULL auto_increment,
   `nik` varchar(20) DEFAULT NULL, 
   `nama` text DEFAULT NULL,    
+  `jabatan` varchar(100) DEFAULT NULL,
   `tempat_lahir` text DEFAULT NULL, 
   `tanggal_lahir` date DEFAULT NULL, 
   `jenis_kelamin` varchar(2) DEFAULT NULL COMMENT 'L=Laki-laki, P=Perempuan', 
@@ -181,4 +182,45 @@ CREATE TABLE `absensi_data_kerja` (
   PRIMARY KEY (`id`),
   KEY `id_instansi` (`id_instansi`),
   KEY `active` (`active`)
+);
+
+CREATE TABLE `absensi_harian` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_pegawai` INT(11) NOT NULL,
+  `id_instansi` INT(11) NOT NULL,
+  `id_kode_kerja` INT(11) NOT NULL,
+  `tanggal` DATE NOT NULL,
+  `waktu_masuk` DATETIME DEFAULT NULL,
+  `waktu_pulang` DATETIME DEFAULT NULL,
+  `status` VARCHAR(20) DEFAULT 'Alpha' COMMENT 'Hadir/Telat/Ijin/Sakit/Alpha',
+  `koordinat_masuk` VARCHAR(100) DEFAULT NULL,
+  `koordinat_pulang` VARCHAR(100) DEFAULT NULL,
+  `foto_masuk` TEXT DEFAULT NULL,
+  `foto_pulang` TEXT DEFAULT NULL,
+  `tahun` YEAR(4) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `id_pegawai` (`id_pegawai`),
+  KEY `id_instansi` (`id_instansi`),
+  KEY `tanggal` (`tanggal`)
+);
+
+CREATE TABLE `absensi_ijin` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_pegawai` INT(11) NOT NULL,
+  `id_instansi` INT(11) NOT NULL,
+  `tipe_ijin` VARCHAR(50) DEFAULT NULL,
+  `jenis_ijin` VARCHAR(50) DEFAULT NULL,
+  `alasan` TEXT DEFAULT NULL,
+  `tanggal_mulai` DATE NOT NULL,
+  `tanggal_selesai` DATE NOT NULL,
+  `file_lampiran` TEXT DEFAULT NULL,
+  `status` VARCHAR(20) DEFAULT 'Pending' COMMENT 'Pending/Approved/Rejected',
+  `tahun` YEAR(4) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `id_pegawai` (`id_pegawai`),
+  KEY `id_instansi` (`id_instansi`)
 );

@@ -128,10 +128,10 @@ $current_user_id = $current_user->ID;
 </div>
 
 <script>
-    var map;
-    var marker;
-    var isAdminInstansi = <?php echo $is_admin_instansi ? 'true' : 'false'; ?>;
-    var currentUserId = '<?php echo $current_user_id; ?>';
+    let map;
+    let marker;
+    let isAdminInstansi = <?php echo $is_admin_instansi ? 'true' : 'false'; ?>;
+    let currentUserId = '<?php echo $current_user_id; ?>';
 
     jQuery(document).ready(() => {
         jQuery('.mg-card-box').parent().removeClass('col-md-8').addClass('col-md-12');
