@@ -154,10 +154,8 @@ function output( props, fields ) {
 
 			if ( isNestedComplex ) {
 				const groupField = find( get( fields, pathPrefix ), [ 'name', chunk ] );
-				
-				if ( groupField ) {
-					pathPrefix = `${ groupField.id }.value`;
-				}
+
+				pathPrefix = `${ groupField.id }.value`;
 
 				depth--;
 			}

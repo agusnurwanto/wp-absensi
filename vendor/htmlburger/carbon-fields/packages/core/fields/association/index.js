@@ -17,8 +17,7 @@ import {
 	pick,
 	without,
 	isMatch,
-	isEmpty,
-	debounce
+	isEmpty
 } from 'lodash';
 import {
 	combine,
@@ -121,7 +120,7 @@ class AssociationField extends Component {
 	 * @param  {string} queryTerm
 	 * @return {void}
 	 */
-	handleSearchChange = debounce( ( queryTerm ) => {
+	handleSearchChange = ( queryTerm ) => {
 		const {
 			fetchOptions,
 			setState
@@ -137,7 +136,7 @@ class AssociationField extends Component {
 			page: 1,
 			queryTerm
 		} );
-	}, 250 )
+	}
 
 	/**
 	 * Handles addition of a new item.
@@ -223,7 +222,6 @@ class AssociationField extends Component {
 	 */
 	render() {
 		const {
-			id,
 			name,
 			value,
 			field,
@@ -253,7 +251,6 @@ class AssociationField extends Component {
 			<Fragment>
 				<div className="cf-association__bar">
 					<SearchInput
-						id={ id }
 						value={ queryTerm }
 						onChange={ this.handleSearchChange }
 					/>
@@ -280,7 +277,7 @@ class AssociationField extends Component {
 								return (
 									<div className={ cx( 'cf-association__option', { 'cf-association__option--selected': option.disabled } ) } key={ index }>
 										{ option.thumbnail && (
-											<img className="cf-association__option-thumb" alt={ __( 'Thumbnail', 'carbon-fields-ui' ) } src={ option.thumbnail } />
+											<img className="cf-association__option-thumb" src={ option.thumbnail } />
 										) }
 
 										<div className="cf-association__option-content">
@@ -291,7 +288,7 @@ class AssociationField extends Component {
 											</span>
 
 											<span className="cf-association__option-type">
-												{ option.label }
+												{ option.type }
 											</span>
 										</div>
 
@@ -302,7 +299,6 @@ class AssociationField extends Component {
 													href={ option.edit_link.replace( '&amp;', '&', 'g' ) }
 													target="_blank"
 													rel="noopener noreferrer"
-													aria-label={ __( 'Edit', 'carbon-fields-ui' ) }
 												></a>
 											) }
 
@@ -310,7 +306,7 @@ class AssociationField extends Component {
 												! option.disabled
 												&& ( field.max < 0 || value.length < field.max )
 											) && (
-												<button type="button" className="cf-association__option-action dashicons dashicons-plus-alt" aria-label={ __( 'Add', 'carbon-fields-ui' ) } onClick={ () => this.handleAddItem( option ) }>
+												<button type="button" className="cf-association__option-action dashicons dashicons-plus-alt" onClick={ () => this.handleAddItem( option ) }>
 												</button>
 											) }
 										</div>
@@ -362,7 +358,7 @@ class AssociationField extends Component {
 											</div>
 
 											<div className="cf-association__option-actions">
-												<button type="button" className="cf-association__option-action dashicons dashicons-dismiss" aria-label={ __( 'Remove', 'carbon-fields-ui' ) } onClick={ () => this.handleRemoveItem( option ) }></button>
+												<button type="button" className="cf-association__option-action dashicons dashicons-dismiss" onClick={ () => this.handleRemoveItem( option ) }></button>
 											</div>
 
 											<input
@@ -450,30 +446,30 @@ function handler( props ) {
 				} );
 
 				// eslint-disable-next-line
-				const request = apiFetch(
-					`${ window.wpApiSettings.root }carbon-fields/v1/association/options`,
-					'get',
-					{
-						container_id: props.containerId,
-						options: props.value.map( ( option ) => `${ option.id }:${ option.type }:${ option.subtype }` ).join( ';' ),
-						field_id: hierarchyResolver,
-						term: payload.queryTerm,
-						page: payload.page || 1
-					}
-				);
+				const request = window.jQuery.get( window.ajaxurl, {
+					action: 'carbon_fields_fetch_association_options',
+					term: payload.queryTerm,
+					page: payload.page || 1,
+					container_id: props.containerId,
+					field_name: hierarchyResolver()
+				}, null, 'json' );
 
 				/* eslint-disable-next-line no-alert */
 				const errorHandler = () => alert( __( 'An error occurred while trying to fetch association options.', 'carbon-fields-ui' ) );
 
-				request.then( ( response ) => {
-					setState( {
-						options: payload.type === 'replace' ? response.options : [ ...payload.options, ...response.options ],
-						totalOptionsCount: response.total_options
-					} );
+				request.done( ( response ) => {
+					if ( response && response.success ) {
+						setState( {
+							options: payload.type === 'replace' ? response.data.options : [ ...payload.options, ...response.data.options ],
+							totalOptionsCount: response.data.total_options
+						} );
+					} else {
+						errorHandler();
+					}
 				} );
 
-				request.catch( errorHandler );
-				request.finally( () => {
+				request.fail( errorHandler );
+				request.always( () => {
 					setState( {
 						isLoading: false
 					} );
@@ -487,7 +483,7 @@ function handler( props ) {
 					{
 						container_id: props.containerId,
 						options: props.value.map( ( option ) => `${ option.id }:${ option.type }:${ option.subtype }` ).join( ';' ),
-						field_id: hierarchyResolver
+						field_id: hierarchyResolver()
 					}
 				)
 					.then( ( response ) => {

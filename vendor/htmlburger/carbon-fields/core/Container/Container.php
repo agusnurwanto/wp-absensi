@@ -35,13 +35,6 @@ abstract class Container implements Datastore_Holder_Interface {
 	const HIERARCHY_GROUP_SEPARATOR = ':';
 
 	/**
-	 * Visual layout type constants
-	 */
-	const LAYOUT_TABBED_HORIZONTAL = 'tabbed-horizontal';
-	const LAYOUT_TABBED_VERTICAL = 'tabbed-vertical';
-
-
-	/**
 	 * Stores if the container is active on the current page
 	 *
 	 * @see activate()
@@ -56,13 +49,6 @@ abstract class Container implements Datastore_Holder_Interface {
 	 * @var array
 	 */
 	protected $registered_field_names = array();
-
-	/**
-	 * Complex field layout
-	 *
-	 * @var string static::LAYOUT_* constant
-	 */
-	protected $layout = self::LAYOUT_TABBED_HORIZONTAL;
 
 	/**
 	 * Tabs available
@@ -174,7 +160,7 @@ abstract class Container implements Datastore_Holder_Interface {
 		if ( $name === '' ) {
 			$name = $id;
 			$id = '';
-		}
+	}
 
 		$type = Helper::normalize_type( $raw_type );
 		$repository = Carbon_Fields::resolve( 'container_repository' );
@@ -223,7 +209,7 @@ abstract class Container implements Datastore_Holder_Interface {
 	 * @return Container
 	 */
 	public static function make() {
-		return call_user_func_array( array( get_class(), 'factory' ), func_get_args() );
+		return call_user_func_array( array( static::class, 'factory' ), func_get_args() );
 	}
 
 	/**
@@ -799,7 +785,6 @@ abstract class Container implements Datastore_Holder_Interface {
 			'id' => $this->get_id(),
 			'type' => $this->type,
 			'title' => $this->title,
-			'layout' => $this->layout,
 			'classes' => $this->get_classes(),
 			'settings' => $this->settings,
 			'conditions' => $conditions,
@@ -888,31 +873,6 @@ abstract class Container implements Datastore_Holder_Interface {
 	 */
 	public function or_where() {
 		call_user_func_array( array( $this->condition_collection, 'or_where' ), func_get_args() );
-		return $this;
-	}
-
-	/**
-	 * Modify the layout of this field.
-	 *
-	 * @param  string $layout
-	 * @return self   $this
-	 */
-	public function set_layout( $layout ) {
-		$available_layouts = array(
-			static::LAYOUT_TABBED_HORIZONTAL,
-			static::LAYOUT_TABBED_VERTICAL,
-		);
-
-		if ( ! in_array( $layout,  $available_layouts ) ) {
-			$error_message = 'Incorrect layout ``' . $layout . '" specified. ' .
-				'Available layouts: ' . implode( ', ', $available_layouts );
-
-			Incorrect_Syntax_Exception::raise( $error_message );
-			return $this;
-		}
-
-		$this->layout = $layout;
-
 		return $this;
 	}
 }

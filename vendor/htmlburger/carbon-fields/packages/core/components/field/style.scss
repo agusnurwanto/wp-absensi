@@ -13,11 +13,6 @@
 	@media (max-width: 1024px) {
 		flex-basis: 100% !important;
 	}
-
-	// Show only on block preview iframe
-	&.cf-block-preview {
-		display: none;
-	}
 }
 
 .cf-field__body {
@@ -35,8 +30,7 @@
 	display: block;
 
 	.cf-html &,
-	.cf-separator &,
-	.cf-block-preview & {
+	.cf-separator & {
 		display: none;
 	}
 }

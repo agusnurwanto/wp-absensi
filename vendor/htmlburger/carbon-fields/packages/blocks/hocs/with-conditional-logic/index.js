@@ -50,9 +50,9 @@ function isComplexGroupIdentifier( id ) {
  */
 function input( props ) {
 	return pipe(
-		fromSelector( select( 'core/block-editor' ).getBlock, props.blockId ),
+		fromSelector( select( 'core/editor' ).getBlock, props.blockId ),
 		distinctUntilChanged(),
-		map( ( blockData ) => blockData?.attributes?.data )
+		map( ( { attributes } ) => attributes.data )
 	);
 }
 

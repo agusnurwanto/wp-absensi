@@ -63,8 +63,7 @@ get( window.cf, 'preloaded.blocks', [] ).forEach( ( container ) => {
 			html: false
 		},
 		edit: BlockEdit,
-		save: BlockSave,
-		example: true,
+		save: BlockSave
 	} );
 } );
 

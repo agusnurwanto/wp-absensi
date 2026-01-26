@@ -21,12 +21,6 @@ class Post_Meta_Container extends Container {
 	protected $post_id;
 
 	/**
-	 * Post Types
-	 * 
-	 */
-	protected $post_types;
-
-	/**
 	 * Determines whether revisions are disabled for this container
 	 *
 	 * @var bool

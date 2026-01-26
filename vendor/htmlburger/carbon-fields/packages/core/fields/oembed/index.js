@@ -15,6 +15,7 @@ import {
 	isEmpty,
 	debounce
 } from 'lodash';
+import $ from 'jquery';
 
 /**
  * The internal dependencies.
@@ -178,7 +179,7 @@ function handler( props ) {
 
 		switch ( type ) {
 			case 'FETCH_EMBED_CODE':
-				const request = window.jQuery.get( window.wpApiSettings.root + 'oembed/1.0/proxy', {
+				const request = $.get( window.wpApiSettings.root + 'oembed/1.0/proxy', {
 					url: payload,
 					_wpnonce: window.wpApiSettings.nonce
 				} );

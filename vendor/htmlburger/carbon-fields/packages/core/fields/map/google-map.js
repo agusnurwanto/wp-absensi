@@ -1,6 +1,7 @@
 /**
  * External dependencies.
  */
+import observeResize from 'observe-resize';
 import { Component, createRef } from '@wordpress/element';
 
 class GoogleMap extends Component {
@@ -21,13 +22,9 @@ class GoogleMap extends Component {
 		this.setupMapEvents();
 		this.updateMap( this.props );
 
-		const resizeObserver = new ResizeObserver( () => {
+		this.cancelResizeObserver = observeResize( this.node.current, () => {
 			this.updateMap( this.props );
 		} );
-
-		resizeObserver.observe( this.node.current );
-
-		this.observer = resizeObserver;
 	}
 
 	/**
@@ -68,7 +65,7 @@ class GoogleMap extends Component {
 	 * @return {void}
 	 */
 	componentWillUnmount() {
-		this.observer.disconnect();
+		this.cancelResizeObserver();
 
 		window.google.maps.event.clearInstanceListeners( this.map );
 	}

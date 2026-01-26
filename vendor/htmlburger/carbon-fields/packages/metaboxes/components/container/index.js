@@ -105,8 +105,7 @@ class Container extends Component {
 			`cf-container-${ kebabCase( container.type ) }`,
 			...container.classes,
 			{
-				'cf-container--plain': ! hasTabs,
-				[ `cf-container--tabbed cf-container--${ container.layout }` ]: hasTabs
+				'cf-container--plain': ! hasTabs
 			}
 		] );
 
@@ -119,7 +118,7 @@ class Container extends Component {
 				/>
 
 				{ hasTabs && (
-					<div className={ `cf-container__tabs cf-container__tabs--${ container.layout }` }>
+					<div className="cf-container__tabs">
 						<ul className="cf-container__tabs-list">
 							{ map( container.settings.tabs, ( fieldNames, tabName ) => {
 								// eslint-disable-next-line no-shadow
@@ -134,15 +133,9 @@ class Container extends Component {
 									<li
 										key={ tabName }
 										className={ classes }
-										tabIndex={ -1 }
-										role="tab"
-										aria-selected={ currentTab === tabName }
+										onClick={ () => this.handleTabClick( tabName ) }
 									>
-										<button
-											type="button"
-											onClick={ () => this.handleTabClick( tabName ) }
-											dangerouslySetInnerHTML={ { __html: tabName } }
-										/>
+										{ tabName }
 									</li>
 								);
 							} ) }

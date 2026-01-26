@@ -14,7 +14,6 @@ import { withValidation } from '@carbon-fields/core';
  * Internal dependencies.
  */
 import withConditionalLogic from '../hocs/with-conditional-logic';
-import isGutenberg from '../../metaboxes/utils/is-gutenberg';
 
 /**
  * Connects every field to the store.
@@ -22,17 +21,12 @@ import isGutenberg from '../../metaboxes/utils/is-gutenberg';
 addFilter( 'carbon-fields.field-edit.block', 'carbon-fields/blocks', compose(
 	withConditionalLogic,
 	withDispatch( ( dispatch ) => {
-		// Widgets support - WordPress 5.8
-		if ( isGutenberg() ) {
-			const { lockPostSaving, unlockPostSaving } = dispatch( 'core/editor' );
+		const { lockPostSaving, unlockPostSaving } = dispatch( 'core/editor' );
 
-			return {
-				lockSaving: lockPostSaving,
-				unlockSaving: unlockPostSaving
-			};
-		}
-
-		return {};
+		return {
+			lockSaving: lockPostSaving,
+			unlockSaving: unlockPostSaving
+		};
 	} ),
 	withValidation
 ) );
@@ -60,4 +54,3 @@ import './sidebar';
 import './separator';
 import './text';
 import './textarea';
-import './block-preview';

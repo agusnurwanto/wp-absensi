@@ -3,8 +3,10 @@
    ========================================================================== */
 
 .cf-complex__placeholder-label {
-	font-size: $wp-font-size;
-	line-height: $wp-line-height;
+	.block-editor & {
+		font-size: $wp-font-size;
+		line-height: $wp-line-height;
+	}
 }
 
 .cf-complex__inserter-menu {

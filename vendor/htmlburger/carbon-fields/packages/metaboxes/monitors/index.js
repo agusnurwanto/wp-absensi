@@ -1,7 +1,7 @@
 /**
  * External dependencies.
  */
-import { Fragment, render, createRoot } from '@wordpress/element';
+import { Fragment, render } from '@wordpress/element';
 
 /**
  * Internal dependencies.
@@ -22,40 +22,25 @@ import { PAGE_NOW_WIDGETS, PAGE_NOW_CUSTOMIZE } from '../lib/constants';
 export default function initializeMonitors( context ) {
 	const { pagenow } = window.cf.config;
 
-	const MonitorElement = document.createElement( 'div' );
-	const MonitorComponent = <Fragment>
-		{ ! isGutenberg() && (
-			<SaveLock />
-		) }
+	render(
+		<Fragment>
+			{ ! isGutenberg() && (
+				<SaveLock />
+			) }
 
-		{ ( pagenow === PAGE_NOW_WIDGETS || pagenow === PAGE_NOW_CUSTOMIZE ) && (
-			<WidgetHandler />
-		) }
+			{ ( pagenow === PAGE_NOW_WIDGETS || pagenow === PAGE_NOW_CUSTOMIZE ) && (
+				<WidgetHandler />
+			) }
 
-		<ConditionalDisplay context={ context } />
-	</Fragment>;
-
-	if ( createRoot ) {
-		createRoot( MonitorElement ).render( MonitorComponent );
-	} else {
-		render(
-			MonitorComponent,
-			MonitorElement,
-		);
-	}
+			<ConditionalDisplay context={ context } />
+		</Fragment>,
+		document.createElement( 'div' )
+	);
 
 	const postStuffNode = document.querySelector( '#poststuff' );
 
 	if ( postStuffNode ) {
-		const postStuffElement = document.createElement( 'div' );
-		const postStuffComponenet = <RevisionsFlag />;
-
-		const postStuffChildElement = postStuffNode.appendChild( postStuffElement );
-
-		if ( createRoot ) {
-			createRoot( postStuffChildElement ).render( postStuffComponenet );
-		} else {
-			render( postStuffComponenet, postStuffChildElement );
-		}
+		render( <RevisionsFlag />, postStuffNode.appendChild( document.createElement( 'div' ) ) );
 	}
 }
+

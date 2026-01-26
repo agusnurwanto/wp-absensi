@@ -221,27 +221,9 @@ export function isDirty( state = false, action ) {
 	}
 }
 
-/**
- * The reducer that keeps track if an update is being made.
- *
- * @param  {boolean} state
- * @param  {Object}  action
- * @return {Object}
- */
-export function isFieldUpdated( state, action ) {
-	switch ( action.type ) {
-		case 'UPDATE_FIELD_VALUE':
-			return { action };
-
-		default:
-			return false;
-	}
-}
-
 export default combineReducers( {
 	containers,
 	fields,
 	savingLock,
-	isDirty,
-	isFieldUpdated
+	isDirty
 } );

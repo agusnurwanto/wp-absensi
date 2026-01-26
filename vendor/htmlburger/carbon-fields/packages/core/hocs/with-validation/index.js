@@ -16,7 +16,6 @@ import {
 	pipe,
 	take
 } from 'callbag-basics';
-import empty from 'callbag-empty';
 
 /**
  * Internal dependencies.
@@ -32,7 +31,7 @@ import required from './required';
  */
 function aperture( component, props ) {
 	if ( ! props.field.required ) {
-		return empty;
+		return;
 	}
 
 	const mount$ = component.mount;

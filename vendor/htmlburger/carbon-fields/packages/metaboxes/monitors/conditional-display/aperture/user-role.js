@@ -52,7 +52,7 @@ addFilter( 'carbon-fields.conditional-display-user-role.classic', 'carbon-fields
 	}
 
 	return pipe(
-		fromEvent.default( node, 'change' ),
+		fromEvent( node, 'change' ),
 		map( ( { target } ) => getRoleFromSelect( target ) ),
 		startWith( getRoleFromSelect( node ) )
 	);

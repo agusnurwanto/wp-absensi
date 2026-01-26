@@ -3,8 +3,7 @@
    ========================================================================== */
 
 .cf-complex__inserter-menu {
-	.postbox &,
-	body[class*="taxonomy-"] & {
+	.postbox & {
 		margin: 0;
 		border-radius: $wp-radius-round;
 		background-color: $wp-color-ultra-dark-gray;
@@ -25,8 +24,7 @@
 }
 
 .cf-complex__inserter-item {
-	.postbox &,
-	body[class*="taxonomy-"] & {
+	.postbox & {
 		font-weight: 600;
 		color: $color-white;
 		transition: color $transition-base;
@@ -38,16 +36,14 @@
 }
 
 .cf-complex__inserter-button {
-	.postbox .cf-complex__tabs &,
-	body[class*="taxonomy-"] .cf-complex__tabs & {
+	.postbox .cf-complex__tabs & {
 		font-weight: 600;
 		color: $wp-color-dark-gray;
 	}
 }
 
 .cf-complex__tabs-item {
-	.postbox &,
-	body[class*="taxonomy"] & {
+	.postbox & {
 		font-weight: 600;
 		color: $wp-color-dark-gray;
 	}
