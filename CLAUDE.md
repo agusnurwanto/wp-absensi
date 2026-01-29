@@ -27,22 +27,30 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 ## Architecture
 
 ### Directory Structure
-- `includes/` - Core classes: main orchestrator, loader, activator, functions utility
+- `includes/` - Core classes: main orchestrator, loader, activator, deactivator, i18n, functions utility
 - `admin/` - WordPress admin functionality, Carbon Fields integration
 - `public/` - Frontend: shortcode handlers, AJAX endpoints, view templates in `partials/`
 - `public/trait/` - Shared PHP traits for public classes
+- `public/partials/` - View templates for shortcodes
 - `vendor/` - Composer dependencies (Carbon Fields)
 - `core/Libraries/` - Custom libraries (Plugin_Update_Warning)
 
 ### Key Classes
+
 | Class | File | Role |
 |-------|------|------|
 | Wp_Absen | includes/class-wp-absen.php | Main orchestrator, loads dependencies and hooks |
+| Wp_Absen_Loader | includes/class-wp-absen-loader.php | Hook registration system |
+| Wp_Absen_Activator | includes/class-wp-absen-activator.php | Plugin activation handler |
+| Wp_Absen_Deactivator | includes/class-wp-absen-deactivator.php | Plugin deactivation handler |
+| Wp_Absen_i18n | includes/class-wp-absen-i18n.php | Internationalization |
+| ABSEN_Functions | includes/class-wp-absen-functions.php | Utility library (API keys, uploads, Telegram, password management) |
 | Wp_Absen_Admin | admin/class-wp-absen-admin.php | Admin area, Carbon Fields options, Excel import, WP-SIPD integration |
 | Wp_Absen_Public | public/class-wp-absen-public.php | Attendance management, legacy employee handlers, menu shortcode |
 | Wp_Absen_Public_Instansi | public/class-wp-absen-public-instansi.php | Institution management with geofencing, auto user creation |
 | Wp_Absen_Public_Pegawai | public/class-wp-absen-public-pegawai.php | Employee management, master data, copy between years |
-| ABSEN_Functions | includes/class-wp-absen-functions.php | Utility library (API keys, uploads, Telegram, password management) |
+| Wp_Absen_Public_Kode_Kerja | public/class-wp-absen-public-kode-kerja.php | Work code/schedule management with flexible hours |
+| Wp_Absen_Public_Absensi | public/class-wp-absen-public-absensi.php | Daily attendance submission, clock in/out, GPS tracking |
 | CustomTraitAbsen | public/trait/CustomTrait.php | Shared file upload trait |
 
 ### Data Flow
@@ -53,17 +61,22 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 5. Permission filtering based on user role (admin vs admin_instansi)
 
 ### Database Tables (prefix: none, direct names)
+
 | Table | Purpose |
 |-------|---------|
 | `absensi_data_pegawai` | Employee records with dual status (active + status_kerja) |
 | `absensi_data_instansi` | Institutions with GPS geofencing, linked WordPress users |
-| `absensi_data` | Attendance/overtime header records |
-| `absensi_data_detail` | Detailed attendance entries per employee |
+| `absensi_data_kerja` | Work codes/schedules with flexible hours, geofencing, primary flag |
+| `absensi_harian` | Daily attendance records (clock in/out, coordinates, photos) |
+| `absensi_ijin` | Leave/permission requests (pending implementation) |
+| `absensi_data` | Attendance/overtime header records (legacy) |
+| `absensi_data_detail` | Detailed attendance entries per employee (legacy) |
 | `absensi_data_unit` | Organizational units (SKPD) from WP-SIPD |
 | `absensi_data_rekening_akun` | Account codes from WP-SIPD |
 | `absensi_data_satuan` | Unit/measurement data from WP-SIPD |
 
 ### Custom Roles
+
 | Role | Capabilities | Purpose |
 |------|-------------|---------|
 | `admin_instansi` | `read` | Institution administrator, sees only their data |
@@ -76,8 +89,23 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | `[management_data_pegawai_absensi]` | Wp_Absen_Public_Pegawai | Employee management interface |
 | `[management_data_instansi]` | Wp_Absen_Public_Instansi | Institution management with Leaflet map |
 | `[management_data_absensi]` | Wp_Absen_Public | Attendance records management |
+| `[management_data_kerja]` | Wp_Absen_Public_Kode_Kerja | Work code/schedule management |
+| `[manajemen_data_kerja]` | Wp_Absen_Public_Kode_Kerja | Work code management (alias) |
+| `[absensi_pegawai]` | Wp_Absen_Public_Absensi | Employee attendance submission interface |
 | `[menu_absensi]` | Wp_Absen_Public | Dynamic menu based on user role |
 | `[ubah_password_absen]` | ABSEN_Functions | Password change form with force-change support |
+| `[laporan_bulanan_absensi]` | (Auto-generated page) | Monthly attendance report |
+
+## View Partials
+
+| File | Purpose |
+|------|---------|
+| `wp-absen-management-data-pegawai.php` | Employee management UI |
+| `wp-absen-management-data-instansi.php` | Institution management with Leaflet map |
+| `wp-absen-management-data-kode-kerja.php` | Work code management UI |
+| `wp-absen-management-data-absensi.php` | Attendance records UI |
+| `wp-absen-absensi-pegawai.php` | Employee attendance submission UI |
+| `wp-absen-public-display.php` | Generic public display |
 
 ## AJAX Endpoints
 
@@ -92,6 +120,7 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 - `tambah_data_pegawai` - Add/update employee
 - `get_data_pegawai_by_id` - Get employee details
 - `hapus_data_pegawai_by_id` - Soft delete (modes: `hapus`, `nonaktif`)
+- `toggle_status_pegawai` - Toggle employee active status
 - `copy_data_pegawai` - Copy employees between fiscal years
 - `get_master_data` - All dropdown master data
 - `get_master_jenis_kelamin` - Gender options (L/P)
@@ -99,18 +128,44 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 - `get_master_pendidikan` - Education levels (SD to S3)
 - `get_master_status_pegawai` - Employment status types
 - `get_master_user_role` - User role options
+- `get_master_pegawai_search` - Employee search for Select2
 
 ### Instansi Management (Wp_Absen_Public_Instansi)
 - `get_datatable_instansi` - DataTable with permission filtering
 - `tambah_data_instansi` - Add/update institution (auto-creates WordPress user)
 - `get_data_instansi_by_id` - Get institution details
 - `hapus_data_instansi_by_id` - Soft delete
+- `toggle_status_instansi` - Toggle institution active status
 - `get_master_instansi` - Institution dropdown with permission filtering
 - `get_users_for_instansi` - Get WordPress users
 - `mutakhirkan_user_instansi` - Update/create user for institution
 
+### Kode Kerja Management (Wp_Absen_Public_Kode_Kerja)
+- `get_datatable_kode_kerja` - DataTable for work codes
+- `tambah_data_kode_kerja` - Add/update work code
+- `get_data_kode_kerja_by_id` - Get work code details
+- `hapus_data_kode_kerja_by_id` - Delete work code
+- `toggle_status_kode_kerja` - Toggle work code status
+- `check_primary_kode_kerja` - Validate one primary per institution
+
+### Absensi Operations (Wp_Absen_Public_Absensi)
+- `get_server_time` - Get current server time for frontend clock
+- `get_valid_kode_kerja` - Get valid work codes for current institution
+- `submit_absensi_pegawai` - Submit attendance (clock in/out with GPS/photo)
+- `check_status_absensi` - Check today's attendance status
+- `get_datatable_absensi` - DataTable for attendance records
+- `get_data_absensi_by_id` - Get attendance record details
+- `tambah_data_absensi_manual` - Manual attendance entry by admin
+- `hapus_data_absensi` - Delete attendance record
+
 ### Password Management (ABSEN_Functions)
 - `absen_change_password` - Change password, clears force-change flag
+
+### Legacy Endpoints (Wp_Absen_Public - deprecated)
+- `get_datatable_karyawan` - Old employee DataTable
+- `hapus_data_karyawan_by_id` - Old employee delete
+- `get_data_karyawan_by_id` - Old employee get
+- `tambah_data_karyawan` - Old employee add/update
 
 ## Critical Patterns
 
@@ -137,14 +192,22 @@ add_shortcode('shortcode_name', array($instance, 'method_name'));
 $wpdb->update('absensi_data_pegawai', array('active' => 0), array('id' => $id));
 ```
 
+### Toggle Status Pattern
+```php
+// Get current status then toggle
+$current = $wpdb->get_var($wpdb->prepare("SELECT active FROM table WHERE id = %d", $id));
+$new_status = ($current == 1) ? 0 : 1;
+$wpdb->update('table', array('active' => $new_status), array('id' => $id));
+```
+
 ### Permission Filtering Pattern
 ```php
 $current_user = wp_get_current_user();
 if (in_array('administrator', $current_user->roles)) {
     // Show all records
-} else {
-    // Filter by id_user or id_instansi
-    $where .= " AND id_user = " . $current_user->ID;
+} else if (in_array('admin_instansi', $current_user->roles)) {
+    // Filter by id_instansi or id_user
+    $where .= " AND id_instansi = " . $instansi_id;
 }
 ```
 
@@ -177,6 +240,34 @@ class Wp_Absen_Public_Pegawai {
 }
 ```
 
+### JSON-Encoded Flexible Data (Kode Kerja)
+```php
+// Work schedules store multiple times as JSON arrays
+$jam_masuk = json_encode(['08:00', '13:00']);  // Multiple check-in times
+$jam_pulang = json_encode(['12:00', '17:00']); // Multiple check-out times
+$hari_kerja = json_encode([1, 2, 3, 4, 5]);    // Monday-Friday
+```
+
+## Work Code System (Kode Kerja)
+
+Work codes define attendance schedules with the following features:
+
+- **Primary vs Secondary**: Each institution can have one primary schedule (is_primary = 1)
+- **Flexible Hours**: JSON arrays for multiple check-in/check-out times per day
+- **Working Days**: JSON array specifying which days (1=Monday to 7=Sunday)
+- **Geofencing**: Coordinates (latitude, longitude) and radius for location validation
+- **Tolerance**: Minutes allowed before/after scheduled time
+
+## Daily Attendance System (Absensi Harian)
+
+Real-time attendance tracking with:
+
+- **Clock In/Out**: Separate timestamps for masuk (in) and pulang (out)
+- **GPS Tracking**: Coordinates captured for both check-in and check-out
+- **Photo Documentation**: Support for foto_masuk and foto_pulang
+- **Status Types**: Hadir (present), Telat (late), Ijin (permission), Sakit (sick), Alpha (absent)
+- **Manual Entry**: Admins can manually add/edit attendance records
+
 ## Constants (defined in wp-absen.php)
 - `ABSEN_PLUGIN_URL` - Plugin URL path
 - `ABSEN_PLUGIN_PATH` - Plugin file path
@@ -188,12 +279,32 @@ class Wp_Absen_Public_Pegawai {
 - DataTables (server-side processing)
 - Select2 (enhanced dropdowns)
 - Chart.js (charts)
+- Animate.css (animations)
+- Vegas.js (background slideshow/video)
 - SweetAlert2 (alerts, CDN)
 - Leaflet.js v1.9.4 (maps, CDN)
 - DateRangePicker (date selection, CDN)
 
 ### Admin Libraries
 - JSZip + XLSX.js (Excel import/export)
+
+## ABSEN_Functions Utility Methods
+
+| Method | Purpose |
+|--------|---------|
+| `generateRandomString()` | Generate random strings for API keys |
+| `CekNull()` | Number padding utility |
+| `user_has_role()` | Check if user has specific role |
+| `get_option_complex()` | Complex option retrieval for Carbon Fields |
+| `get_option_multiselect()` | Multiselect option handling |
+| `curl_post()` | cURL POST wrapper |
+| `uploadTelegram()` | Telegram integration |
+| `allow_access_private_post()` | Toggle post status via encoded key |
+| `gen_key()` / `decode_key()` | Secure URL key generation/validation |
+| `get_link_post()` | Generate secured links with keys |
+| `generatePage()` | Auto-create/update WordPress pages with shortcodes |
+| `shortcode_ubah_password()` | Password change form shortcode |
+| `absen_change_password()` | AJAX handler for password change |
 
 ## Master Data Reference
 
@@ -206,7 +317,16 @@ class Wp_Absen_Public_Pegawai {
 | 4 | Probation |
 | 5 | Lainnya |
 
-### Jenis Absensi
+### Status Absensi Harian
+| Value | Label |
+|-------|-------|
+| Hadir | Present |
+| Telat | Late |
+| Ijin | Permission |
+| Sakit | Sick |
+| Alpha | Absent |
+
+### Jenis Absensi (Legacy)
 | Value | Label |
 |-------|-------|
 | Masuk | Regular attendance |
@@ -227,12 +347,21 @@ class Wp_Absen_Public_Pegawai {
 - `pegawai` - Employee
 - `instansi` - Institution/Agency
 - `absensi` - Attendance
+- `kode_kerja` - Work code/schedule
 - `tahun_anggaran` - Fiscal year
 - `SKPD` - Satuan Kerja Perangkat Daerah (Regional Work Unit)
 - `lembur` - Overtime
 - `cuti` - Leave
+- `ijin` - Permission/leave request
 - `NIK` - Nomor Induk Kependudukan (National ID Number)
 - `NIP` - Nomor Induk Pegawai (Employee ID Number)
+- `jam_masuk` - Check-in time
+- `jam_pulang` - Check-out time
+- `hari_kerja` - Working days
+
+## Pending/Incomplete Features
+
+- **Leave System (absensi_ijin)**: Database table created but no AJAX endpoints or UI implemented yet. Fields include: tipe_ijin, jenis_ijin, alasan, tanggal_mulai, tanggal_selesai, file_lampiran, status (Pending/Approved/Rejected)
 
 ## Maintenance
 
