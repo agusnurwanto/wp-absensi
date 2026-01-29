@@ -495,7 +495,7 @@ class Wp_Absen_Admin {
             Field::make('html', 'crb_sql_fte_absen_buttons')
                 ->set_html(<<<HTML
                     <div>
-                        <a onclick="confirm('Apakah anda yakin ingin menjalankan SQL Migrate?') ? sql_migrate_absen() : return false;" href="#" class="button button-primary button-large">SQL Migrate</a>
+                        <a onclick="confirm('Apakah anda yakin ingin menjalankan SQL Migrate?') ? sql_migrate_absen() : false;" href="#" class="button button-primary button-large">SQL Migrate</a>
                     </div>
                 HTML)
                 ->set_width(33.33)
