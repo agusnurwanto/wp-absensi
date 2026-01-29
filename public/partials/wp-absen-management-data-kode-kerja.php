@@ -176,10 +176,10 @@ $current_user_id = $current_user->ID;
         jQuery.ajax({
             method: 'post', url: '<?php echo admin_url('admin-ajax.php'); ?>', dataType: 'json',
             data:{ 'action': 'get_master_data', 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>' },
-            success: function(res){
-                if(res.status == 'success'){
-                    var options = '<option value="">-- Pilih Admin Instansi --</option>';
-                    res.data.admin_instansi.forEach(function(item){
+            success: (res) => {
+                if (res.status == 'success') {
+                    let options = '<option value="">-- Pilih Admin Instansi --</option>';
+                    res.data.admin_instansi.forEach((item) => {
                         options += `<option value="${item.value}">${item.label}</option>`;
                     });
                     jQuery('#admin_instansi').html(options);
@@ -197,7 +197,7 @@ $current_user_id = $current_user->ID;
         jQuery('#admin_instansi').val('');
         
         // Handle Restricted Access and Auto-Check
-        if(isAdminInstansi) {
+        if (isAdminInstansi) {
             jQuery('#admin_instansi').val(currentUserId).trigger('change').prop('disabled', true);
             checkPrimaryAvailability(currentUserId);
         } else {
@@ -210,8 +210,8 @@ $current_user_id = $current_user->ID;
         jQuery('.time-out').val('16:00');
         
         // Set Default Days (Mon-Fri)
-        var defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        defaultDays.forEach(function(day){
+        let defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        defaultDays.forEach((day) => {
             jQuery('#check_' + day).prop('checked', true).trigger('change');
         });
         
@@ -220,9 +220,9 @@ $current_user_id = $current_user->ID;
     }
     
     // Add Admin Instansi Listener
-    jQuery('#admin_instansi').on('change', function() {
-        var id_instansi = jQuery(this).val();
-        if(id_instansi) {
+    jQuery('#admin_instansi').on('change', () => {
+        let id_instansi = jQuery(this).val();
+        if (id_instansi) {
             checkPrimaryAvailability(id_instansi);
         } else {
             jQuery('#jenis').prop('disabled', true);
@@ -239,8 +239,8 @@ $current_user_id = $current_user->ID;
                 'exclude_id': exclude_id
             },
             success: (res) => {
-                if(res.status == 'success') {
-                    if(res.data.primary_exists) {
+                if (res.status == 'success') {
+                    if (res.data.primary_exists) {
                         jQuery('#jenis').val('Secondary');
                         // Option 1: Disable user interaction but keep value
                         // jQuery('#jenis option[value="Primary"]').prop('disabled', true);
@@ -274,7 +274,7 @@ $current_user_id = $current_user->ID;
                     jQuery('#radius_meter').val(res.data.radius_meter);
                     jQuery('#admin_instansi').val(res.data.id_instansi);
                     
-                    if(isAdminInstansi) {
+                    if (isAdminInstansi) {
                         jQuery('#admin_instansi').prop('disabled', true);
                     } else {
                         jQuery('#admin_instansi').prop('disabled', false);
@@ -297,23 +297,23 @@ $current_user_id = $current_user->ID;
                     jQuery('.time-input').prop('disabled', true);
                     
                     try {
-                        var days = res.data.hari_kerja || [];
-                        var jamMasuk = res.data.jam_masuk || {};
-                        var jamPulang = res.data.jam_pulang || {};
+                        let days = res.data.hari_kerja || [];
+                        let jamMasuk = res.data.jam_masuk || {};
+                        let jamPulang = res.data.jam_pulang || {};
                         
                         // Fallback string parsing if not auto-decoded by simple JSON
                         if (typeof days === 'string') days = JSON.parse(days);
                         if (typeof jamMasuk === 'string') jamMasuk = JSON.parse(jamMasuk);
                         if (typeof jamPulang === 'string') jamPulang = JSON.parse(jamPulang);
 
-                        if(Array.isArray(days)){
-                            days.forEach(function(d) {
+                        if (Array.isArray(days)) {
+                            days.forEach((d) => {
                                 jQuery('#check_' + d).prop('checked', true);
                                 jQuery('#jam_masuk_' + d).prop('disabled', false);
                                 jQuery('#jam_pulang_' + d).prop('disabled', false);
                                 
-                                if(jamMasuk[d]) jQuery('#jam_masuk_' + d).val(jamMasuk[d]);
-                                if(jamPulang[d]) jQuery('#jam_pulang_' + d).val(jamPulang[d]);
+                                if (jamMasuk[d]) jQuery('#jam_masuk_' + d).val(jamMasuk[d]);
+                                if (jamPulang[d]) jQuery('#jam_pulang_' + d).val(jamPulang[d]);
                             });
                         }
                     } catch(e) { console.log(e); }
@@ -362,9 +362,9 @@ $current_user_id = $current_user->ID;
     }
 
     function toggle_status_kode_kerja_js(id, current_status) {
-        var action = current_status == 1 ? 'Nonaktifkan' : 'Aktifkan';
-        var actionText = current_status == 1 ? 'Data akan disembunyikan dari absensi' : 'Data akan muncul kembali di absensi';
-        
+        let action = current_status == 1 ? 'Nonaktifkan' : 'Aktifkan';
+        let actionText = current_status == 1 ? 'Data akan disembunyikan dari absensi' : 'Data akan muncul kembali di absensi';
+
         Swal.fire({
             title: 'Konfirmasi ' + action,
             text: actionText,
@@ -382,7 +382,7 @@ $current_user_id = $current_user->ID;
                     data: { 'action': 'toggle_status_kode_kerja', 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>', 'id': id, 'current_status': current_status },
                     success: (res) => {
                         jQuery('#wrap-loading').hide();
-                        if(res.status == 'success') {
+                        if (res.status == 'success') {
                             Swal.fire('Berhasil', res.message, 'success');
                             get_data_kode_kerja();
                         } else {
@@ -400,30 +400,30 @@ $current_user_id = $current_user->ID;
     }
 
     function submitTambahData() {
-        var id_data = jQuery('#id_data').val();
-        var nama_kerja = jQuery('#nama_kerja').val();
-        var admin_instansi = jQuery('#admin_instansi').val();
+        let id_data = jQuery('#id_data').val();
+        let nama_kerja = jQuery('#nama_kerja').val();
+        let admin_instansi = jQuery('#admin_instansi').val();
          // If disabled (for admin instansi), value might not submit normally, but we handle it in backend via user ID session check too. 
          // However, ensure value is grabbed.
         
-        if(nama_kerja == '') return alert('Nama Kode Kerja wajib diisi!');
-        if(admin_instansi == '') return alert('Admin Instansi wajib dipilih!');
-        if(jQuery('#jenis').val() == '') return alert('Jenis Kode Kerja wajib dipilih!');
-        if(jQuery('#koordinat').val() == '') return alert('Koordinat Lokasi wajib diisi!');
-        if(jQuery('#radius_meter').val() == '') return alert('Jarak Maksimal Absen wajib diisi!');
+        if (nama_kerja == '') return alert('Nama Kode Kerja wajib diisi!');
+        if (admin_instansi == '') return alert('Admin Instansi wajib dipilih!');
+        if (jQuery('#jenis').val() == '') return alert('Jenis Kode Kerja wajib dipilih!');
+        if (jQuery('#koordinat').val() == '') return alert('Koordinat Lokasi wajib diisi!');
+        if (jQuery('#radius_meter').val() == '') return alert('Jarak Maksimal Absen wajib diisi!');
 
-        var hari_kerja = [];
-        var jam_masuk = {};
-        var jam_pulang = {};
+        let hari_kerja = [];
+        let jam_masuk = {};
+        let jam_pulang = {};
 
-        jQuery('.day-check:checked').each(function() {
-            var day = jQuery(this).val();
+        jQuery('.day-check:checked').each(() => {
+            let day = jQuery(this).val();
             hari_kerja.push(day);
             jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
             jam_pulang[day] = jQuery('#jam_pulang_' + day).val();
         });
 
-        if(hari_kerja.length == 0) return alert('Pilih minimal satu hari kerja!');
+        if (hari_kerja.length == 0) return alert('Pilih minimal satu hari kerja!');
 
         jQuery('#wrap-loading').show();
         jQuery.ajax({
@@ -444,7 +444,7 @@ $current_user_id = $current_user->ID;
             success: (res) => {
                 jQuery('#wrap-loading').hide();
                 alert(res.message);
-                if(res.status == 'success') {
+                if (res.status == 'success') {
                     jQuery('#modalTambahDataKodeKerja').modal('hide');
                     get_data_kode_kerja();
                 }
@@ -454,19 +454,19 @@ $current_user_id = $current_user->ID;
 
     /* MAP LOGIC */
     function initMap(initialCoords) {
-        var defaultLat = -7.589537668248559;
-        var defaultLng = 111.41982078552246;
-        var zoomLevel = 16;
+        let defaultLat = -7.589537668248559;
+        let defaultLng = 111.41982078552246;
+        let zoomLevel = 16;
 
         if (initialCoords) {
-            var parts = initialCoords.split(',');
+            let parts = initialCoords.split(',');
             if (parts.length == 2) {
                 defaultLat = parseFloat(parts[0].trim());
                 defaultLng = parseFloat(parts[1].trim());
             }
         } else if (navigator.geolocation && !marker) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                if(!marker) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                if (!marker) {
                     map.setView([position.coords.latitude, position.coords.longitude], 16);
                     updateMarker(position.coords.latitude, position.coords.longitude);
                 }
@@ -489,7 +489,7 @@ $current_user_id = $current_user->ID;
         else {
             marker = L.marker([lat, lng], {draggable: true}).addTo(map);
             marker.on('dragend', (e) => {
-                var position = marker.getLatLng();
+                let position = marker.getLatLng();
                 updateInput(position.lat, position.lng);
             });
         }

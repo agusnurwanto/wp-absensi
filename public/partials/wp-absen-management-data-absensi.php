@@ -107,8 +107,6 @@ $date = date('d-m-Y');
                     </div>
                 </div>
 
-                <!-- Status Removed -->
-
             </div> 
             <div class="modal-footer">
                 <button class="btn btn-primary submitBtn" onclick="submitTambahDataFormAbsensi()">Simpan</button>

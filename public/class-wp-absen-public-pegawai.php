@@ -786,24 +786,22 @@ class Wp_Absen_Public_Pegawai {
     public function get_master_pegawai_search() {
         global $wpdb;
         $ret = array('items' => array());
-        
+
         if (!empty($_GET['api_key']) && $_GET['api_key'] == get_option(ABSEN_APIKEY)) {
             $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
-            
             $query = "SELECT id, nama, nik, id_instansi FROM absensi_data_pegawai WHERE active = 1";
-            
+
             // Instansi Filter
             $current_user = wp_get_current_user();
             if (in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles)) {
-                 $query .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
+                $query .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
             }
-            
+
             if ($search) {
                 $query .= " AND (nama LIKE '%$search%' OR nik LIKE '%$search%')";
             }
-            
+
             $query .= " LIMIT 20";
-            
             $results = $wpdb->get_results($query);
             foreach ($results as $row) {
                 $ret['items'][] = array(
@@ -813,6 +811,7 @@ class Wp_Absen_Public_Pegawai {
                 );
             }
         }
+
         die(json_encode($ret));
     }
 
