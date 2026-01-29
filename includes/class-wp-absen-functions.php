@@ -34,77 +34,76 @@ class ABSEN_Functions
 		$this->version = $version;
 	}
 
-    function allow_access_private_post(){
-    	if(
-    		!empty($_GET) 
-    		&& !empty($_GET['key'])
-    	){
-    		$key = base64_decode($_GET['key']);
-    		$decode = $this->decode_key($_GET['key']);
-    		if(!empty($decode['skip'])){
-    			return;
-    		}
-    		
-    		$key_db = md5(get_option( ABSEN_APIKEY ));
-    		$key = explode($key_db, $key);
-    		$valid = 0;
-    		if(
-    			!empty($key[1]) 
-    			&& $key[0] == $key[1]
-    			&& is_numeric($key[1])
-    		){
-    			$tgl1 = new DateTime();
-    			$date = substr($key[1], 0, strlen($key[1])-3);
-    			$tgl2 = new DateTime(date('Y-m-d', $date));
-    			$valid = $tgl2->diff($tgl1)->days+1;
-    		}
-    		if($valid == 1){
-	    		global $wp_query;
-		        // print_r($wp_query);
-		        // print_r($wp_query->queried_object); die('tes');
-		        if(!empty($wp_query->queried_object)){
-		    		if($wp_query->queried_object->post_status == 'private'){
+    function allow_access_private_post() {
+		if (
+			!empty($_GET) 
+			&& !empty($_GET['key'])
+		) {
+			$key = base64_decode($_GET['key']);
+			$decode = $this->decode_key($_GET['key']);
+			if (!empty($decode['skip'])) {
+				return;
+			}
+
+			$key_db = md5(get_option( ABSEN_APIKEY ));
+			$key = explode($key_db, $key);
+			$valid = 0;
+			if (
+				!empty($key[1]) 
+				&& $key[0] == $key[1]
+				&& is_numeric($key[1])
+			) {
+				$tgl1 = new DateTime();
+				$date = substr($key[1], 0, strlen($key[1])-3);
+				$tgl2 = new DateTime(date('Y-m-d', $date));
+				$valid = $tgl2->diff($tgl1)->days+1;
+			}
+			if ($valid == 1) {
+				global $wp_query;
+
+				if (!empty($wp_query->queried_object)) {
+					if ($wp_query->queried_object->post_status == 'private') {
 						wp_update_post(array(
-					        'ID'    =>  $wp_query->queried_object->ID,
-					        'post_status'   =>  'publish'
-				        ));
-				        die('<script>window.location =  window.location.href;</script>');
-					}else{
+							'ID'    =>  $wp_query->queried_object->ID,
+							'post_status'   =>  'publish'
+						));
+						die('<script>window.location =  window.location.href;</script>');
+					} else {
 						wp_update_post(array(
-					        'ID'    =>  $wp_query->queried_object->ID,
-					        'post_status'   =>  'private'
-				        ));
+							'ID'    =>  $wp_query->queried_object->ID,
+							'post_status'   =>  'private'
+						));
 					}
-				}else if($wp_query->found_posts >= 1){
+				} else if ($wp_query->found_posts >= 1) {
 					global $wpdb;
 					$sql = $wp_query->request;
 					$post = $wpdb->get_results($sql, ARRAY_A);
-					if(!empty($post)){
-						if($post[0]['post_status'] == 'private'){
+					if (!empty($post)) {
+						if ($post[0]['post_status'] == 'private') {
 							wp_update_post(array(
-						        'ID'    =>  $post[0]['ID'],
-						        'post_status'   =>  'publish'
-					        ));
-					        die('<script>window.location =  window.location.href;</script>');
-						}else{
+								'ID'    =>  $post[0]['ID'],
+								'post_status'   =>  'publish'
+							));
+							die('<script>window.location =  window.location.href;</script>');
+						} else {
 							wp_update_post(array(
-						        'ID'    =>  $post[0]['ID'],
-						        'post_status'   =>  'private'
-					        ));
+								'ID'    =>  $post[0]['ID'],
+								'post_status'   =>  'private'
+							));
 						}
 					}
 				}
 			}
-    	}
+		}
     }
 
-	function gen_key($key_db = false, $options = array()){
+	function gen_key($key_db = false, $options = array()) {
 		$now = time()*1000;
-		if(empty($key_db)){
+		if (empty($key_db)) {
 			$key_db = md5(get_option( ABSEN_APIKEY ));
 		}
 		$tambahan_url = '';
-		if(!empty($options['custom_url'])){
+		if (!empty($options['custom_url'])) {
 			$custom_url = array();
 			foreach ($options['custom_url'] as $k => $v) {
 				$custom_url[] = $v['key'].'='.$v['value'];
@@ -115,12 +114,12 @@ class ABSEN_Functions
 		return $key;
 	}
 
-	public function decode_key($value){
+	public function decode_key($value) {
 		$key = base64_decode($value);
 		$key_db = md5(get_option( ABSEN_APIKEY ));
 		$key = explode($key_db, $key);
 		$get = array();
-		if(!empty($key[2])){
+		if (!empty($key[2])) {
 			$all_get = explode('&', $key[2]);
 			foreach ($all_get as $k => $v) {
 				$current_get = explode('=', $v);
@@ -130,15 +129,15 @@ class ABSEN_Functions
 		return $get;
 	}
 
-	public function get_link_post($custom_post){
+	public function get_link_post($custom_post) {
 		$link = get_permalink($custom_post);
 		$options = array();
-		if(!empty($custom_post->custom_url)){
+		if (!empty($custom_post->custom_url)) {
 			$options['custom_url'] = $custom_post->custom_url;
 		}
-		if(strpos($link, '?') === false){
+		if (strpos($link, '?') === false) {
 			$link .= '?key=' . $this->gen_key(false, $options);
-		}else{
+		} else {
 			$link .= '&key=' . $this->gen_key(false, $options);
 		}
 		return $link;
@@ -170,19 +169,19 @@ class ABSEN_Functions
 		return null;
 	}
 
-	public function generatePage($options = array()){
+	public function generatePage($options = array()) {
 		$post_type = 'page';
 		$status = 'private';
-		if(!empty($options['post_status'])){
+		if (!empty($options['post_status'])) {
 			$status = $options['post_status'];
 		}
-		if(!empty($options['post_type'])){
+		if (!empty($options['post_type'])) {
 			$post_type = $options['post_type'];
 		}
 
-		if(!empty($options['post_id'])){
-			$custom_post = get_page($options['post_id']);
-		}else{
+		if (!empty($options['post_id'])) {
+			$custom_post = get_post($options['post_id']);
+		} else {
 			$custom_post = $this->get_page_by_title($options['nama_page'], OBJECT, $post_type);
 		}
 		$_post = array(
@@ -209,8 +208,8 @@ class ABSEN_Functions
 			update_post_meta($custom_post->ID, 'site-post-title', 'disabled');
 			update_post_meta($custom_post->ID, 'site-sidebar-layout', 'no-sidebar');
 			update_post_meta($custom_post->ID, 'theme-transparent-header-meta', 'disabled');
-		}else if(!empty($options['update'])){
-			if(empty($options['show_header'])){
+		} else if (!empty($options['update'])) {
+			if (empty($options['show_header'])) {
 				update_post_meta($custom_post->ID, 'ast-main-header-display', 'disabled');
 				update_post_meta($custom_post->ID, 'footer-sml-layout', 'disabled');
 			} else if (empty($options['show_footer'])) {
@@ -220,12 +219,12 @@ class ABSEN_Functions
 			wp_update_post( $_post );
 			$_post['update'] = 1;
 		}
-		if(!empty($options['custom_url'])){
+		if (!empty($options['custom_url'])) {
 			$custom_post->custom_url = $options['custom_url'];
 		}
-		if(!empty($options['no_key'])){
+		if (!empty($options['no_key'])) {
 			$link = get_permalink($custom_post);
-		}else{
+		} else {
 			$link = $this->get_link_post($custom_post);
 		}
 		return array(
@@ -237,20 +236,20 @@ class ABSEN_Functions
 	}
 
 	public function generateRandomString($length = 10) {
-	    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-	    $charactersLength = strlen($characters);
-	    $randomString = '';
-	    for ($i = 0; $i < $length; $i++) {
-	        $randomString .= $characters[rand(0, $charactersLength - 1)];
-	    }
-	    return $randomString;
+		$characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		$charactersLength = strlen($characters);
+		$randomString = '';
+		for ($i = 0; $i < $length; $i++) {
+			$randomString .= $characters[rand(0, $charactersLength - 1)];
+		}
+		return $randomString;
 	}
 
-	public function CekNull($number, $length=2){
+	public function CekNull($number, $length=2) {
         $l = strlen($number);
         $ret = '';
-        for($i=0; $i<$length; $i++){
-            if($i+1 > $l){
+        for ($i=0; $i<$length; $i++) {
+            if ($i+1 > $l) {
                 $ret .= '0';
             }
         }
@@ -258,80 +257,79 @@ class ABSEN_Functions
         return $ret;
     }
 
-	function user_has_role($user_id, $role_name, $return=false){
-		if(empty($user_id)){
+	function user_has_role($user_id, $role_name, $return = false) {
+		if (empty($user_id)) {
 			return false;
 		}
-	    $user_meta = get_userdata($user_id);
-	    $user_roles = $user_meta->roles;
-	    if($return){
-	    	return $user_roles;
-	    }else{
-	    	return in_array($role_name, $user_roles);
-	    }
+		$user_meta = get_userdata($user_id);
+		$user_roles = $user_meta->roles;
+		if ($return) {
+			return $user_roles;
+		} else {
+			return in_array($role_name, $user_roles);
+		}
 	}
 
-	function get_option_complex($key, $type){
+	function get_option_complex($key, $type) {
 		global $wpdb;
         $ret = $wpdb->get_results('select option_name, option_value from '.$wpdb->prefix.'options where option_name like \''.$key.'|%\'', ARRAY_A);
         $res = array();
         $types = array();
-        foreach($ret as $v){
+        foreach ($ret as $v) {
             $k = explode('|', $v['option_name']);
             $column = $k[1];
             $group = $k[3];
-            if($column == ''){
-            	$types[$group] = $v['option_value'];
+            if ($column == '') {
+                $types[$group] = $v['option_value'];
             }
         }
-        foreach($ret as $v){
+        foreach ($ret as $v) {
             $k = explode('|', $v['option_name']);
             $column = $k[1];
             $loop = $k[2];
             $group = $k[3];
-            if($column != ''){
-	            if(
-	            	isset($types[$loop])
-	            	&& $type == $types[$loop]
-	            ){
-		            if(empty($res[$loop])){
-		                $res[$loop] = array();
-		            }
-		            $res[$loop][$column] = $v['option_value'];
-		        }
-		    }
+            if ($column != '') {
+                if (
+                    isset($types[$loop])
+                    && $type == $types[$loop]
+                ) {
+                    if (empty($res[$loop])) {
+                        $res[$loop] = array();
+                    }
+                    $res[$loop][$column] = $v['option_value'];
+                }
+            }
         }
         return $res;
     }
 
-	function get_option_multiselect($key){
+	function get_option_multiselect($key) {
 		global $wpdb;
         $ret = $wpdb->get_results('select option_name, option_value from '.$wpdb->prefix.'options where option_name like \''.$key.'|||%\'', ARRAY_A);
         $res = array();
-        foreach($ret as $v){
+        foreach ($ret as $v) {
             $res[$v['option_value']] = $v['option_value'];
         }
         return $res;
     }
 
-	function isInteger($input){
-	    return(ctype_digit(strval($input)));
+	function isInteger($input) {
+		return(ctype_digit(strval($input)));
 	}
 
-	function curl_post($options){
+	function curl_post($options) {
         $curl = curl_init();
         set_time_limit(0);
         $req = http_build_query($options['data']);
         $url = $options['url'];
-        if(empty($url)){
-        	return false;
+        if (empty($url)) {
+            return false;
         }
         $opsi_curl = array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => "",
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => "POST",
             CURLOPT_POSTFIELDS => $req,
@@ -341,8 +339,8 @@ class ABSEN_Functions
             CURLOPT_TIMEOUT => 10000
         );
 
-        if(!empty($options['header'])){
-        	$opsi_curl[CURLOPT_HTTPHEADER] = $options['header'];
+        if (!empty($options['header'])) {
+            $opsi_curl[CURLOPT_HTTPHEADER] = $options['header'];
         }
 
         curl_setopt_array($curl, $opsi_curl);
@@ -353,43 +351,43 @@ class ABSEN_Functions
         curl_close($curl);
 
         if ($err) {
-        	$msg = "cURL Error #:".$err." (".$url.")";
-        	if($options['debug'] == 1){
-            	die($msg);
-        	}else{
-        		return $msg;
-        	}
+            $msg = "cURL Error #:".$err." (".$url.")";
+            if ($options['debug'] == 1) {
+                die($msg);
+            } else {
+                return $msg;
+            }
         } else {
-        	return $response;
+            return $response;
         }
     }
 
-    function send_tg($options){
+    function send_tg($options) {
 		$login = false;
-		if(is_user_logged_in()){
-		    $current_user = wp_get_current_user();
-		    if($this->user_has_role($current_user->ID, 'administrator')){
-		        $login = true;
-		    }
+		if (is_user_logged_in()) {
+            $current_user = wp_get_current_user();
+            if ($this->user_has_role($current_user->ID, 'administrator')) {
+                $login = true;
+            }
 		}
-	  	$bot_tg = get_option('_crb_satset_bot_tg');
-	  	$id_akun_tg = get_option('_crb_satset_akun_tg');
-	  	$ret = array();
-	  	if(!empty($bot_tg) && !empty($id_akun_tg)){
-	  		$message = $options['message'];
-	  		$id_akun_tg = explode(',', $id_akun_tg);
-	  		foreach($id_akun_tg as $id_akun){
-	  			$url = "https://api.telegram.org/$bot_tg/sendMessage?chat_id=$id_akun&text=$message";
-	  			$ret_url = file_get_contents($url);
-	  			if(true == $login){
-	  				$ret[] = array(
-	  					'return'=> $ret_url,
-	  					'url'=> $url
-	  				);
-	  			}
-	  		}
-	  	}
-	  	return $ret;
+        $bot_tg = get_option('_crb_satset_bot_tg');
+        $id_akun_tg = get_option('_crb_satset_akun_tg');
+        $ret = array();
+        if (!empty($bot_tg) && !empty($id_akun_tg)) {
+            $message = $options['message'];
+            $id_akun_tg = explode(',', $id_akun_tg);
+            foreach ($id_akun_tg as $id_akun) {
+                $url = "https://api.telegram.org/$bot_tg/sendMessage?chat_id=$id_akun&text=$message";
+                $ret_url = file_get_contents($url);
+                if (true == $login) {
+                    $ret[] = array(
+                        'return'=> $ret_url,
+                        'url'=> $url
+                    );
+                }
+            }
+        }
+        return $ret;
     }
 
     public static function uploadFile(
@@ -399,37 +397,36 @@ class ABSEN_Functions
 		array $ext = array(),
 		int $maxSize = 1048576, // default 1MB
 		string $nama_file = ''
-	)
-	{
-		try{
+	) {
+		try {
 			if (!empty($api_key) && $api_key == get_option( ABSEN_APIKEY )) {
-				if(!empty($file)){
+				if (!empty($file)) {
 
-					if(empty($ext)){
+					if (empty($ext)) {
 						throw new Exception('Extensi file belum ditentukan');
 					}
 
-					if(empty($path)){
+					if (empty($path)) {
 						throw new Exception('Lokasi folder belum ditentukan');
 					}
 
-					$imageFileType = strtolower(pathinfo($path.basename($file["name"]),PATHINFO_EXTENSION));
-					if(!in_array($imageFileType, $ext)){
+					$imageFileType = strtolower(pathinfo($path.basename($file["name"]), PATHINFO_EXTENSION));
+					if (!in_array($imageFileType, $ext)) {
 						throw new Exception('Lampiran wajib ber-type ' . implode(", ", $ext));
 					}
 
-					if($file['size'] > $maxSize){
+					if ($file['size'] > $maxSize) {
 						throw new Exception('Ukuran file melebihi ukuran maksimal');
 					}
 
-					if(!empty($nama_file)){
-						$file['name'] = $nama_file.'.'.$imageFileType;
-					}else{
+					if (!empty($nama_file)) {
+						$file['name'] = $nama_file . '.' . $imageFileType;
+					} else {
 						$nama_file = date('Y-m-d-H-i-s');
-						$file['name'] = $nama_file.'-'.$file['name'];
+						$file['name'] = $nama_file . '-' . $file['name'];
 					}
-					$target = $path .  $file['name'];
-					if(move_uploaded_file($file['tmp_name'], $target)){
+					$target = $path . $file['name'];
+					if (move_uploaded_file($file['tmp_name'], $target)) {
 						return [
 							'status' => true,
 							'filename' => $file['name']
@@ -440,7 +437,7 @@ class ABSEN_Functions
 				throw new Exception('Oops, file belum dipilih');
 			}
 			throw new Exception('Api key tidak ditemukan');
-		}catch(Exception $e){
+		} catch (Exception $e) {
 			return array(
 				'status' => false,
 				'message' => $e->getMessage()
@@ -587,8 +584,8 @@ class ABSEN_Functions
 
 		<script>
 		function submitChangePassword() {
-			var new_password = jQuery('#new_password').val();
-			var confirm_password = jQuery('#confirm_password').val();
+			let new_password = jQuery('#new_password').val();
+			let confirm_password = jQuery('#confirm_password').val();
 
 			if (new_password == '') {
 				return alert('Password baru tidak boleh kosong!');
@@ -610,13 +607,13 @@ class ABSEN_Functions
 					'new_password': new_password,
 					'confirm_password': confirm_password
 				},
-				success: function(res) {
+				success: (res) => {
 					alert(res.message);
 					if (res.status == 'success' && res.redirect) {
 						window.location.href = res.redirect;
 					}
 				},
-				error: function() {
+				error: () => {
 					alert('Terjadi kesalahan. Silakan coba lagi.');
 				}
 			});
