@@ -44,7 +44,6 @@ $input = shortcode_atts(array(
         <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key" />
         <h1 class="text-center" style="margin: 3rem">
             Manajemen Data Instansi<br />Tahun <?php echo $input['tahun_anggaran']; ?>
-
         </h1>
         <?php
         $current_user = wp_get_current_user();
@@ -150,6 +149,9 @@ $input = shortcode_atts(array(
                         type="number"
                         id="radius_meter"
                         name="radius_meter"
+                        class="form-control"
+                    />
+                </div>
                 <div class="form-group">
                     <label style="display: block; font-weight: bold; margin-bottom: 10px;">Jadwal Kerja Per Hari</label>
                     <div class="table-responsive">
