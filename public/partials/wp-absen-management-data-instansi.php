@@ -668,8 +668,8 @@ $input = shortcode_atts(array(
         let jam_masuk = {};
         let jam_pulang = {};
 
-        jQuery('.day-check:checked').each(() => {
-            let day = jQuery(this).val();
+        jQuery('.day-check:checked').each((index, element) => {
+            let day = jQuery(element).val();
             hari_kerja.push(day);
             jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
             jam_pulang[day] = jQuery('#jam_pulang_' + day).val();
