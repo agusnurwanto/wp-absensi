@@ -139,6 +139,7 @@ class Wp_Absen_Admin {
         $get_data = '';
         $get_data_instansi = '';
         $get_absensi_pegawai = '';
+        $get_data_kegiatan = '';
 
         if ($table_exists) {
             $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
@@ -171,6 +172,15 @@ class Wp_Absen_Admin {
                         'post_status' => 'private'
                     ));
                     $get_absensi_pegawai .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
+
+                    $management_data_kegiatan = $this->functions->generatePage(array(
+                        'nama_page' => 'Data Kegiatan Pegawai | ' . $v['tahun_anggaran'],
+                        'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+                        'show_header' => 1,
+                        'no_key' => 1,
+                        'post_status' => 'private'
+                    ));
+                    $get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
                 }
             }
         } else {
@@ -189,11 +199,24 @@ class Wp_Absen_Admin {
         Container::make('theme_options', __('Menu Pegawai'))
             ->set_page_parent($basic_options_container)
             ->add_tab('⚙️ Data Pegawai', $this->generate_fields_options_konfigurasi_umum_pegawai($get_data))
-            ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai));
+            ->add_tab('📋 Absensi Pegawai', $this->generate_fields_options_absensi_pegawai($get_absensi_pegawai))
+            ->add_tab('📅 Data Kegiatan Pegawai', $this->generate_fields_options_kegiatan_pegawai($get_data_kegiatan));
 
         Container::make('theme_options', __('Menu Data Kerja'))
             ->set_page_parent($basic_options_container)
             ->add_tab('⚙️ Data Kerja', $this->generate_fields_options_data_kerja());
+    }
+
+    public function generate_fields_options_kegiatan_pegawai($get_data_kegiatan) {
+        return [
+            Field::make('html', 'crb_options_kegiatan_pegawai')
+				->set_html('
+					<h5>HALAMAN TERKAIT</h5>
+					<ol>
+						' . $get_data_kegiatan . '
+					</ol>
+				')
+        ];
     }
 
     public function generate_fields_options_data_kerja() {

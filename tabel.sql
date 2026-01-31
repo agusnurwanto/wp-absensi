@@ -224,3 +224,22 @@ CREATE TABLE `absensi_ijin` (
   KEY `id_pegawai` (`id_pegawai`),
   KEY `id_instansi` (`id_instansi`)
 );
+
+CREATE TABLE `absensi_kegiatan` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_instansi` INT(11) NOT NULL,
+  `id_pegawai` INT(11) NOT NULL DEFAULT 0,
+  `nama_kegiatan` VARCHAR(200) DEFAULT NULL,
+  `tanggal` DATE DEFAULT NULL,
+  `jam_mulai` TIME DEFAULT NULL,
+  `jam_selesai` TIME DEFAULT NULL,
+  `tempat` TEXT DEFAULT NULL,
+  `uraian` TEXT DEFAULT NULL,
+  `tahun` YEAR(4) NOT NULL,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `id_instansi` (`id_instansi`),
+  KEY `active` (`active`)
+);

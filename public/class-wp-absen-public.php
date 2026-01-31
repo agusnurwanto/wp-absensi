@@ -141,6 +141,7 @@ class Wp_Absen_Public {
         $get_data_instansi = '';
         $get_data_pegawai = '';
         $get_data_absensi = '';
+        $get_data_kegiatan = '';
         if ($table_exists) {
             $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
             if (!empty($get_tahun) && is_array($get_tahun)) {
@@ -171,6 +172,15 @@ class Wp_Absen_Public {
                         'post_status' => 'publish'
                     ));
                     $get_data_absensi .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
+
+					$management_data_kegiatan = $this->functions->generatePage(array(
+						'nama_page' => 'Manajemen Data Kegiatan | ' . $v['tahun_anggaran'],
+						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'show_header' => 1,
+						'no_key' => 1,
+						'post_status' => 'publish'
+					));
+					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
 				}
             }
         }
@@ -202,6 +212,9 @@ class Wp_Absen_Public {
                             <a class="nav-link" id="data-kerja-tab" data-toggle="pill" href="#data-kerja" role="tab" aria-controls="data-kerja" aria-selected="false">
                                 <span class="dashicons dashicons-clock"></span> Data Kode Kerja
                             </a>
+							<a class="nav-link" id="data-kegiatan-tab" data-toggle="pill" href="#data-kegiatan" role="tab" aria-controls="data-kegiatan" aria-selected="false">
+                                <span class="dashicons dashicons-list-view"></span> Manajemen Data Kegiatan
+                            </a>
                         </div>
                     </div>
                     <div class="col-md-7">
@@ -217,6 +230,9 @@ class Wp_Absen_Public {
 							</div>
                             <div class="tab-pane fade" id="data-kerja" role="tabpanel" aria-labelledby="data-kerja-tab">
                                 <ul>' . $get_data_kerja . '</ul>
+                            </div>
+							<div class="tab-pane fade" id="data-kegiatan" role="tabpanel" aria-labelledby="data-kegiatan-tab">
+                                <ul>' . $get_data_kegiatan . '</ul>
                             </div>
                         </div>
                     </div>
@@ -246,6 +262,11 @@ class Wp_Absen_Public {
 							<span class="dashicons dashicons-clipboard"></span> Ijin
 						</a>
 					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="tab-menu-kegiatan" data-toggle="tab" href="#menu-kegiatan" role="tab" aria-controls="menu-kegiatan" aria-selected="false">
+							<span class="dashicons dashicons-list-view"></span> Kegiatan
+						</a>
+					</li>
 				</ul>
 				<div class="tab-content" id="myTabContent" style="padding: 20px; border: 1px solid #dee2e6; border-top: none; background: #fff;">
 					<div class="tab-pane fade show active" id="menu-absensi" role="tabpanel" aria-labelledby="tab-menu-absensi">
@@ -256,6 +277,9 @@ class Wp_Absen_Public {
 					</div>
 					<div class="tab-pane fade" id="menu-ijin" role="tabpanel" aria-labelledby="tab-menu-ijin">
 						<ul>WIP</ul>
+					</div>
+					<div class="tab-pane fade" id="menu-kegiatan" role="tabpanel" aria-labelledby="tab-menu-kegiatan">
+						<ul>' . $get_data_kegiatan . '</ul>
 					</div>
 				</div>
 			';
