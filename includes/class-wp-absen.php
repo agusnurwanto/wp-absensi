@@ -225,6 +225,10 @@ class Wp_Absen
 		$this->loader->add_action('wp_head', $plugin_public, 'add_pwa_manifest');
 		$this->loader->add_action('wp_head', $plugin_public, 'add_pwa_meta_tags');
 
+		// Serve PWA files from root URL (must run early)
+		$this->loader->add_action('init', $plugin_public, 'serve_manifest', 1);
+		$this->loader->add_action('init', $plugin_public, 'serve_service_worker', 1);
+
 		$this->loader->add_action('wp_ajax_get_datatable_karyawan', $plugin_public, 'get_datatable_karyawan');
 		$this->loader->add_action('wp_ajax_hapus_data_karyawan_by_id', $plugin_public, 'hapus_data_karyawan_by_id');
 		$this->loader->add_action('wp_ajax_get_data_karyawan_by_id', $plugin_public, 'get_data_karyawan_by_id');

@@ -1,7 +1,7 @@
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        const swUrl = '/wp-content/plugins/wp-absensi/service-worker.js';
+        const swUrl = '/service-worker.js';
 
         navigator.serviceWorker
             .register(swUrl)

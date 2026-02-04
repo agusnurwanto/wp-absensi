@@ -300,7 +300,8 @@ class Wp_Absen_Public
 	 */
 	public function add_pwa_manifest()
 	{
-		$manifest_url = plugin_dir_url(dirname(__FILE__)) . 'manifest.json';
+		// Use home_url to serve manifest from root
+		$manifest_url = home_url('/manifest.json');
 		echo '<link rel="manifest" href="' . esc_url($manifest_url) . '">' . "\n";
 	}
 
@@ -317,6 +318,47 @@ class Wp_Absen_Public
 		echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' . "\n";
 		echo '<meta name="apple-mobile-web-app-title" content="WP Absensi">' . "\n";
 		echo '<link rel="apple-touch-icon" href="' . esc_url($icon_url) . '">' . "\n";
+	}
+
+	/**
+	 * Serve manifest.json from root URL
+	 *
+	 * @since    1.0.0
+	 */
+	public function serve_manifest()
+	{
+		if ($_SERVER['REQUEST_URI'] === '/manifest.json') {
+			header('Content-Type: application/json; charset=utf-8');
+			header('X-Content-Type-Options: nosniff');
+
+			$manifest_file = plugin_dir_path(dirname(__FILE__)) . 'manifest.json';
+
+			if (file_exists($manifest_file)) {
+				readfile($manifest_file);
+				exit;
+			}
+		}
+	}
+
+	/**
+	 * Serve service-worker.js from root URL
+	 *
+	 * @since    1.0.0
+	 */
+	public function serve_service_worker()
+	{
+		if ($_SERVER['REQUEST_URI'] === '/service-worker.js' || $_SERVER['REQUEST_URI'] === '/sw.js') {
+			header('Content-Type: application/javascript; charset=utf-8');
+			header('X-Content-Type-Options: nosniff');
+			header('Service-Worker-Allowed: /');
+
+			$sw_file = plugin_dir_path(dirname(__FILE__)) . 'service-worker.js';
+
+			if (file_exists($sw_file)) {
+				readfile($sw_file);
+				exit;
+			}
+		}
 	}
 
 }
