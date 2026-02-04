@@ -505,6 +505,10 @@ class Wp_Absen_Admin
 				->set_default_value($this->functions->generateRandomString())
 				->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),
 
+			Field::make('checkbox', 'crb_enable_pwa', 'Aktifkan Progressive Web App (PWA)')
+				->set_option_value('yes')
+				->set_help_text('Centang untuk mengaktifkan fitur PWA. PWA memungkinkan aplikasi diinstall di home screen HP dan berfungsi offline dengan game sederhana.'),
+
 			Field::make('html', 'crb_sql_fte_absen_buttons')
 				->set_html(<<<HTML
                     <div>

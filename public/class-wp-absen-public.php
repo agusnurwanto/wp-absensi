@@ -121,7 +121,13 @@ class Wp_Absen_Public
 		wp_enqueue_script($this->plugin_name . 'datatables', plugin_dir_url(__FILE__) . 'js/datatables.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script($this->plugin_name . 'chart', plugin_dir_url(__FILE__) . 'js/chart.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/wp-absen-public.js', array('jquery'), $this->version, false);
-		wp_enqueue_script($this->plugin_name . '-pwa', plugin_dir_url(__FILE__) . 'js/pwa-register.js', array(), $this->version, true);
+
+		// Only enqueue PWA script if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled === 'yes') {
+			wp_enqueue_script($this->plugin_name . '-pwa', plugin_dir_url(__FILE__) . 'js/pwa-register.js', array(), $this->version, true);
+		}
+
 		wp_localize_script($this->plugin_name, 'ajax', array(
 			'api_key' => get_option(ABSEN_APIKEY),
 			'url' => admin_url('admin-ajax.php')
@@ -300,6 +306,12 @@ class Wp_Absen_Public
 	 */
 	public function add_pwa_manifest()
 	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled !== 'yes') {
+			return;
+		}
+
 		// Use home_url to serve manifest from root
 		$manifest_url = home_url('/manifest.json');
 		echo '<link rel="manifest" href="' . esc_url($manifest_url) . '">' . "\n";
@@ -312,6 +324,12 @@ class Wp_Absen_Public
 	 */
 	public function add_pwa_meta_tags()
 	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled !== 'yes') {
+			return;
+		}
+
 		$icon_url = plugin_dir_url(dirname(__FILE__)) . 'public/images/icon-192x192.png';
 		echo '<meta name="theme-color" content="#667eea">' . "\n";
 		echo '<meta name="apple-mobile-web-app-capable" content="yes">' . "\n";
@@ -327,6 +345,12 @@ class Wp_Absen_Public
 	 */
 	public function serve_manifest()
 	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled !== 'yes') {
+			return;
+		}
+
 		if ($_SERVER['REQUEST_URI'] === '/manifest.json') {
 			header('Content-Type: application/json; charset=utf-8');
 			header('X-Content-Type-Options: nosniff');
@@ -347,6 +371,12 @@ class Wp_Absen_Public
 	 */
 	public function serve_service_worker()
 	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled !== 'yes') {
+			return;
+		}
+
 		if ($_SERVER['REQUEST_URI'] === '/service-worker.js' || $_SERVER['REQUEST_URI'] === '/sw.js') {
 			header('Content-Type: application/javascript; charset=utf-8');
 			header('X-Content-Type-Options: nosniff');
