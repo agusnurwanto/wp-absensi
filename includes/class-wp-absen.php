@@ -226,6 +226,7 @@ class Wp_Absen
 		// PWA Hooks
 		$this->loader->add_action('wp_head', $plugin_public, 'add_pwa_manifest');
 		$this->loader->add_action('wp_head', $plugin_public, 'add_pwa_meta_tags');
+		$this->loader->add_action('wp_footer', $plugin_public, 'add_pwa_script_inline');
 
 		$this->loader->add_action('wp_ajax_get_datatable_karyawan', $plugin_public, 'get_datatable_karyawan');
 		$this->loader->add_action('wp_ajax_hapus_data_karyawan_by_id', $plugin_public, 'hapus_data_karyawan_by_id');

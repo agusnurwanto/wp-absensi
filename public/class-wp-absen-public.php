@@ -122,12 +122,6 @@ class Wp_Absen_Public
 		wp_enqueue_script($this->plugin_name . 'chart', plugin_dir_url(__FILE__) . 'js/chart.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/wp-absen-public.js', array('jquery'), $this->version, false);
 
-		// Only enqueue PWA script if PWA is enabled
-		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
-		if ($pwa_enabled === 'yes') {
-			wp_enqueue_script($this->plugin_name . '-pwa', plugin_dir_url(__FILE__) . 'js/pwa-register.js', array(), $this->version, true);
-		}
-
 		wp_localize_script($this->plugin_name, 'ajax', array(
 			'api_key' => get_option(ABSEN_APIKEY),
 			'url' => admin_url('admin-ajax.php')
@@ -336,6 +330,110 @@ class Wp_Absen_Public
 		echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' . "\n";
 		echo '<meta name="apple-mobile-web-app-title" content="WP Absensi">' . "\n";
 		echo '<link rel="apple-touch-icon" href="' . esc_url($icon_url) . '">' . "\n";
+	}
+
+	/**
+	 * Add PWA registration script to WordPress footer
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_pwa_script_inline()
+	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled !== 'yes') {
+			return;
+		}
+		?>
+		<style>
+			#pwa-install-btn {
+				display: none;
+				position: fixed;
+				bottom: 20px;
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 9999;
+				padding: 12px 24px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				border-radius: 50px;
+				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+				font-weight: 600;
+				font-size: 14px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				animation: pwa-bounce 2s infinite;
+			}
+
+			#pwa-install-btn:hover {
+				transform: translateX(-50%) scale(1.05);
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+			}
+
+			@keyframes pwa-bounce {
+
+				0%,
+				20%,
+				50%,
+				80%,
+				100% {
+					transform: translateX(-50%) translateY(0);
+				}
+
+				40% {
+					transform: translateX(-50%) translateY(-10px);
+				}
+
+				60% {
+					transform: translateX(-50%) translateY(-5px);
+				}
+			}
+		</style>
+		<script>
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('/service-worker.js')
+						.then(reg => console.log('PWA Terdaftar!', reg))
+						.catch(err => console.log('Gagal Daftar PWA', err));
+				});
+
+				let deferredPrompt;
+				const installBtn = document.createElement('button');
+				installBtn.id = 'pwa-install-btn';
+				installBtn.innerHTML = '📱 Tambahkan ke Layar Utama';
+				document.body.appendChild(installBtn);
+
+				window.addEventListener('beforeinstallprompt', (e) => {
+					// Prevent Chrome 67 and earlier from automatically showing the prompt
+					e.preventDefault();
+					// Stash the event so it can be triggered later
+					deferredPrompt = e;
+					// Update UI to notify the user they can add to home screen
+					installBtn.style.display = 'block';
+
+					console.log('beforeinstallprompt fired');
+				});
+
+				installBtn.addEventListener('click', (e) => {
+					// Hide the app provided install promotion
+					installBtn.style.display = 'none';
+					// Show the install prompt
+					deferredPrompt.prompt();
+					// Wait for the user to respond to the prompt
+					deferredPrompt.userChoice.then((choiceResult) => {
+						if (choiceResult.outcome === 'accepted') {
+							console.log('User accepted the A2HS prompt');
+						} else {
+							console.log('User dismissed the A2HS prompt');
+						}
+						deferredPrompt = null;
+					});
+				});
+			}
+		</script>
+		<?php
 	}
 
 }
