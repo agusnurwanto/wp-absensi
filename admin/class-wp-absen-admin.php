@@ -865,4 +865,74 @@ class Wp_Absen_Admin
 
 		die(json_encode($ret));
 	}
+
+	/**
+	 * Copy PWA files to WordPress root directory
+	 *
+	 * @since    1.0.0
+	 */
+	public function copy_pwa_files_to_root()
+	{
+		$wp_root = ABSPATH;
+		$plugin_path = ABSEN_PLUGIN_PATH;
+
+		// Files to copy
+		$files = array(
+			'manifest.json' => 'manifest.json',
+			'service-worker.js' => 'service-worker.js'
+		);
+
+		foreach ($files as $source => $dest) {
+			$source_file = $plugin_path . $source;
+			$dest_file = $wp_root . $dest;
+
+			if (file_exists($source_file)) {
+				copy($source_file, $dest_file);
+			}
+		}
+	}
+
+	/**
+	 * Delete PWA files from WordPress root directory
+	 *
+	 * @since    1.0.0
+	 */
+	public function delete_pwa_files_from_root()
+	{
+		$wp_root = ABSPATH;
+
+		// Files to delete
+		$files = array(
+			'manifest.json',
+			'service-worker.js'
+		);
+
+		foreach ($files as $file) {
+			$file_path = $wp_root . $file;
+
+			if (file_exists($file_path)) {
+				unlink($file_path);
+			}
+		}
+	}
+
+	/**
+	 * Handle PWA setting change
+	 * Called when Carbon Fields settings are saved
+	 *
+	 * @since    1.0.0
+	 */
+	public function handle_pwa_setting_change()
+	{
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+
+		if ($pwa_enabled === 'yes') {
+			// PWA enabled - copy files to root
+			$this->copy_pwa_files_to_root();
+		} else {
+			// PWA disabled - delete files from root
+			$this->delete_pwa_files_from_root();
+		}
+	}
+
 }
