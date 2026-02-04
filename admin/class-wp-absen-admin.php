@@ -506,7 +506,7 @@ class Wp_Absen_Admin
 				->set_help_text('Wajib diisi. API KEY digunakan untuk integrasi data.'),
 
 			Field::make('checkbox', 'crb_enable_pwa', 'Aktifkan Progressive Web App (PWA)')
-				->set_option_value('yes')
+				->set_option_value('1')
 				->set_help_text('Centang untuk mengaktifkan fitur PWA. PWA memungkinkan aplikasi diinstall di home screen HP dan berfungsi offline dengan game sederhana.'),
 
 			Field::make('html', 'crb_sql_fte_absen_buttons')
@@ -932,16 +932,11 @@ class Wp_Absen_Admin
 		if ($enable) {
 			// Enable PWA
 			$this->copy_pwa_files_to_root();
-			update_option('_crb_enable_pwa', 'yes');
+			update_option('_crb_enable_pwa', '1');
 			$message = 'PWA berhasil diaktifkan. File manifest dan service worker telah dicopy.';
 		} else {
 			// Disable PWA
 			$this->delete_pwa_files_from_root();
-			update_option('_crb_enable_pwa', 'no');
-			// Also delete the key entirely or set to empty if that's how CF handles unchecked checkboxes usually, 
-			// but explicit 'no' or empty string is safer. Carbon Fields checkboxes save 'yes' or empty.
-			// Let's set to empty string to match unchecked state behavior often seen.
-			// Actually looking at previous code: $pwa_enabled !== 'yes'. So empty is fine.
 			update_option('_crb_enable_pwa', '');
 			$message = 'PWA berhasil dinonaktifkan. File manifest dan service worker telah dihapus.';
 		}

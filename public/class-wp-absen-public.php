@@ -302,7 +302,7 @@ class Wp_Absen_Public
 	{
 		// Check if PWA is enabled
 		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
-		if ($pwa_enabled !== 'yes') {
+		if ($pwa_enabled != '1') {
 			return;
 		}
 
@@ -320,7 +320,7 @@ class Wp_Absen_Public
 	{
 		// Check if PWA is enabled
 		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
-		if ($pwa_enabled !== 'yes') {
+		if ($pwa_enabled != '1') {
 			return;
 		}
 
@@ -341,7 +341,7 @@ class Wp_Absen_Public
 	{
 		// Check if PWA is enabled
 		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
-		if ($pwa_enabled !== 'yes') {
+		if ($pwa_enabled != '1') {
 			return;
 		}
 		?>
