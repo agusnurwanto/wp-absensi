@@ -12,22 +12,11 @@ $input = shortcode_atts(array(
 
 ?>
 
-<link
-    rel="stylesheet"
-    type="text/css"
-    href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"
-/>
-<link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-/>
-<script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -41,19 +30,19 @@ $input = shortcode_atts(array(
 
 <div class="cetak">
     <div style="padding: 10px; margin: 0 0 3rem 0">
-        <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key" />
+        <input type="hidden" value="<?php echo get_option(ABSEN_APIKEY); ?>" id="api_key" />
         <h1 class="text-center" style="margin: 3rem">
             Manajemen Data Instansi<br />Tahun <?php echo $input['tahun_anggaran']; ?>
         </h1>
         <?php
         $current_user = wp_get_current_user();
-        $is_admin = in_array( 'administrator', (array) $current_user->roles );
-        if ($is_admin) : ?>
-        <div style="margin-bottom: 25px">
-            <button class="btn btn-primary" onclick="tambah_data_instansi()">
-                <span class="dashicons dashicons-plus"></span> Tambah Data
-            </button>
-        </div>
+        $is_admin = in_array('administrator', (array) $current_user->roles);
+        if ($is_admin): ?>
+            <div style="margin-bottom: 25px">
+                <button class="btn btn-primary" onclick="tambah_data_instansi()">
+                    <span class="dashicons dashicons-plus"></span> Tambah Data
+                </button>
+            </div>
         <?php endif; ?>
         <div class="wrap-table">
             <table id="management_data_table" cellpadding="2" cellspacing="0">
@@ -72,14 +61,8 @@ $input = shortcode_atts(array(
         </div>
     </div>
 </div>
-<div
-    class="modal fade mt-4"
-    id="modalTambahDataInstansi"
-    tabindex="-1"
-    role="dialog"
-    aria-labelledby="modalTambahDataInstansiLabel"
-    aria-hidden="true"
->
+<div class="modal fade mt-4" id="modalTambahDataInstansi" tabindex="-1" role="dialog"
+    aria-labelledby="modalTambahDataInstansiLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -96,48 +79,27 @@ $input = shortcode_atts(array(
                 </div>
                 <div class="form-group">
                     <label for="username" style="display: inline-block">Username (Login Admin Instansi)</label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        class="form-control"
-                    />
+                    <input type="text" id="username" name="username" class="form-control" />
                 </div>
                 <div class="form-group">
                     <label for="email_instansi" style="display: inline-block">Email Instansi</label>
-                    <input
-                        type="email"
-                        id="email_instansi"
-                        name="email_instansi"
-                        class="form-control"
-                        placeholder="Contoh: youremail@example.com"
-                    />
+                    <input type="email" id="email_instansi" name="email_instansi" class="form-control"
+                        placeholder="Contoh: youremail@example.com" />
                 </div>
                 <div class="form-group">
                     <label for="alamat_instansi" style="display: inline-block"> Alamat Instansi </label>
-                    <input
-                        type="text"
-                        id="alamat_instansi"
-                        name="alamat_instansi"
-                        class="form-control"
-                        placeholder=""
-                    />
+                    <input type="text" id="alamat_instansi" name="alamat_instansi" class="form-control"
+                        placeholder="" />
                 </div>
                 <div class="form-group">
                     <label for="nama_kerja" style="display: inline-block">Nama Kode Kerja</label>
                     <input type="text" id="nama_kerja" name="nama_kerja" class="form-control" />
                 </div>
                 <div class="form-group">
-                    <label for="koordinat" style="display: inline-block"
-                        >Koordinat Lokasi Kantor (Latitude, Longitude)</label
-                    >
-                    <input
-                        type="text"
-                        id="koordinat"
-                        name="koordinat"
-                        class="form-control"
-                        placeholder="Contoh: -7.589537668248559, 111.41982078552246"
-                    />
+                    <label for="koordinat" style="display: inline-block">Koordinat Lokasi Kantor (Latitude,
+                        Longitude)</label>
+                    <input type="text" id="koordinat" name="koordinat" class="form-control"
+                        placeholder="Contoh: -7.589537668248559, 111.41982078552246" />
                 </div>
                 <div class="form-group">
                     <div id="map" style="height: 300px; width: 100%"></div>
@@ -145,12 +107,7 @@ $input = shortcode_atts(array(
                 </div>
                 <div class="form-group">
                     <label for="radius_meter" style="display: inline-block">Jarak Maksimal Absen (Meter)</label>
-                    <input
-                        type="number"
-                        id="radius_meter"
-                        name="radius_meter"
-                        class="form-control"
-                    />
+                    <input type="number" id="radius_meter" name="radius_meter" class="form-control" />
                 </div>
                 <div class="form-group">
                     <label style="display: block; font-weight: bold; margin-bottom: 10px;">Jadwal Kerja Per Hari</label>
@@ -158,7 +115,8 @@ $input = shortcode_atts(array(
                         <table class="table table-bordered table-sm">
                             <thead>
                                 <tr>
-                                    <th width="10" class="text-center"><input type="checkbox" id="check_all_days" onclick="toggleAllDays(this)"></th>
+                                    <th width="10" class="text-center"><input type="checkbox" id="check_all_days"
+                                            onclick="toggleAllDays(this)"></th>
                                     <th>Hari</th>
                                     <th width="150">Jam Masuk</th>
                                     <th width="150">Jam Pulang</th>
@@ -175,20 +133,26 @@ $input = shortcode_atts(array(
                                     'Saturday' => 'Sabtu',
                                     'Sunday' => 'Minggu'
                                 ];
-                                foreach ($days as $key => $label) :
-                                ?>
-                                <tr>
-                                    <td class="text-center">
-                                        <input type="checkbox" class="day-check" name="hari_kerja[]" value="<?php echo $key; ?>" id="check_<?php echo $key; ?>" onchange="toggleTimeInputs('<?php echo $key; ?>')">
-                                    </td>
-                                    <td><label for="check_<?php echo $key; ?>" style="font-weight: normal; cursor: pointer; margin:0;"><?php echo $label; ?></label></td>
-                                    <td>
-                                        <input type="time" class="form-control time-input time-in" id="jam_masuk_<?php echo $key; ?>" disabled value="08:00">
-                                    </td>
-                                    <td>
-                                        <input type="time" class="form-control time-input time-out" id="jam_pulang_<?php echo $key; ?>" disabled value="16:00">
-                                    </td>
-                                </tr>
+                                foreach ($days as $key => $label):
+                                    ?>
+                                    <tr>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="day-check" name="hari_kerja[]"
+                                                value="<?php echo $key; ?>" id="check_<?php echo $key; ?>"
+                                                onchange="toggleTimeInputs('<?php echo $key; ?>')">
+                                        </td>
+                                        <td><label for="check_<?php echo $key; ?>"
+                                                style="font-weight: normal; cursor: pointer; margin:0;"><?php echo $label; ?></label>
+                                        </td>
+                                        <td>
+                                            <input type="time" class="form-control time-input time-in"
+                                                id="jam_masuk_<?php echo $key; ?>" disabled value="08:00">
+                                        </td>
+                                        <td>
+                                            <input type="time" class="form-control time-input time-out"
+                                                id="jam_pulang_<?php echo $key; ?>" disabled value="16:00">
+                                        </td>
+                                    </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
@@ -225,14 +189,14 @@ $input = shortcode_atts(array(
                     dataType: 'json',
                     data: {
                         'action': 'get_datatable_instansi',
-                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                         'tahun': '<?php echo $input['tahun_anggaran']; ?>',
 
                     }
                 },
                 lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
                 order: [[0, 'asc']],
-                "drawCallback": ( settings ) => {
+                "drawCallback": (settings) => {
                     jQuery("#wrap-loading").hide();
                 },
                 "columns": [
@@ -267,8 +231,8 @@ $input = shortcode_atts(array(
         }
 
         // Hide delete buttons via CSS if not admin (cleaner than JS row callback)
-        <?php if (!$is_admin) : ?>
-        jQuery('body').append('<style>#management_data_table .btn-danger { display: none !important; }</style>');
+        <?php if (!$is_admin): ?>
+            jQuery('body').append('<style>#management_data_table .btn-danger { display: none !important; }</style>');
         <?php endif; ?>
     }
 
@@ -289,9 +253,9 @@ $input = shortcode_atts(array(
                     url: '<?php echo admin_url('admin-ajax.php'); ?>',
                     type: 'post',
                     data: {
-                        'action' : 'hapus_data_instansi_by_id',
-                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                        'id'     : id
+                        'action': 'hapus_data_instansi_by_id',
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                        'id': id
                     },
                     dataType: 'json',
                     success: (response) => {
@@ -338,7 +302,7 @@ $input = shortcode_atts(array(
                     dataType: 'json',
                     data: {
                         'action': 'toggle_status_instansi',
-                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                         'id': id,
                         'status': status
                     },
@@ -381,7 +345,7 @@ $input = shortcode_atts(array(
             dataType: 'json',
             data: {
                 'action': 'get_data_instansi_by_id',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                 'id': _id,
             },
             success: (res) => {
@@ -404,9 +368,9 @@ $input = shortcode_atts(array(
                         // Safe JSON Parse helper
                         let parseSchedule = (str) => {
                             try {
-                                return JSON.parse(str); 
-                            } catch(e) { 
-                                return str; 
+                                return JSON.parse(str);
+                            } catch (e) {
+                                return str;
                             }
                         };
 
@@ -442,7 +406,7 @@ $input = shortcode_atts(array(
                             // Case 1: New JSON format (Object: Day -> Time)
                             if (typeof jamMasuk === 'object' && jamMasuk !== null && jamMasuk[d]) {
                                 jQuery('#jam_masuk_' + d).val(jamMasuk[d]);
-                            } 
+                            }
                             // Case 2: Legacy/Global String (Apply to all)
                             else if (typeof jamMasuk === 'string') {
                                 jQuery('#jam_masuk_' + d).val(jamMasuk);
@@ -455,8 +419,8 @@ $input = shortcode_atts(array(
                             }
                         });
 
-                    } catch(e) {
-                        console.log('Error parsing schedule', e); 
+                    } catch (e) {
+                        console.log('Error parsing schedule', e);
                     }
 
                     jQuery('#modalTambahDataInstansi').modal('show');
@@ -487,7 +451,7 @@ $input = shortcode_atts(array(
         jQuery('#radius_meter').val('100');
         jQuery('#username').val('').attr('disabled', false);
         jQuery('#email_instansi').val('').attr('disabled', false);
-        
+
         // Reset Days & Time
         let defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         jQuery('.day-check').prop('checked', false);
@@ -507,20 +471,20 @@ $input = shortcode_atts(array(
         }, 500);
     }
 
-    function get_users_list(){
+    function get_users_list() {
         jQuery.ajax({
             method: 'post',
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
             dataType: 'json',
             data: {
                 'action': 'get_users_for_instansi',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>'
             },
             success: (res) => {
                 if (res.status == 'success') {
                     let options = '<option value="0">-- Pilih User --</option>';
                     res.data.forEach((user) => {
-                        options += '<option value="'+user.ID+'">'+user.display_name+' ('+user.user_login+')</option>';
+                        options += '<option value="' + user.ID + '">' + user.display_name + ' (' + user.user_login + ')</option>';
                     });
                     jQuery('#id_user').html(options);
                 }
@@ -587,7 +551,7 @@ $input = shortcode_atts(array(
         if (marker) {
             marker.setLatLng([lat, lng]);
         } else {
-            marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
             marker.on('dragend', (e) => {
                 let position = marker.getLatLng();
                 updateInput(position.lat, position.lng);
@@ -632,7 +596,7 @@ $input = shortcode_atts(array(
                 'error'
             );
         }
-        
+
         let nama_kerja = jQuery('#nama_kerja').val();
         if (nama_kerja == '') {
             return Swal.fire(
@@ -662,14 +626,14 @@ $input = shortcode_atts(array(
                 'error'
             );
         }
-        
+
         // GATHER SCHEDULE DATA
         let hari_kerja = [];
         let jam_masuk = {};
         let jam_pulang = {};
 
-        jQuery('.day-check:checked').each(() => {
-            let day = jQuery(this).val();
+        jQuery('.day-check:checked').map(function (a, b) {
+            let day = jQuery(b).val();
             hari_kerja.push(day);
             jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
             jam_pulang[day] = jQuery('#jam_pulang_' + day).val();
@@ -690,7 +654,7 @@ $input = shortcode_atts(array(
             dataType: 'json',
             data: {
                 'action': 'tambah_data_instansi',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                 'id_data': id_data,
                 'nama_instansi': nama_instansi,
                 'nama_kerja': nama_kerja,
@@ -733,4 +697,3 @@ $input = shortcode_atts(array(
     }
 
 </script>
-
