@@ -11,7 +11,7 @@ trait CustomTraitAbsen {
 		string $nama_file = ''
 	) {
 		try {
-			if (!empty($api_key) && $api_key == get_option(ABSENSI_APIKEY)) {
+			if (!empty($api_key) && $api_key == get_option(ABSEN_APIKEY)) {
 				if (!empty($file)) {
 					if (empty($ext)) {
 						throw new Exception('Extensi file belum ditentukan ' . json_encode($file));

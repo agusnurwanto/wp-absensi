@@ -142,6 +142,7 @@ class Wp_Absen_Public {
         $get_data_pegawai = '';
         $get_data_absensi = '';
         $get_data_kegiatan = '';
+		$get_data_ijin = '';
         if ($table_exists) {
             $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
             if (!empty($get_tahun) && is_array($get_tahun)) {
@@ -181,6 +182,15 @@ class Wp_Absen_Public {
 						'post_status' => 'publish'
 					));
 					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
+
+                    $management_data_ijin = $this->functions->generatePage(array(
+						'nama_page' => 'Manajemen Data Ijin | ' . $v['tahun_anggaran'],
+						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'show_header' => 1,
+						'no_key' => 1,
+						'post_status' => 'publish'
+					));
+					$get_data_ijin .= '<li><a target="_blank" href="' . $management_data_ijin['url'] . '">' . esc_html($management_data_ijin['title']) . '</a></li>';
 				}
             }
         }
@@ -215,6 +225,9 @@ class Wp_Absen_Public {
 							<a class="nav-link" id="data-kegiatan-tab" data-toggle="pill" href="#data-kegiatan" role="tab" aria-controls="data-kegiatan" aria-selected="false">
                                 <span class="dashicons dashicons-list-view"></span> Manajemen Data Kegiatan
                             </a>
+                            <a class="nav-link" id="data-ijin-tab" data-toggle="pill" href="#data-ijin" role="tab" aria-controls="data-ijin" aria-selected="false">
+                                <span class="dashicons dashicons-id-alt"></span> Manajemen Data Ijin
+                            </a>
                         </div>
                     </div>
                     <div class="col-md-7">
@@ -233,6 +246,9 @@ class Wp_Absen_Public {
                             </div>
 							<div class="tab-pane fade" id="data-kegiatan" role="tabpanel" aria-labelledby="data-kegiatan-tab">
                                 <ul>' . $get_data_kegiatan . '</ul>
+                            </div>
+                            <div class="tab-pane fade" id="data-ijin" role="tabpanel" aria-labelledby="data-ijin-tab">
+                                <ul>' . $get_data_ijin . '</ul>
                             </div>
                         </div>
                     </div>
@@ -276,7 +292,7 @@ class Wp_Absen_Public {
 						<ul>' . $get_data_absensi . '</ul>
 					</div>
 					<div class="tab-pane fade" id="menu-ijin" role="tabpanel" aria-labelledby="tab-menu-ijin">
-						<ul>WIP</ul>
+						<ul>' . $get_data_ijin . '</ul>
 					</div>
 					<div class="tab-pane fade" id="menu-kegiatan" role="tabpanel" aria-labelledby="tab-menu-kegiatan">
 						<ul>' . $get_data_kegiatan . '</ul>

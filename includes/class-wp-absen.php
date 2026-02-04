@@ -153,6 +153,12 @@ class Wp_Absen {
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-kegiatan.php';
 
+		/**
+		 * The class responsible for defining all actions that occur in the public-facing
+		 * side of the site for Ijin.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-ijin.php';
+
 		$this->loader = new Wp_Absen_Loader();
 
 		// Functions tambahan
@@ -216,6 +222,7 @@ class Wp_Absen {
 		$plugin_public_kode_kerja = new Wp_Absen_Public_Kode_Kerja( $this->get_plugin_name(), $this->get_version(), $this->functions );
 		$plugin_public_absensi = new Wp_Absen_Public_Absensi( $this->get_plugin_name(), $this->get_version(), $this->functions );
 		$plugin_public_kegiatan = new Wp_Absen_Public_Kegiatan( $this->get_plugin_name(), $this->get_version(), $this->functions );
+		$plugin_public_ijin = new Wp_Absen_Public_Ijin( $this->get_plugin_name(), $this->get_version(), $this->functions );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
@@ -282,12 +289,20 @@ class Wp_Absen {
 		$this->loader->add_action('wp_ajax_get_data_kegiatan_by_id',  $plugin_public_kegiatan, 'get_data_kegiatan_by_id');
 		$this->loader->add_action('wp_ajax_hapus_data_kegiatan_by_id',  $plugin_public_kegiatan, 'hapus_data_kegiatan_by_id');
 		
+		// Ijin Hooks
+		$this->loader->add_action('wp_ajax_get_datatable_ijin',  $plugin_public_ijin, 'get_datatable_ijin');
+		$this->loader->add_action('wp_ajax_tambah_data_ijin',  $plugin_public_ijin, 'tambah_data_ijin');
+		$this->loader->add_action('wp_ajax_get_data_ijin_by_id',  $plugin_public_ijin, 'get_data_ijin_by_id');
+		$this->loader->add_action('wp_ajax_hapus_data_ijin_by_id',  $plugin_public_ijin, 'hapus_data_ijin_by_id');
+		$this->loader->add_action('wp_ajax_update_status_ijin',  $plugin_public_ijin, 'update_status_ijin');
+
 		add_shortcode('management_data_pegawai_absensi', array($plugin_public_pegawai, 'management_data_pegawai_absensi'));
 		add_shortcode('management_data_instansi', array($plugin_public_instansi, 'management_data_instansi'));
 		add_shortcode('management_data_absensi', array($plugin_public, 'management_data_absensi'));
 		add_shortcode('management_data_kerja', array($plugin_public_kode_kerja, 'manajemen_data_kerja'));
 		add_shortcode('manajemen_data_kerja', array($plugin_public_kode_kerja, 'manajemen_data_kerja'));
 		add_shortcode('management_data_kegiatan', array($plugin_public_kegiatan, 'management_data_kegiatan'));
+		add_shortcode('management_data_ijin', array($plugin_public_ijin, 'management_data_ijin'));
 		add_shortcode('menu_absensi', array($plugin_public, 'menu_absensi'));
 
 		$this->loader->add_filter( 'login_redirect', $plugin_public, 'custom_login_redirect', 10, 3 );

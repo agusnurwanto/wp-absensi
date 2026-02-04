@@ -86,10 +86,10 @@ class Wp_Absen_Public_Absensi
         if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
             $current_user = wp_get_current_user();
             $id_pegawai_user = $current_user->ID;
-            
+
             // Retrieve Pegawai ID from absensi_data_pegawai using id_user
             $pegawai = $wpdb->get_row($wpdb->prepare("SELECT id, id_instansi FROM absensi_data_pegawai WHERE id_user = %d", $id_pegawai_user));
-            
+
             if (!$pegawai) {
                 $ret['message'] = 'Data Pegawai tidak ditemukan!';
                 die(json_encode($ret));
@@ -109,10 +109,39 @@ class Wp_Absen_Public_Absensi
                 die(json_encode($ret));
             }
 
+            // Handle Foto Upload
+            $foto_lampiran = '';
+            if (!empty($_FILES['foto_lampiran']['name'])) {
+                $target_path = ABSEN_PLUGIN_PATH . 'public/img/absensi/';
+                $ext = ['jpg', 'jpeg', 'png'];
+
+                // Ensure directory exists
+                if (!file_exists($target_path)) {
+                    mkdir($target_path, 0755, true);
+                }
+
+                $prefix = 'absensi_' . $tipe_absen . '_' . $id_pegawai . '_' . time();
+                $upload = self::uploadFileAbsen(
+                    get_option(ABSEN_APIKEY),
+                    $target_path,
+                    $_FILES['foto_lampiran'],
+                    $ext,
+                    2000000, // 2MB max
+                    $prefix
+                );
+
+                if ($upload['status']) {
+                    $foto_lampiran = $upload['filename'];
+                } else {
+                    $ret['message'] = 'Gagal upload foto: ' . $upload['message'];
+                    die(json_encode($ret));
+                }
+            }
+
             // Check existing attendance for today & code
             $existing = $wpdb->get_row($wpdb->prepare("
-                SELECT id, waktu_masuk, waktu_pulang 
-                FROM absensi_harian 
+                SELECT id, waktu_masuk, waktu_pulang
+                FROM absensi_harian
                 WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s
             ", $id_pegawai, $id_kode_kerja, $tanggal));
 
@@ -131,7 +160,12 @@ class Wp_Absen_Public_Absensi
                         'status' => 'Hadir', // Default Hadir, nanti bisa logic telat
                         'tahun' => $tahun
                     );
-                    
+
+                    // Add foto masuk if uploaded
+                    if (!empty($foto_lampiran)) {
+                        $data['foto_masuk'] = $foto_lampiran;
+                    }
+
                     if ($existing) {
                         $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
                     } else {
@@ -150,6 +184,12 @@ class Wp_Absen_Public_Absensi
                         'waktu_pulang' => $waktu_sekarang,
                         'koordinat_pulang' => $koordinat
                     );
+
+                    // Add foto pulang if uploaded
+                    if (!empty($foto_lampiran)) {
+                        $data['foto_pulang'] = $foto_lampiran;
+                    }
+
                     $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
                     $ret['status'] = 'success';
                     $ret['message'] = 'Berhasil Update Absen Pulang pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
@@ -159,6 +199,12 @@ class Wp_Absen_Public_Absensi
                         'waktu_pulang' => $waktu_sekarang,
                         'koordinat_pulang' => $koordinat
                     );
+
+                    // Add foto pulang if uploaded
+                    if (!empty($foto_lampiran)) {
+                        $data['foto_pulang'] = $foto_lampiran;
+                    }
+
                     $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
                     $ret['status'] = 'success';
                     $ret['message'] = 'Berhasil Absen Pulang pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
@@ -452,7 +498,21 @@ class Wp_Absen_Public_Absensi
             foreach($queryRecords as $row){
                 $waktu_masuk = $row['waktu_masuk'] ? date('H:i', strtotime($row['waktu_masuk'])) : '-';
                 $waktu_pulang = $row['waktu_pulang'] ? date('H:i', strtotime($row['waktu_pulang'])) : '-';
-                
+
+                // Foto Masuk
+                $foto_masuk_html = '-';
+                if (!empty($row['foto_masuk'])) {
+                    $foto_masuk_url = ABSEN_PLUGIN_URL . 'public/img/absensi/' . $row['foto_masuk'];
+                    $foto_masuk_html = '<a href="'.$foto_masuk_url.'" target="_blank"><img src="'.$foto_masuk_url.'" style="max-width:50px;max-height:50px;border-radius:5px;" title="Lihat Foto Masuk"></a>';
+                }
+
+                // Foto Pulang
+                $foto_pulang_html = '-';
+                if (!empty($row['foto_pulang'])) {
+                    $foto_pulang_url = ABSEN_PLUGIN_URL . 'public/img/absensi/' . $row['foto_pulang'];
+                    $foto_pulang_html = '<a href="'.$foto_pulang_url.'" target="_blank"><img src="'.$foto_pulang_url.'" style="max-width:50px;max-height:50px;border-radius:5px;" title="Lihat Foto Pulang"></a>';
+                }
+
                 $btn_aksi = '';
                 if (!$is_pegawai_only) {
                     $btn_aksi = '
@@ -467,6 +527,8 @@ class Wp_Absen_Public_Absensi
                     'tanggal' => date_i18n('d F Y', strtotime($row['tanggal'])),
                     'status' => $row['status'], // e.g. Hadir, Telat
                     'waktu' => $waktu_masuk . ' - ' . $waktu_pulang,
+                    'foto_masuk' => $foto_masuk_html,
+                    'foto_pulang' => $foto_pulang_html,
                     'nama_kerja' => $row['nama_kerja'],
                     'aksi' => $btn_aksi
                 );

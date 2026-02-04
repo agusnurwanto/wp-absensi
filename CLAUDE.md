@@ -51,6 +51,8 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | Wp_Absen_Public_Pegawai | public/class-wp-absen-public-pegawai.php | Employee management, master data, copy between years |
 | Wp_Absen_Public_Kode_Kerja | public/class-wp-absen-public-kode-kerja.php | Work code/schedule management with flexible hours |
 | Wp_Absen_Public_Absensi | public/class-wp-absen-public-absensi.php | Daily attendance submission, clock in/out, GPS tracking |
+| Wp_Absen_Public_Kegiatan | public/class-wp-absen-public-kegiatan.php | Activity/event management per employee |
+| Wp_Absen_Public_Ijin | public/class-wp-absen-public-ijin.php | Leave/permission request management with approval workflow |
 | CustomTraitAbsen | public/trait/CustomTrait.php | Shared file upload trait |
 
 ### Data Flow
@@ -68,7 +70,8 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | `absensi_data_instansi` | Institutions with GPS geofencing, linked WordPress users |
 | `absensi_data_kerja` | Work codes/schedules with flexible hours, geofencing, primary flag |
 | `absensi_harian` | Daily attendance records (clock in/out, coordinates, photos) |
-| `absensi_ijin` | Leave/permission requests (pending implementation) |
+| `absensi_ijin` | Leave/permission requests with approval workflow (Pending/Approved/Rejected) |
+| `absensi_kegiatan` | Employee activities/events with time, location, and descriptions |
 | `absensi_data` | Attendance/overtime header records (legacy) |
 | `absensi_data_detail` | Detailed attendance entries per employee (legacy) |
 | `absensi_data_unit` | Organizational units (SKPD) from WP-SIPD |
@@ -91,6 +94,8 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | `[management_data_absensi]` | Wp_Absen_Public | Attendance records management |
 | `[management_data_kerja]` | Wp_Absen_Public_Kode_Kerja | Work code/schedule management |
 | `[manajemen_data_kerja]` | Wp_Absen_Public_Kode_Kerja | Work code management (alias) |
+| `[management_data_kegiatan]` | Wp_Absen_Public_Kegiatan | Employee activity/event management |
+| `[management_data_ijin]` | Wp_Absen_Public_Ijin | Leave/permission request management |
 | `[absensi_pegawai]` | Wp_Absen_Public_Absensi | Employee attendance submission interface |
 | `[menu_absensi]` | Wp_Absen_Public | Dynamic menu based on user role |
 | `[ubah_password_absen]` | ABSEN_Functions | Password change form with force-change support |
@@ -103,8 +108,10 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | `wp-absen-management-data-pegawai.php` | Employee management UI |
 | `wp-absen-management-data-instansi.php` | Institution management with Leaflet map |
 | `wp-absen-management-data-kode-kerja.php` | Work code management UI |
-| `wp-absen-management-data-absensi.php` | Attendance records UI |
+| `wp-absen-management-data-absensi.php` | Attendance records UI with photo attachments |
 | `wp-absen-absensi-pegawai.php` | Employee attendance submission UI |
+| `wp-absen-management-data-kegiatan.php` | Activity/event management UI |
+| `wp-absen-management-data-ijin.php` | Leave/permission request UI |
 | `wp-absen-public-display.php` | Generic public display |
 
 ## AJAX Endpoints
@@ -157,6 +164,19 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 - `get_data_absensi_by_id` - Get attendance record details
 - `tambah_data_absensi_manual` - Manual attendance entry by admin
 - `hapus_data_absensi` - Delete attendance record
+
+### Kegiatan Management (Wp_Absen_Public_Kegiatan)
+- `get_datatable_kegiatan` - DataTable for activities (permission filtered)
+- `tambah_data_kegiatan` - Add/update activity with file upload
+- `get_data_kegiatan_by_id` - Get activity details
+- `hapus_data_kegiatan_by_id` - Delete activity (hard delete, permission checked)
+
+### Ijin Management (Wp_Absen_Public_Ijin)
+- `get_datatable_ijin` - DataTable for leave requests (permission filtered)
+- `tambah_data_ijin` - Add/update leave request with file upload
+- `get_data_ijin_by_id` - Get leave request details
+- `hapus_data_ijin_by_id` - Delete leave request (hard delete)
+- `update_status_ijin` - Approve/reject leave request (admin only)
 
 ### Password Management (ABSEN_Functions)
 - `absen_change_password` - Change password, clears force-change flag
@@ -264,9 +284,39 @@ Real-time attendance tracking with:
 
 - **Clock In/Out**: Separate timestamps for masuk (in) and pulang (out)
 - **GPS Tracking**: Coordinates captured for both check-in and check-out
-- **Photo Documentation**: Support for foto_masuk and foto_pulang
+- **Photo Documentation**: Required foto_masuk (check-in photo) and foto_pulang (check-out photo) stored in `public/img/absensi/`
 - **Status Types**: Hadir (present), Telat (late), Ijin (permission), Sakit (sick), Alpha (absent)
 - **Manual Entry**: Admins can manually add/edit attendance records
+
+## Activity System (Kegiatan)
+
+Activity/event tracking for employees:
+
+- **Activity Details**: nama_kegiatan (activity name), tanggal (date), jam_mulai/jam_selesai (start/end time)
+- **Location**: tempat (place/venue)
+- **Description**: uraian (activity description)
+- **File Attachment**: Support for PDF, JPG, PNG uploads (stored in `public/img/kegiatan/`)
+- **Permission Hierarchy**:
+  - Administrator: Can manage all activities
+  - Admin Instansi: Can manage activities for their institution
+  - Pegawai: Can manage only their own activities
+- **Soft Delete**: Uses `active` field (0/1)
+
+## Leave/Permission System (Ijin)
+
+Leave and permission request management with approval workflow:
+
+- **Request Types (tipe_ijin)**: Sakit (sick), Ijin (permission), Cuti (leave), Dinas Luar (external duty)
+- **Date Range**: tanggal_mulai and tanggal_selesai for multi-day requests
+- **Approval Workflow**:
+  - `Pending` - Initial status when submitted
+  - `Approved` - Approved by admin
+  - `Rejected` - Rejected by admin
+- **File Attachment**: Support for PDF, JPG, PNG uploads (stored in `public/img/ijin/`)
+- **Permission Logic**:
+  - Pegawai: Can submit requests, edit/delete only if status is Pending
+  - Admin Instansi: Can manage requests for their institution, approve/reject
+  - Administrator: Full access to all requests
 
 ## Constants (defined in wp-absen.php)
 - `ABSEN_PLUGIN_URL` - Plugin URL path
@@ -358,10 +408,35 @@ Real-time attendance tracking with:
 - `jam_masuk` - Check-in time
 - `jam_pulang` - Check-out time
 - `hari_kerja` - Working days
+- `kegiatan` - Activity/event
 
-## Pending/Incomplete Features
+## Tipe Ijin (Leave Types)
+| Value | Label |
+|-------|-------|
+| Sakit | Sick leave |
+| Ijin | Permission/leave |
+| Cuti | Annual leave |
+| Dinas Luar | External duty |
 
-- **Leave System (absensi_ijin)**: Database table created but no AJAX endpoints or UI implemented yet. Fields include: tipe_ijin, jenis_ijin, alasan, tanggal_mulai, tanggal_selesai, file_lampiran, status (Pending/Approved/Rejected)
+## Status Ijin (Leave Status)
+| Value | Label |
+|-------|-------|
+| Pending | Awaiting approval |
+| Approved | Approved by admin |
+| Rejected | Rejected by admin |
+
+## File Upload Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `public/img/kegiatan/` | Activity file attachments |
+| `public/img/ijin/` | Leave request attachments (medical certificates, etc.) |
+| `public/img/absensi/` | Attendance photo attachments (check-in/check-out selfies) |
+
+### File Naming Convention
+- Kegiatan files: `kegiatan_[timestamp].[ext]`
+- Ijin files: `ijin_[timestamp].[ext]`
+- Absensi photos: `absensi_[masuk/pulang]_[id_pegawai]_[timestamp].[ext]`
 
 ## Maintenance
 

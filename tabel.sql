@@ -235,6 +235,7 @@ CREATE TABLE `absensi_kegiatan` (
   `jam_selesai` TIME DEFAULT NULL,
   `tempat` TEXT DEFAULT NULL,
   `uraian` TEXT DEFAULT NULL,
+  `file_lampiran` TEXT DEFAULT NULL,
   `tahun` YEAR(4) NOT NULL,
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -243,3 +244,5 @@ CREATE TABLE `absensi_kegiatan` (
   KEY `id_instansi` (`id_instansi`),
   KEY `active` (`active`)
 );
+
+ALTER TABLE `absensi_kegiatan` ADD `file_lampiran` TEXT NULL AFTER `uraian`;

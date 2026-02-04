@@ -1,9 +1,7 @@
 <?php
-
-global $wpdb;
-
-if (!defined('WPINC')) {
-    die;
+// Ensure strict type checking is not enabled for this file if we are mixing HTML/PHP
+if (!defined('ABSPATH')) {
+    exit;
 }
 
 $input = shortcode_atts(array(
@@ -13,32 +11,33 @@ $input = shortcode_atts(array(
 ?>
 
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<div class="wrap box_dashboard_absensi">
-    <div style="padding: 10px;margin:0 0 3rem 0;">
-        <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key">
-        <h1 class="text-center" style="margin:3rem;">Manajemen Data Kegiatan<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
-        <div style="margin-bottom: 25px;">
-            <button class="btn btn-primary" onclick="tambah_data_kegiatan();"><i class="dashicons dashicons-plus"></i> Tambah Data Kegiatan</button>
+<div class="cetak">
+    <div style="padding: 10px; margin: 0 0 3rem 0">
+        <h3 class="text-center" style="margin: 3rem">
+            Manajemen Data Ijin / Cuti / Sakit<br />Tahun <?php echo esc_html($input['tahun_anggaran']); ?>
+        </h3>
+        
+        <div style="margin-bottom: 25px">
+            <button class="btn btn-primary" onclick="tambah_data_ijin()">
+                <span class="dashicons dashicons-plus"></span> Tambah Data
+            </button>
         </div>
+
         <div class="wrap-table">
-        <table id="management_data_kegiatan_table" cellpadding="2" cellspacing="0" class="table table-striped table-bordered" style="width:100%">
+        <table id="management_data_ijin_table" cellpadding="2" cellspacing="0" class="table table-striped table-bordered" style="width:100%">
             <thead>
                 <tr>
                     <th class="text-center">No</th>
                     <th class="text-center">Nama Pegawai</th>
-                    <th class="text-center">Nama Kegiatan</th>
+                    <th class="text-center">Tipe</th>
                     <th class="text-center">Tanggal</th>
-                    <th class="text-center">Waktu</th>
-                    <th class="text-center">Tempat</th>
-                    <th class="text-center">Uraian</th>
+                    <th class="text-center">Alasan</th>
                     <th class="text-center">Lampiran</th>
                     <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 100px;">Aksi</th>
+                    <th class="text-center" style="width: 120px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,17 +48,17 @@ $input = shortcode_atts(array(
 </div>
 
 <!-- Modal Tambah/Edit Data -->
-<div class="modal fade" id="modalTambahDataKegiatan" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataKegiatanLabel" aria-hidden="true">
+<div class="modal fade" id="modalTambahDataIjin" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataIjinLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTambahDataKegiatanLabel">Tambah Data Kegiatan</h5>
+                <h5 class="modal-title" id="modalTambahDataIjinLabel">Pengajuan Ijin</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="formTambahDataKegiatan" enctype="multipart/form-data">
+                <form id="formTambahDataIjin" enctype="multipart/form-data">
                     <input type="hidden" id="id_data" name="id_data">
                     <div class="form-group">
                         <label for="nama_pegawai">Nama Pegawai</label>
@@ -75,40 +74,40 @@ $input = shortcode_atts(array(
                             <input type="text" class="form-control" id="nama_pegawai_readonly" value="<?php echo esc_attr($pegawai_info['nama']); ?>" readonly>
                         <?php endif; ?>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="nama_kegiatan">Nama Kegiatan</label>
-                        <input type="text" class="form-control" id="nama_kegiatan" name="nama_kegiatan" required>
+                        <label for="tipe_ijin">Tipe Ijin</label>
+                        <select class="form-control" id="tipe_ijin" name="tipe_ijin" required>
+                            <option value="">-- Pilih Tipe --</option>
+                            <option value="Sakit">Sakit</option>
+                            <option value="Ijin">Ijin</option>
+                            <option value="Cuti">Cuti</option>
+                            <option value="Dinas Luar">Dinas Luar</option>
+                        </select>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="tanggal">Tanggal</label>
-                                <input type="date" class="form-control" id="tanggal" name="tanggal" required>
+                                <label for="tanggal_mulai">Tanggal Mulai</label>
+                                <input type="date" class="form-control" id="tanggal_mulai" name="tanggal_mulai" required>
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <div class="form-group">
-                                <label for="jam_mulai">Jam Mulai</label>
-                                <input type="time" class="form-control" id="jam_mulai" name="jam_mulai">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="jam_selesai">Jam Selesai</label>
-                                <input type="time" class="form-control" id="jam_selesai" name="jam_selesai">
+                                <label for="tanggal_selesai">Tanggal Selesai</label>
+                                <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai" required>
                             </div>
                         </div>
                     </div>
+
                     <div class="form-group">
-                        <label for="tempat">Tempat</label>
-                        <textarea class="form-control" id="tempat" name="tempat" rows="2"></textarea>
+                        <label for="alasan">Alasan / Keterangan</label>
+                        <textarea class="form-control" id="alasan" name="alasan" rows="3"></textarea>
                     </div>
+
                     <div class="form-group">
-                        <label for="uraian">Uraian / Keterangan</label>
-                        <textarea class="form-control" id="uraian" name="uraian" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="file_lampiran">Lampiran (Foto/Dokumen) <small class="text-muted">*Maks 5MB (PDF/JPG/PNG)</small></label>
+                        <label for="file_lampiran">Lampiran (Bukti/Surat Dokter) <small class="text-muted">*Maks 2MB (PDF/JPG/PNG)</small></label>
                         <input type="file" class="form-control-file" id="file_lampiran" name="file_lampiran">
                         <small id="file_existing" class="form-text text-info"></small>
                     </div>
@@ -116,150 +115,137 @@ $input = shortcode_atts(array(
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-primary" onclick="submitTambahDataFormKegiatan()">Simpan</button>
+                <button type="button" class="btn btn-primary" onclick="submitTambahDataFormIjin()">Simpan</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-jQuery(document).ready(($) => {
+jQuery(document).ready(function($) {
     let ajaxurl = ajax.url;
     let apikey = ajax.api_key;
-    let datakegiatan;
+    let dataijin;
 
     // Initialize Select2 if exists
     if ($('#nama_pegawai_select').length) {
         $('#nama_pegawai_select').select2({
-            dropdownParent: $('#modalTambahDataKegiatan')
+            dropdownParent: $('#modalTambahDataIjin')
         });
     }
 
-    get_data_kegiatan();
+    get_data_ijin();
 
-    function get_data_kegiatan() {
-        if (typeof datakegiatan == 'undefined') {
-            datakegiatan = $('#management_data_kegiatan_table').on('preXhr.dt', (e, settings, data) => {
+    function get_data_ijin() {
+        if (typeof dataijin == 'undefined') {
+            dataijin = $('#management_data_ijin_table').on('preXhr.dt', function (e, settings, data) {
                 $("#wrap-loading").show();
             }).DataTable({
                 "processing": true,
                 "serverSide": true,
-                "responsive": true, // Enable responsive
+                "responsive": true,
                 "ajax": {
                     url: ajaxurl,
                     type: 'post',
                     dataType: 'json',
                     data: {
-                        'action': 'get_datatable_kegiatan',
+                        'action': 'get_datatable_ijin',
                         'api_key': apikey,
-                        'tahun': '<?php echo $input['tahun_anggaran']; ?>', // Pass Year
+                        'tahun': '<?php echo $input['tahun_anggaran']; ?>',
                     }
                 },
                 lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-                "drawCallback": (settings) => {
+                "drawCallback": function(settings) {
                     $("#wrap-loading").hide();
                 },
                 "columns": [
                     { "data": 'no', className: "text-center" },
                     { "data": 'nama_pegawai' },
-                    { "data": 'nama_kegiatan' },
+                    { "data": 'tipe_ijin', className: "text-center" },
                     { "data": 'tanggal', className: "text-center" },
-                    { "data": 'waktu', className: "text-center" },
-                    { "data": 'tempat' },
-                    { "data": 'uraian' },
+                    { "data": 'alasan' },
                     { "data": 'lampiran', className: "text-center" },
                     { "data": 'status', className: "text-center" },
                     { "data": 'aksi', className: "text-center" }
                 ],
                 "columnDefs": [
-                    { "orderable": false, "targets": [0, 7, 9] }
+                    { "orderable": false, "targets": [0, 5, 7] }
                 ]
             });
         } else {
-            datakegiatan.draw();
+            dataijin.draw();
         }
     }
 
-    window.tambah_data_kegiatan = () => {
+    window.tambah_data_ijin = function() {
         $('#id_data').val('');
-        
-        // Reset Pegawai Select if Admin
         if ($('#nama_pegawai_select').length) {
             $('#nama_pegawai_select').val('').trigger('change');
         }
-        
-        $('#nama_kegiatan').val('');
-        $('#tanggal').val('');
-        $('#jam_mulai').val('');
-        $('#jam_selesai').val('');
-        $('#tempat').val('');
-        $('#tempat').val('');
-        $('#uraian').val('');
+        $('#tipe_ijin').val('');
+        $('#tanggal_mulai').val('');
+        $('#tanggal_selesai').val('');
+        $('#alasan').val('');
         $('#file_lampiran').val('');
         $('#file_existing').text('');
-        $('#modalTambahDataKegiatanLabel').text('Tambah Data Kegiatan');
-        $('#modalTambahDataKegiatan').modal('show');
+        
+        $('#modalTambahDataIjinLabel').text('Pengajuan Ijin');
+        $('#modalTambahDataIjin').modal('show');
     }
 
-    window.edit_data_kegiatan = (id) => {
+    window.edit_data_ijin = function(id) {
         $("#wrap-loading").show();
         $.ajax({
             url: ajaxurl,
             type: 'post',
             data: {
-                action: 'get_data_kegiatan_by_id',
+                action: 'get_data_ijin_by_id',
                 api_key: apikey,
                 id: id
             },
             dataType: 'json',
-            success: (response) => {
+            success: function(response) {
                 $("#wrap-loading").hide();
                 if (response.status == 'success') {
                     let data = response.data;
                     $('#id_data').val(data.id);
                     
-                    // Set Pegawai Value if Admin
                     if ($('#nama_pegawai_select').length) {
                         $('#nama_pegawai_select').val(data.id_pegawai).trigger('change');
                     }
 
-                    $('#nama_kegiatan').val(data.nama_kegiatan);
-                    $('#tanggal').val(data.tanggal);
-                    // Handle Time format if needed (Backend returns HH:MM:SS usually, input type time expects HH:MM)
-                    $('#jam_mulai').val(data.jam_mulai ? data.jam_mulai.substring(0,5) : '');
-                    $('#jam_selesai').val(data.jam_selesai ? data.jam_selesai.substring(0,5) : '');
-                    $('#tempat').val(data.tempat);
-                    $('#uraian').val(data.uraian);
+                    $('#tipe_ijin').val(data.tipe_ijin);
+                    $('#tanggal_mulai').val(data.tanggal_mulai);
+                    $('#tanggal_selesai').val(data.tanggal_selesai);
+                    $('#alasan').val(data.alasan);
                     
                     if (data.file_lampiran) {
                         $('#file_existing').text('Lampiran Saat Ini: ' + data.file_lampiran);
                     } else {
                         $('#file_existing').text('');
                     }
-                    
-                    $('#modalTambahDataKegiatanLabel').text('Edit Data Kegiatan');
-                    $('#modalTambahDataKegiatan').modal('show');
+
+                    $('#modalTambahDataIjinLabel').text('Edit Ijin');
+                    $('#modalTambahDataIjin').modal('show');
                 } else {
                     Swal.fire({ icon: 'error', title: 'Gagal', text: response.message });
                 }
             },
-            error: () => {
+            error: function() {
                 $("#wrap-loading").hide();
                 Swal.fire({ icon: 'error', title: 'Error', text: 'Koneksi Gagal!' });
             }
         });
     }
 
-    window.hapus_data_kegiatan = (id) => {
+    window.hapus_data_ijin = function(id) {
         Swal.fire({
             title: 'Hapus Data',
             text: "Apakah anda yakin ingin menghapus data ini?",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Ya, Hapus!'
         }).then((result) => {
             if (result.isConfirmed) {
                 $("#wrap-loading").show();
@@ -267,49 +253,87 @@ jQuery(document).ready(($) => {
                     url: ajaxurl,
                     type: 'post',
                     data: {
-                        action: 'hapus_data_kegiatan_by_id',
+                        action: 'hapus_data_ijin_by_id',
                         api_key: apikey,
                         id: id
                     },
                     dataType: 'json',
-                    success: (response) => {
+                    success: function(response) {
                         $("#wrap-loading").hide();
                         if (response.status == 'success') {
                             Swal.fire('Terhapus!', response.message, 'success');
-                            datakegiatan.ajax.reload();
+                            dataijin.ajax.reload();
                         } else {
                             Swal.fire('Gagal!', response.message, 'error');
                         }
                     },
-                    error: () => {
+                    error: function() {
                         $("#wrap-loading").hide();
-                        Swal.fire('Error!', 'Terjadi kesalahan server', 'error');
                     }
                 });
             }
         })
     }
 
-    window.submitTambahDataFormKegiatan = () => {
-        let fd = new FormData(document.getElementById('formTambahDataKegiatan'));
-        fd.append('action', 'tambah_data_kegiatan');
-        fd.append('api_key', apikey);
-        fd.set('id', $('#id_data').val());
+    window.update_status_ijin = function(id, status) {
+        Swal.fire({
+            title: status == 'Approved' ? 'Setujui Ijin?' : 'Tolak Ijin?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: status == 'Approved' ? '#28a745' : '#dc3545',
+            confirmButtonText: 'Ya'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#wrap-loading").show();
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'post',
+                    data: {
+                        action: 'update_status_ijin',
+                        api_key: apikey,
+                        id: id,
+                        status: status
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        $("#wrap-loading").hide();
+                        if (response.status == 'success') {
+                            Swal.fire('Berhasil!', response.message, 'success');
+                            dataijin.ajax.reload();
+                        } else {
+                            Swal.fire('Gagal!', response.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        $("#wrap-loading").hide();
+                    }
+                });
+            }
+        })
+    }
 
-        let nama_kegiatan = $('#nama_kegiatan').val();
-        let tanggal = $('#tanggal').val();
-        
-        // Validation for Admin select
+    window.submitTambahDataFormIjin = function() {
+        let fd = new FormData(document.getElementById('formTambahDataIjin'));
+        fd.append('action', 'tambah_data_ijin');
+        fd.append('api_key', apikey);
+        fd.set('id', $('#id_data').val()); // FormData takes name, but ensuring
+
+        // Validation
         let id_pegawai = 0;
         if ($('#nama_pegawai_select').length) {
             id_pegawai = $('#nama_pegawai_select').val();
-            if (id_pegawai == '') {
-                return Swal.fire({ icon: 'error', title: 'Gagal', text: 'Silahkan Pilih Pegawai!' });
+            if(!id_pegawai) {
+               return Swal.fire('Gagal', 'Pilih Pegawai', 'error');
             }
         }
         
-        if (nama_kegiatan == '' || tanggal == '') {
-            return Swal.fire({ icon: 'error', title: 'Gagal', text: 'Nama Kegiatan dan Tanggal Wajib Diisi!' });
+        // Ensure id_pegawai is in FormData if it's admin select
+        if (id_pegawai > 0) {
+             fd.set('id_pegawai', id_pegawai);
+        }
+
+        if ($('#tipe_ijin').val() == '' || $('#tanggal_mulai').val() == '') {
+            return Swal.fire('Gagal', 'Lengkapi form wajib', 'error');
         }
 
         $("#wrap-loading").show();
@@ -323,19 +347,18 @@ jQuery(document).ready(($) => {
             success: function(response) {
                 $("#wrap-loading").hide();
                 if (response.status == 'success') {
-                    Swal.fire({ icon: 'success', title: 'Berhasil', text: response.message });
-                    $('#modalTambahDataKegiatan').modal('hide');
-                    datakegiatan.ajax.reload();
+                    Swal.fire('Berhasil', response.message, 'success');
+                    $('#modalTambahDataIjin').modal('hide');
+                    dataijin.ajax.reload();
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Gagal', text: response.message });
+                    Swal.fire('Gagal', response.message, 'error');
                 }
             },
             error: function() {
                 $("#wrap-loading").hide();
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Koneksi Gagal!' });
+                Swal.fire('Error', 'Koneksi Gagal', 'error');
             }
         });
     }
-
 });
 </script>

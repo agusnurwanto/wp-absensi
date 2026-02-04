@@ -79,11 +79,18 @@ $current_user = wp_get_current_user();
                 <!-- Action Buttons -->
                 <div class="absensi-action-area">
                     <input type="hidden" id="current_koordinat" value="">
-                    
+
+                    <!-- Foto Lampiran Input -->
+                    <div class="form-group" id="foto-lampiran-group" style="display:none; margin-bottom: 15px;">
+                        <label for="foto_lampiran"><strong>Foto Lampiran</strong> <small class="text-muted">(Maks 2MB, JPG/PNG)</small></label>
+                        <input type="file" class="form-control-file" id="foto_lampiran" name="foto_lampiran" accept="image/jpeg,image/png,image/jpg">
+                        <div id="foto-preview" style="margin-top: 10px;"></div>
+                    </div>
+
                     <button id="btn-absen-masuk" class="btn btn-lg btn-primary mb-2" style="display:none;" onclick="submit_absensi('masuk')">
                         <i class="dashicons dashicons-location-alt"></i> Absen Masuk
                     </button>
-                    
+
                     <button id="btn-absen-pulang" class="btn btn-lg btn-success mb-2" style="display:none;" onclick="submit_absensi('pulang')">
                         <i class="dashicons dashicons-location-alt"></i> Absen Pulang
                     </button>
@@ -159,12 +166,15 @@ function loadKodeKerja() {
 
 function checkStatusAbsensi() {
     let id_kode = jQuery('#id_kode_kerja_pegawai').val();
-    
-    // Hide buttons initially
+
+    // Hide buttons and foto input initially
     jQuery('#btn-absen-masuk').hide();
     jQuery('#btn-absen-pulang').hide();
     jQuery('#absensi-status-box').hide();
     jQuery('#jadwal-info').hide();
+    jQuery('#foto-lampiran-group').hide();
+    jQuery('#foto_lampiran').val('');
+    jQuery('#foto-preview').html('');
 
     if (!id_kode) return;
 
@@ -208,10 +218,12 @@ function checkStatusAbsensi() {
                 if (!waktu_masuk) {
                     // Belum Absen Masuk
                     jQuery('#btn-absen-masuk').show();
+                    jQuery('#foto-lampiran-group').show();
                 } else {
                     // Sudah Masuk, bisa Pulang (atau update pulang)
                     jQuery('#btn-btn-absen-masuk').hide();
                     jQuery('#btn-absen-pulang').show();
+                    jQuery('#foto-lampiran-group').show();
                     // Optional: If already pulang, maybe change text to "Update Pulang"
                     if (waktu_pulang) {
                         jQuery('#btn-absen-pulang').html('<i class="dashicons dashicons-update"></i> Update Absen Pulang');
@@ -267,53 +279,87 @@ function submit_absensi(tipe) {
     let koordinat = jQuery('#current_koordinat').val();
 
     if (!id_kode) {
-        alert("Pilih Kode Kerja Terlebih Dahulu!");
+        Swal.fire('Peringatan', 'Pilih Kode Kerja Terlebih Dahulu!', 'warning');
         return;
     }
     if (!koordinat) {
-        alert("Lokasi belum ditemukan! Pastikan GPS aktif dan browser diizinkan.");
+        Swal.fire('Peringatan', 'Lokasi belum ditemukan! Pastikan GPS aktif dan browser diizinkan.', 'warning');
         getLocation(); // Retry
         return;
     }
 
-    if (!confirm(`Apakah anda yakin ingin Absen ${tipe.toUpperCase()}?`)) return;
+    Swal.fire({
+        title: `Absen ${tipe.toUpperCase()}`,
+        text: `Apakah anda yakin ingin Absen ${tipe.toUpperCase()}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Absen!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            jQuery('#wrap-loading').show();
 
-    jQuery('#wrap-loading').show(); // Assume global loader exists
+            // Use FormData for file upload
+            let fd = new FormData();
+            fd.append('action', 'submit_absensi_pegawai');
+            fd.append('api_key', ajax.api_key);
+            fd.append('id_kode_kerja', id_kode);
+            fd.append('koordinat', koordinat);
+            fd.append('tipe_absen', tipe);
 
-    jQuery.ajax({
-        url: ajax.url,
-        type: 'post',
-        data: {
-            action: 'submit_absensi_pegawai',
-            api_key: ajax.api_key,
-            id_kode_kerja: id_kode,
-            koordinat: koordinat,
-            tipe_absen: tipe
-        },
-        dataType: 'json',
-        success: (response) => {
-            jQuery('#wrap-loading').hide();
-            if (response.status == 'success') {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: response.message
-                }).then(() => {
-                    checkStatusAbsensi(); // Refresh status
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal',
-                    text: response.message
-                });
+            // Append foto if exists
+            let fotoInput = jQuery('#foto_lampiran')[0];
+            if (fotoInput && fotoInput.files.length > 0) {
+                fd.append('foto_lampiran', fotoInput.files[0]);
             }
-        },
-        error: () => {
-            jQuery('#wrap-loading').hide();
-            alert("Terjadi kesalahan koneksi server.");
+
+            jQuery.ajax({
+                url: ajax.url,
+                type: 'post',
+                data: fd,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: (response) => {
+                    jQuery('#wrap-loading').hide();
+                    if (response.status == 'success') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: response.message
+                        }).then(() => {
+                            jQuery('#foto_lampiran').val('');
+                            jQuery('#foto-preview').html('');
+                            checkStatusAbsensi(); // Refresh status
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: response.message
+                        });
+                    }
+                },
+                error: () => {
+                    jQuery('#wrap-loading').hide();
+                    Swal.fire('Error', 'Terjadi kesalahan koneksi server.', 'error');
+                }
+            });
         }
     });
-
 }
+
+// Preview foto before upload
+jQuery('#foto_lampiran').on('change', function() {
+    let file = this.files[0];
+    if (file) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            jQuery('#foto-preview').html('<img src="' + e.target.result + '" style="max-width: 200px; max-height: 200px; border-radius: 5px;">');
+        }
+        reader.readAsDataURL(file);
+    } else {
+        jQuery('#foto-preview').html('');
+    }
+});
 </script>

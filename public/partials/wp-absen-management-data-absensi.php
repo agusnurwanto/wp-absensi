@@ -48,6 +48,8 @@ $date = date('d-m-Y');
                     <th class="text-center">Tanggal</th>
                     <th class="text-center">Status</th>
                     <th class="text-center">Waktu (Masuk - Pulang)</th>
+                    <th class="text-center">Foto Masuk</th>
+                    <th class="text-center">Foto Pulang</th>
                     <th class="text-center">Kode Kerja</th>
                     <th class="text-center" style="width: 100px;">Aksi</th>
                 </tr>
@@ -185,6 +187,8 @@ jQuery(document).ready(() => {
                     { "data": 'tanggal', className: "text-center" },
                     { "data": 'status', className: "text-center" },
                     { "data": 'waktu', className: "text-center" },
+                    { "data": 'foto_masuk', className: "text-center" },
+                    { "data": 'foto_pulang', className: "text-center" },
                     { "data": 'nama_kerja', className: "text-center" },
                     { "data": 'aksi', className: "text-center" }
                 ]
