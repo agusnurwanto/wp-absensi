@@ -917,22 +917,36 @@ class Wp_Absen_Admin
 	}
 
 	/**
-	 * Handle PWA setting change
-	 * Called when Carbon Fields settings are saved
+	 * AJAX Handler for PWA File Management
 	 *
 	 * @since    1.0.0
 	 */
-	public function handle_pwa_setting_change()
+	public function manage_pwa_files()
 	{
-		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
-
-		if ($pwa_enabled === 'yes') {
-			// PWA enabled - copy files to root
-			$this->copy_pwa_files_to_root();
-		} else {
-			// PWA disabled - delete files from root
-			$this->delete_pwa_files_from_root();
+		if (!current_user_can('manage_options')) {
+			wp_send_json_error(array('message' => 'Permission denied'));
 		}
+
+		$enable = isset($_POST['enable']) && $_POST['enable'] === 'true';
+
+		if ($enable) {
+			// Enable PWA
+			$this->copy_pwa_files_to_root();
+			update_option('_crb_enable_pwa', 'yes');
+			$message = 'PWA berhasil diaktifkan. File manifest dan service worker telah dicopy.';
+		} else {
+			// Disable PWA
+			$this->delete_pwa_files_from_root();
+			update_option('_crb_enable_pwa', 'no');
+			// Also delete the key entirely or set to empty if that's how CF handles unchecked checkboxes usually, 
+			// but explicit 'no' or empty string is safer. Carbon Fields checkboxes save 'yes' or empty.
+			// Let's set to empty string to match unchecked state behavior often seen.
+			// Actually looking at previous code: $pwa_enabled !== 'yes'. So empty is fine.
+			update_option('_crb_enable_pwa', '');
+			$message = 'PWA berhasil dinonaktifkan. File manifest dan service worker telah dihapus.';
+		}
+
+		wp_send_json_success(array('message' => $message));
 	}
 
 }

@@ -197,11 +197,10 @@ class Wp_Absen
 
 		$this->loader->add_action('wp_ajax_import_excel_absen_pegawai', $plugin_admin, 'import_excel_absen_pegawai');
 		$this->loader->add_action('wp_ajax_generate_user_absen', $plugin_admin, 'generate_user_absen');
-		$this->loader->add_action('wp_ajax_sql_migrate_absen', $plugin_admin, 'sql_migrate_absen');
 		$this->loader->add_action('wp_ajax_get_data_unit_wpsipd', $plugin_admin, 'get_data_unit_wpsipd');
 
-		// PWA file management hook
-		$this->loader->add_action('carbon_fields_theme_options_container_saved', $plugin_admin, 'handle_pwa_setting_change');
+		// PWA AJAX hook
+		$this->loader->add_action('wp_ajax_manage_pwa_files', $plugin_admin, 'manage_pwa_files');
 	}
 
 	/**
