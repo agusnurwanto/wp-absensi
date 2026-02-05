@@ -9,14 +9,14 @@
  * that starts the plugin.
  *
  * @link              https://github.com/agusnurwanto
- * @since             1.0.0
+ * @since             1.0.1
  * @package           Wp_Absen
  *
  * @wordpress-plugin
  * Plugin Name:       WP ABSENSI
  * Plugin URI:        https://github.com/agusnurwanto/wp-absensi
  * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Agus Nurwanto
  * Author URI:        https://github.com/agusnurwanto
  * License:           GPL-2.0+
@@ -26,30 +26,31 @@
  */
 
 // If this file is called directly, abort.
-if ( ! defined( 'WPINC' ) ) {
-	die;
+if (!defined('WPINC')) {
+    die;
 }
 
-define( 'ABSEN_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'ABSEN_PLUGIN_PATH', plugin_dir_path(__FILE__) );
-define( 'ABSEN_APIKEY', '_crb_apikey_absen' );
+define('ABSEN_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('ABSEN_PLUGIN_PATH', plugin_dir_path(__FILE__));
+define('ABSEN_APIKEY', '_crb_apikey_absen');
 
 // ============== https://carbonfields.net/ ================
-if(!defined('Carbon_Fields_Plugin\PLUGIN_FILE')){
-    define( 'Carbon_Fields_Plugin\PLUGIN_FILE', __FILE__ );
+if (!defined('Carbon_Fields_Plugin\PLUGIN_FILE')) {
+    define('Carbon_Fields_Plugin\PLUGIN_FILE', __FILE__);
 
-    define( 'Carbon_Fields_Plugin\RELATIVE_PLUGIN_FILE', basename( dirname( \Carbon_Fields_Plugin\PLUGIN_FILE ) ) . '/' . basename( \Carbon_Fields_Plugin\PLUGIN_FILE ) );
+    define('Carbon_Fields_Plugin\RELATIVE_PLUGIN_FILE', basename(dirname(\Carbon_Fields_Plugin\PLUGIN_FILE)) . '/' . basename(\Carbon_Fields_Plugin\PLUGIN_FILE));
 }
 
-add_action( 'after_setup_theme', 'carbon_fields_boot_plugin' );
-if(!function_exists('carbon_fields_boot_plugin')){
-    function carbon_fields_boot_plugin() {
-        if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
-            require( __DIR__ . '/vendor/autoload.php' );
+add_action('after_setup_theme', 'carbon_fields_boot_plugin');
+if (!function_exists('carbon_fields_boot_plugin')) {
+    function carbon_fields_boot_plugin()
+    {
+        if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+            require(__DIR__ . '/vendor/autoload.php');
         }
         \Carbon_Fields\Carbon_Fields::boot();
 
-        if ( is_admin() ) {
+        if (is_admin()) {
             \Carbon_Fields_Plugin\Libraries\Plugin_Update_Warning\Plugin_Update_Warning::boot();
         }
     }
@@ -62,34 +63,36 @@ if(!function_exists('carbon_fields_boot_plugin')){
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'WP_ABSEN_VERSION', '1.0.0' );
+define('WP_ABSEN_VERSION', '1.0.0');
 
 /**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-wp-absen-activator.php
  */
-function activate_wp_absen() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-absen-activator.php';
-	Wp_Absen_Activator::activate();
+function activate_wp_absen()
+{
+    require_once plugin_dir_path(__FILE__) . 'includes/class-wp-absen-activator.php';
+    Wp_Absen_Activator::activate();
 }
 
 /**
  * The code that runs during plugin deactivation.
  * This action is documented in includes/class-wp-absen-deactivator.php
  */
-function deactivate_wp_absen() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-wp-absen-deactivator.php';
-	Wp_Absen_Deactivator::deactivate();
+function deactivate_wp_absen()
+{
+    require_once plugin_dir_path(__FILE__) . 'includes/class-wp-absen-deactivator.php';
+    Wp_Absen_Deactivator::deactivate();
 }
 
-register_activation_hook( __FILE__, 'activate_wp_absen' );
-register_deactivation_hook( __FILE__, 'deactivate_wp_absen' );
+register_activation_hook(__FILE__, 'activate_wp_absen');
+register_deactivation_hook(__FILE__, 'deactivate_wp_absen');
 
 /**
  * The core plugin class that is used to define internationalization,
  * admin-specific hooks, and public-facing site hooks.
  */
-require plugin_dir_path( __FILE__ ) . 'includes/class-wp-absen.php';
+require plugin_dir_path(__FILE__) . 'includes/class-wp-absen.php';
 
 /**
  * Begins execution of the plugin.
@@ -100,10 +103,11 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-wp-absen.php';
  *
  * @since    1.0.0
  */
-function run_wp_absen() {
+function run_wp_absen()
+{
 
-	$plugin = new Wp_Absen();
-	$plugin->run();
+    $plugin = new Wp_Absen();
+    $plugin->run();
 
 }
 run_wp_absen();

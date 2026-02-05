@@ -23,7 +23,8 @@
 
 require_once ABSEN_PLUGIN_PATH . "/public/trait/CustomTrait.php";
 
-class Wp_Absen_Public {
+class Wp_Absen_Public
+{
 
 	use CustomTraitAbsen;
 
@@ -53,7 +54,8 @@ class Wp_Absen_Public {
 	 * @param      string    $plugin_name       The name of the plugin.
 	 * @param      string    $version    The version of this plugin.
 	 */
-	public function __construct( $plugin_name, $version, $functions ) {
+	public function __construct($plugin_name, $version, $functions)
+	{
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
@@ -66,7 +68,8 @@ class Wp_Absen_Public {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_styles() {
+	public function enqueue_styles()
+	{
 
 		/**
 		 * This function is provided for demonstration purposes only.
@@ -83,13 +86,14 @@ class Wp_Absen_Public {
 		wp_enqueue_style($this->plugin_name . 'select2', plugin_dir_url(__FILE__) . 'css/select2.min.css', array(), $this->version, 'all');
 		wp_enqueue_style($this->plugin_name . 'datatables', plugin_dir_url(__FILE__) . 'css/datatables.min.css', array(), $this->version, 'all');
 
-		wp_enqueue_style( 'dashicons' );
+		wp_enqueue_style('dashicons');
 
 	}
 
-	public function prefix_add_footer_styles() {
+	public function prefix_add_footer_styles()
+	{
 		wp_enqueue_style($this->plugin_name . 'bootstrap', plugin_dir_url(__FILE__) . 'css/bootstrap.min.css', array(), $this->version, 'all');
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-absen-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style($this->plugin_name, plugin_dir_url(__FILE__) . 'css/wp-absen-public.css', array(), $this->version, 'all');
 	}
 
 	/**
@@ -97,7 +101,8 @@ class Wp_Absen_Public {
 	 *
 	 * @since    1.0.0
 	 */
-	public function enqueue_scripts() {
+	public function enqueue_scripts()
+	{
 
 		/**
 		 * This function is provided for demonstration purposes only.
@@ -110,69 +115,72 @@ class Wp_Absen_Public {
 		 * between the defined hooks and the functions defined in this
 		 * class.
 		 */
-		
+
 		wp_enqueue_script($this->plugin_name . 'bootstrap', plugin_dir_url(__FILE__) . 'js/bootstrap.bundle.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script($this->plugin_name . 'select2', plugin_dir_url(__FILE__) . 'js/select2.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script($this->plugin_name . 'datatables', plugin_dir_url(__FILE__) . 'js/datatables.min.js', array('jquery'), $this->version, false);
 		wp_enqueue_script($this->plugin_name . 'chart', plugin_dir_url(__FILE__) . 'js/chart.min.js', array('jquery'), $this->version, false);
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-absen-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script($this->plugin_name, plugin_dir_url(__FILE__) . 'js/wp-absen-public.js', array('jquery'), $this->version, false);
+
 		wp_localize_script($this->plugin_name, 'ajax', array(
 			'api_key' => get_option(ABSEN_APIKEY),
 			'url' => admin_url('admin-ajax.php')
 		));
 	}
 
-    public function management_data_absensi($atts){
-        if(!empty($_GET) && !empty($_GET['post'])){
-            return '';
-        }
-        require_once plugin_dir_path(dirname(__FILE__)) . 'public/partials/wp-absen-management-data-absensi.php';
-    }
+	public function management_data_absensi($atts)
+	{
+		if (!empty($_GET) && !empty($_GET['post'])) {
+			return '';
+		}
+		require_once plugin_dir_path(dirname(__FILE__)) . 'public/partials/wp-absen-management-data-absensi.php';
+	}
 
-	public function menu_absensi() {
-        global $wpdb;
+	public function menu_absensi()
+	{
+		global $wpdb;
 
 		$user_id = um_user('ID');
 		$user_meta = get_userdata($user_id);
 
-        $table_name = 'absensi_data_unit';
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+		$table_name = 'absensi_data_unit';
+		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
 
-        $get_data_instansi = '';
-        $get_data_pegawai = '';
-        $get_data_absensi = '';
-        $get_data_kegiatan = '';
+		$get_data_instansi = '';
+		$get_data_pegawai = '';
+		$get_data_absensi = '';
+		$get_data_kegiatan = '';
 		$get_data_ijin = '';
-        if ($table_exists) {
-            $get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
-            if (!empty($get_tahun) && is_array($get_tahun)) {
-                foreach ($get_tahun as $k => $v){
-                    $management_data_instansi = $this->functions->generatePage(array(
-                        'nama_page' => 'Management Data Instansi | ' . $v['tahun_anggaran'],
-                        'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
-                        'show_header' => 1,
-                        'no_key' => 1,
-                        'post_status' => 'publish'
-                    ));
-                    $get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
+		if ($table_exists) {
+			$get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
+			if (!empty($get_tahun) && is_array($get_tahun)) {
+				foreach ($get_tahun as $k => $v) {
+					$management_data_instansi = $this->functions->generatePage(array(
+						'nama_page' => 'Management Data Instansi | ' . $v['tahun_anggaran'],
+						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'show_header' => 1,
+						'no_key' => 1,
+						'post_status' => 'publish'
+					));
+					$get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
 
-                    $management_data_pegawai = $this->functions->generatePage(array(
-                        'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
-                        'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
-                        'show_header' => 1,
-                        'no_key' => 1,
-                        'post_status' => 'publish'
-                    ));
-                    $get_data_pegawai .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
+					$management_data_pegawai = $this->functions->generatePage(array(
+						'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
+						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'show_header' => 1,
+						'no_key' => 1,
+						'post_status' => 'publish'
+					));
+					$get_data_pegawai .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
 
-                    $management_data_absensi = $this->functions->generatePage(array(
-                        'nama_page' => 'Management Data Absensi | ' . $v['tahun_anggaran'],
-                        'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
-                        'show_header' => 1,
-                        'no_key' => 1,
-                        'post_status' => 'publish'
-                    ));
-                    $get_data_absensi .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
+					$management_data_absensi = $this->functions->generatePage(array(
+						'nama_page' => 'Management Data Absensi | ' . $v['tahun_anggaran'],
+						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'show_header' => 1,
+						'no_key' => 1,
+						'post_status' => 'publish'
+					));
+					$get_data_absensi .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
 
 					$management_data_kegiatan = $this->functions->generatePage(array(
 						'nama_page' => 'Manajemen Data Kegiatan | ' . $v['tahun_anggaran'],
@@ -183,7 +191,7 @@ class Wp_Absen_Public {
 					));
 					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
 
-                    $management_data_ijin = $this->functions->generatePage(array(
+					$management_data_ijin = $this->functions->generatePage(array(
 						'nama_page' => 'Manajemen Data Ijin | ' . $v['tahun_anggaran'],
 						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
 						'show_header' => 1,
@@ -191,9 +199,14 @@ class Wp_Absen_Public {
 						'post_status' => 'publish'
 					));
 					$get_data_ijin .= '<li><a target="_blank" href="' . $management_data_ijin['url'] . '">' . esc_html($management_data_ijin['title']) . '</a></li>';
+						'show_header' => 1,
+						'no_key' => 1,
+						'post_status' => 'publish'
+					));
 				}
-            }
-        }
+				}
+			}
+		}
 
 		$management_data_kerja = $this->functions->generatePage(array(
 			'nama_page' => 'Data Kode Kerja',
@@ -204,8 +217,8 @@ class Wp_Absen_Public {
 		));
 		$get_data_kerja = '<li><a target="_blank" href="' . $management_data_kerja['url'] . '">' . esc_html($management_data_kerja['title']) . '</a></li>';
 
-        if (in_array('admin_instansi', $user_meta->roles) || in_array('administrator', $user_meta->roles)) {
-            $html = '
+		if (in_array('admin_instansi', $user_meta->roles) || in_array('administrator', $user_meta->roles)) {
+			$html = '
 				<h3>Menu Admin Instansi</h3>
                 <div class="row">
                     <div class="col-md-5">
@@ -254,9 +267,9 @@ class Wp_Absen_Public {
                     </div>
                 </div>
 			';
-            return $html;
-        } else {
-            // Default / Pegawai View
+			return $html;
+		} else {
+			// Default / Pegawai View
 			ob_start();
 			require_once plugin_dir_path(dirname(__FILE__)) . 'public/partials/wp-absen-absensi-pegawai.php';
 
@@ -299,28 +312,173 @@ class Wp_Absen_Public {
 					</div>
 				</div>
 			';
-        }
+		}
 
-    }
+	}
 
-    public function custom_login_redirect( $redirect_to, $request, $user ) {
-        if ( $user && is_a( $user, 'WP_User' ) ) {
-            if ( in_array( 'administrator', (array) $user->roles ) ) {
-                return $redirect_to;
-            }
-        }
+	public function custom_login_redirect($redirect_to, $request, $user)
+	{
+		if ($user && is_a($user, 'WP_User')) {
+			if (in_array('administrator', (array) $user->roles)) {
+				return $redirect_to;
+			}
+		}
 
 		return home_url('/user');
-    }
+	}
 
-    public function custom_logout_redirect( $redirect_to, $requested_redirect_to, $user ) {
-        if ( $user && is_a( $user, 'WP_User' ) ) {
-            if ( in_array( 'administrator', (array) $user->roles ) ) {
-                return $redirect_to;
-            }
-        }
+	public function custom_logout_redirect($redirect_to, $requested_redirect_to, $user)
+	{
+		if ($user && is_a($user, 'WP_User')) {
+			if (in_array('administrator', (array) $user->roles)) {
+				return $redirect_to;
+			}
+		}
 
-        return home_url( '/' );
-    }
+		return home_url('/');
+	}
+
+	/**
+	 * Add PWA manifest link to WordPress header
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_pwa_manifest()
+	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled != '1') {
+			return;
+		}
+
+		// Manifest is now in WordPress root
+		$manifest_url = home_url('/manifest.json');
+		echo '<link rel="manifest" href="' . esc_url($manifest_url) . '">' . "\n";
+	}
+
+	/**
+	 * Add PWA meta tags to WordPress header
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_pwa_meta_tags()
+	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled != '1') {
+			return;
+		}
+
+		$icon_url = plugin_dir_url(dirname(__FILE__)) . 'public/images/icon-192x192.png';
+		echo '<meta name="theme-color" content="#667eea">' . "\n";
+		echo '<meta name="apple-mobile-web-app-capable" content="yes">' . "\n";
+		echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' . "\n";
+		echo '<meta name="apple-mobile-web-app-title" content="WP Absensi">' . "\n";
+		echo '<link rel="apple-touch-icon" href="' . esc_url($icon_url) . '">' . "\n";
+	}
+
+	/**
+	 * Add PWA registration script to WordPress footer
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_pwa_script_inline()
+	{
+		// Check if PWA is enabled
+		$pwa_enabled = carbon_get_theme_option('crb_enable_pwa');
+		if ($pwa_enabled != '1') {
+			return;
+		}
+		?>
+		<style>
+			#pwa-install-btn {
+				display: none;
+				position: fixed;
+				bottom: 20px;
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 9999;
+				padding: 12px 24px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				border-radius: 50px;
+				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+				font-weight: 600;
+				font-size: 14px;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				animation: pwa-bounce 2s infinite;
+			}
+
+			#pwa-install-btn:hover {
+				transform: translateX(-50%) scale(1.05);
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+			}
+
+			@keyframes pwa-bounce {
+
+				0%,
+				20%,
+				50%,
+				80%,
+				100% {
+					transform: translateX(-50%) translateY(0);
+				}
+
+				40% {
+					transform: translateX(-50%) translateY(-10px);
+				}
+
+				60% {
+					transform: translateX(-50%) translateY(-5px);
+				}
+			}
+		</style>
+		<script>
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('/service-worker.js')
+						.then(reg => console.log('PWA Terdaftar!', reg))
+						.catch(err => console.log('Gagal Daftar PWA', err));
+				});
+
+				let deferredPrompt;
+				const installBtn = document.createElement('button');
+				installBtn.id = 'pwa-install-btn';
+				installBtn.innerHTML = '📱 Tambahkan ke Layar Utama';
+				document.body.appendChild(installBtn);
+
+				window.addEventListener('beforeinstallprompt', (e) => {
+					// Prevent Chrome 67 and earlier from automatically showing the prompt
+					e.preventDefault();
+					// Stash the event so it can be triggered later
+					deferredPrompt = e;
+					// Update UI to notify the user they can add to home screen
+					installBtn.style.display = 'block';
+
+					console.log('beforeinstallprompt fired');
+				});
+
+				installBtn.addEventListener('click', (e) => {
+					// Hide the app provided install promotion
+					installBtn.style.display = 'none';
+					// Show the install prompt
+					deferredPrompt.prompt();
+					// Wait for the user to respond to the prompt
+					deferredPrompt.userChoice.then((choiceResult) => {
+						if (choiceResult.outcome === 'accepted') {
+							console.log('User accepted the A2HS prompt');
+						} else {
+							console.log('User dismissed the A2HS prompt');
+						}
+						deferredPrompt = null;
+					});
+				});
+			}
+		</script>
+		<?php
+	}
 
 }

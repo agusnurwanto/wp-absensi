@@ -1,14 +1,61 @@
 jQuery(document).ready(() => {
     window.options_skpd = {};
     let loading = ''
-        +'<div id="wrap-loading">'
-            +'<div class="lds-hourglass"></div>'
-            +'<div id="persen-loading"></div>'
-        +'</div>';
+        + '<div id="wrap-loading">'
+        + '<div class="lds-hourglass"></div>'
+        + '<div id="persen-loading"></div>'
+        + '</div>';
 
-    if(jQuery('#wrap-loading').length == 0){
+    if (jQuery('#wrap-loading').length == 0) {
         jQuery('body').prepend(loading);
     }
+
+    // PWA Checkbox Listener
+    jQuery('body').on('change', 'input[name="carbon_fields_compact_input[_crb_enable_pwa]"]', function (e) {
+        e.preventDefault();
+
+        let $checkbox = jQuery(this);
+        let isChecked = $checkbox.is(':checked');
+        let status = isChecked ? 'mengaktifkan' : 'menonaktifkan';
+
+        if (confirm('Apakah anda yakin ingin ' + status + ' fitur PWA?')) {
+            jQuery('#wrap-loading').show();
+
+            // Disable checkbox while processing
+            $checkbox.prop('disabled', true);
+
+            jQuery.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'manage_pwa_files',
+                    enable: isChecked
+                },
+                success: function (response) {
+                    jQuery('#wrap-loading').hide();
+                    $checkbox.prop('disabled', false);
+
+                    if (response.success) {
+                        alert(response.data.message);
+                    } else {
+                        alert('Error: ' + response.data.message);
+                        // Revert checkbox state on error
+                        $checkbox.prop('checked', !isChecked);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    jQuery('#wrap-loading').hide();
+                    $checkbox.prop('disabled', false);
+                    alert('Terjadi kesalahan koneksi');
+                    // Revert checkbox state on error
+                    $checkbox.prop('checked', !isChecked);
+                }
+            });
+        } else {
+            // Revert if cancelled
+            $checkbox.prop('checked', !isChecked);
+        }
+    });
 });
 
 function filePickedAbsen(oEvent) {
@@ -61,32 +108,32 @@ function filePickedAbsen(oEvent) {
     reader.readAsBinaryString(oFile);
 }
 
-function relayAjax(options, retries=20, delay=5000, timeout=9000000) {
+function relayAjax(options, retries = 20, delay = 5000, timeout = 9000000) {
     options.timeout = timeout;
     options.cache = false;
     jQuery.ajax(options)
-    .fail((jqXHR, exception) => {
-        // console.log('jqXHR, exception', jqXHR, exception);
-        if (
-            jqXHR.status != '0' 
-            && jqXHR.status != '503'
-            && jqXHR.status != '500'
-        ) {
-            if (jqXHR.responseJSON) {
-                options.success(jqXHR.responseJSON);
+        .fail((jqXHR, exception) => {
+            // console.log('jqXHR, exception', jqXHR, exception);
+            if (
+                jqXHR.status != '0'
+                && jqXHR.status != '503'
+                && jqXHR.status != '500'
+            ) {
+                if (jqXHR.responseJSON) {
+                    options.success(jqXHR.responseJSON);
+                } else {
+                    options.success(jqXHR.responseText);
+                }
+            } else if (retries > 0) {
+                console.log('Koneksi error. Coba lagi ' + retries, options);
+                let new_delay = Math.random() * (delay / 1000);
+                setTimeout(() => {
+                    relayAjax(options, --retries, delay, timeout);
+                }, new_delay * 1000);
             } else {
-                options.success(jqXHR.responseText);
+                alert('Capek. Sudah dicoba berkali-kali error terus. Maaf, berhenti mencoba.');
             }
-        } else if (retries > 0) {
-            console.log('Koneksi error. Coba lagi '+retries, options);
-            let new_delay = Math.random() * (delay/1000);
-            setTimeout(() => { 
-                relayAjax(options, --retries, delay, timeout);
-            }, new_delay * 1000);
-        } else {
-            alert('Capek. Sudah dicoba berkali-kali error terus. Maaf, berhenti mencoba.');
-        }
-    });
+        });
 }
 
 function import_excel_absen_pegawai() {
@@ -132,25 +179,25 @@ function import_excel_absen_pegawai() {
                         }
                     });
                 })
+                    .catch((e) => {
+                        console.log(e);
+                        return Promise.resolve(nextData);
+                    });
+            })
                 .catch((e) => {
                     console.log(e);
                     return Promise.resolve(nextData);
                 });
+        }, Promise.resolve(data_all[last]))
+            .then((data_last) => {
+                jQuery('#wrap-loading').hide();
+                alert('Success import data pegawai dari excel!');
             })
             .catch((e) => {
                 console.log(e);
-                return Promise.resolve(nextData);
+                jQuery('#wrap-loading').hide();
+                alert('Error!');
             });
-        }, Promise.resolve(data_all[last]))
-        .then((data_last) => {
-            jQuery('#wrap-loading').hide();
-            alert('Success import data pegawai dari excel!');
-        })
-        .catch((e) => {
-            console.log(e);
-            jQuery('#wrap-loading').hide();
-            alert('Error!');
-        });
     }
 }
 

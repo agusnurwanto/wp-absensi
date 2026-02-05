@@ -27,7 +27,8 @@
  * @subpackage Wp_Absen/includes
  * @author     Agus Nurwanto <agusnurwantomuslim@gmail.com>
  */
-class Wp_Absen {
+class Wp_Absen
+{
 
 	/**
 	 * The loader that's responsible for maintaining and registering all hooks that power
@@ -67,8 +68,9 @@ class Wp_Absen {
 	 *
 	 * @since    1.0.0
 	 */
-	public function __construct() {
-		if ( defined( 'WP_ABSEN_VERSION' ) ) {
+	public function __construct()
+	{
+		if (defined('WP_ABSEN_VERSION')) {
 			$this->version = WP_ABSEN_VERSION;
 		} else {
 			$this->version = '1.0.0';
@@ -98,54 +100,55 @@ class Wp_Absen {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function load_dependencies() {
+	private function load_dependencies()
+	{
 
 		/**
 		 * The class responsible for orchestrating the actions and filters of the
 		 * core plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-wp-absen-loader.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wp-absen-loader.php';
 
 		/**
 		 * The class responsible for defining internationalization functionality
 		 * of the plugin.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-wp-absen-i18n.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wp-absen-i18n.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-wp-absen-admin.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'admin/class-wp-absen-admin.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-wp-absen-public.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site for Instansi.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-instansi.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-wp-absen-public-instansi.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site for Pegawai.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-pegawai.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-wp-absen-public-pegawai.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site for Kode Kerja.
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-kode-kerja.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-wp-absen-public-kode-kerja.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
 		 * side of the site for Absensi (Attendance).
 		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-wp-absen-public-absensi.php';
+		require_once plugin_dir_path(dirname(__FILE__)) . 'public/class-wp-absen-public-absensi.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
@@ -164,7 +167,7 @@ class Wp_Absen {
 		// Functions tambahan
 		require_once plugin_dir_path(dirname(__FILE__)) . 'includes/class-wp-absen-functions.php';
 
-		$this->functions = new ABSEN_Functions( $this->plugin_name, $this->version );
+		$this->functions = new ABSEN_Functions($this->plugin_name, $this->version);
 
 		$this->loader->add_action('template_redirect', $this->functions, 'allow_access_private_post', 0);
 
@@ -179,11 +182,12 @@ class Wp_Absen {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function set_locale() {
+	private function set_locale()
+	{
 
 		$plugin_i18n = new Wp_Absen_i18n();
 
-		$this->loader->add_action( 'plugins_loaded', $plugin_i18n, 'load_plugin_textdomain' );
+		$this->loader->add_action('plugins_loaded', $plugin_i18n, 'load_plugin_textdomain');
 
 	}
 
@@ -194,18 +198,21 @@ class Wp_Absen {
 	 * @since    1.0.0
 	 * @access   private
 	 */
-	private function define_admin_hooks() {
+	private function define_admin_hooks()
+	{
 
-		$plugin_admin = new Wp_Absen_Admin( $this->get_plugin_name(), $this->get_version(), $this->functions );
+		$plugin_admin = new Wp_Absen_Admin($this->get_plugin_name(), $this->get_version(), $this->functions);
 
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
+		$this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
 		$this->loader->add_action('carbon_fields_register_fields', $plugin_admin, 'crb_absen_options');
 
-		$this->loader->add_action('wp_ajax_import_excel_absen_pegawai',  $plugin_admin, 'import_excel_absen_pegawai');
-		$this->loader->add_action('wp_ajax_generate_user_absen',  $plugin_admin, 'generate_user_absen');
-		$this->loader->add_action('wp_ajax_sql_migrate_absen',  $plugin_admin, 'sql_migrate_absen');
-		$this->loader->add_action('wp_ajax_get_data_unit_wpsipd',  $plugin_admin, 'get_data_unit_wpsipd');
+		$this->loader->add_action('wp_ajax_import_excel_absen_pegawai', $plugin_admin, 'import_excel_absen_pegawai');
+		$this->loader->add_action('wp_ajax_generate_user_absen', $plugin_admin, 'generate_user_absen');
+		$this->loader->add_action('wp_ajax_get_data_unit_wpsipd', $plugin_admin, 'get_data_unit_wpsipd');
+
+		// PWA AJAX hook
+		$this->loader->add_action('wp_ajax_manage_pwa_files', $plugin_admin, 'manage_pwa_files');
 	}
 	
 	/**
@@ -215,73 +222,79 @@ class Wp_Absen {
 	* @since    1.0.0
 	 * @access   private
 	 */
-	private function define_public_hooks() {
-		$plugin_public = new Wp_Absen_Public( $this->get_plugin_name(), $this->get_version(), $this->functions );
-		$plugin_public_instansi = new Wp_Absen_Public_Instansi( $this->get_plugin_name(), $this->get_version(), $this->functions );
-		$plugin_public_pegawai = new Wp_Absen_Public_Pegawai( $this->get_plugin_name(), $this->get_version(), $this->functions );
-		$plugin_public_kode_kerja = new Wp_Absen_Public_Kode_Kerja( $this->get_plugin_name(), $this->get_version(), $this->functions );
-		$plugin_public_absensi = new Wp_Absen_Public_Absensi( $this->get_plugin_name(), $this->get_version(), $this->functions );
-		$plugin_public_kegiatan = new Wp_Absen_Public_Kegiatan( $this->get_plugin_name(), $this->get_version(), $this->functions );
-		$plugin_public_ijin = new Wp_Absen_Public_Ijin( $this->get_plugin_name(), $this->get_version(), $this->functions );
+	private function define_public_hooks()
+	{
+		$plugin_public = new Wp_Absen_Public($this->get_plugin_name(), $this->get_version(), $this->functions);
+		$plugin_public_instansi = new Wp_Absen_Public_Instansi($this->get_plugin_name(), $this->get_version(), $this->functions);
+		$plugin_public_pegawai = new Wp_Absen_Public_Pegawai($this->get_plugin_name(), $this->get_version(), $this->functions);
+		$plugin_public_kode_kerja = new Wp_Absen_Public_Kode_Kerja($this->get_plugin_name(), $this->get_version(), $this->functions);
+		$plugin_public_absensi = new Wp_Absen_Public_Absensi($this->get_plugin_name(), $this->get_version(), $this->functions);
+		$plugin_public_kegiatan = new Wp_Absen_Public_Kegiatan($this->get_plugin_name(), $this->get_version(), $this->functions);
+		$plugin_public_ijin = new Wp_Absen_Public_Ijin($this->get_plugin_name(), $this->get_version(), $this->functions);
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-		$this->loader->add_action( 'get_footer', $plugin_public, 'prefix_add_footer_styles' );		
-		
-		$this->loader->add_action('wp_ajax_get_datatable_karyawan',  $plugin_public, 'get_datatable_karyawan');
-		$this->loader->add_action('wp_ajax_hapus_data_karyawan_by_id',  $plugin_public, 'hapus_data_karyawan_by_id');
-		$this->loader->add_action('wp_ajax_get_data_karyawan_by_id',  $plugin_public, 'get_data_karyawan_by_id');
-		$this->loader->add_action('wp_ajax_tambah_data_karyawan',  $plugin_public, 'tambah_data_karyawan');
-		
+		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_styles');
+		$this->loader->add_action('wp_enqueue_scripts', $plugin_public, 'enqueue_scripts');
+		$this->loader->add_action('get_footer', $plugin_public, 'prefix_add_footer_styles');
+
+		// PWA Hooks
+		$this->loader->add_action('wp_head', $plugin_public, 'add_pwa_manifest');
+		$this->loader->add_action('wp_head', $plugin_public, 'add_pwa_meta_tags');
+		$this->loader->add_action('wp_footer', $plugin_public, 'add_pwa_script_inline');
+
+		$this->loader->add_action('wp_ajax_get_datatable_karyawan', $plugin_public, 'get_datatable_karyawan');
+		$this->loader->add_action('wp_ajax_hapus_data_karyawan_by_id', $plugin_public, 'hapus_data_karyawan_by_id');
+		$this->loader->add_action('wp_ajax_get_data_karyawan_by_id', $plugin_public, 'get_data_karyawan_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_karyawan', $plugin_public, 'tambah_data_karyawan');
+
 		// Moved to Pegawai Class
-		$this->loader->add_action('wp_ajax_get_master_data',  $plugin_public_pegawai, 'get_master_data');
-		$this->loader->add_action('wp_ajax_get_master_jenis_kelamin',  $plugin_public_pegawai, 'get_master_jenis_kelamin');
-		$this->loader->add_action('wp_ajax_get_master_agama',  $plugin_public_pegawai, 'get_master_agama');
-		$this->loader->add_action('wp_ajax_get_master_pendidikan',  $plugin_public_pegawai, 'get_master_pendidikan');
+		$this->loader->add_action('wp_ajax_get_master_data', $plugin_public_pegawai, 'get_master_data');
+		$this->loader->add_action('wp_ajax_get_master_jenis_kelamin', $plugin_public_pegawai, 'get_master_jenis_kelamin');
+		$this->loader->add_action('wp_ajax_get_master_agama', $plugin_public_pegawai, 'get_master_agama');
+		$this->loader->add_action('wp_ajax_get_master_pendidikan', $plugin_public_pegawai, 'get_master_pendidikan');
 		// Note: 'get_master_status_karyawan' likely refers to 'get_master_status_pegawai' or trait method. 
 		// Leaving on public or updating if sure. Assuming it's legacy/trait for now or typo. 
 		// If get_master_status_pegawai is needed via AJAX, add it:
-		$this->loader->add_action('wp_ajax_get_master_status_pegawai',  $plugin_public_pegawai, 'get_master_status_pegawai'); 
-		
-		$this->loader->add_action('wp_ajax_get_master_user_role',  $plugin_public_pegawai, 'get_master_user_role');
+		$this->loader->add_action('wp_ajax_get_master_status_pegawai', $plugin_public_pegawai, 'get_master_status_pegawai');
 
-		// Instansi Hooks
-		$this->loader->add_action('wp_ajax_hapus_data_instansi_by_id',  $plugin_public_instansi, 'hapus_data_instansi_by_id');
-		$this->loader->add_action('wp_ajax_get_data_instansi_by_id',  $plugin_public_instansi, 'get_data_instansi_by_id');
-		$this->loader->add_action('wp_ajax_tambah_data_instansi',  $plugin_public_instansi, 'tambah_data_instansi');
-		$this->loader->add_action('wp_ajax_get_datatable_instansi',  $plugin_public_instansi, 'get_datatable_instansi');
-		$this->loader->add_action('wp_ajax_get_users_for_instansi',  $plugin_public_instansi, 'get_users_for_instansi');
-		$this->loader->add_action('wp_ajax_get_users_for_instansi',  $plugin_public_instansi, 'get_users_for_instansi');
-		$this->loader->add_action('wp_ajax_get_master_instansi',  $plugin_public_instansi, 'get_master_instansi');
-		$this->loader->add_action('wp_ajax_toggle_status_instansi',  $plugin_public_instansi, 'toggle_status_instansi');
+		$this->loader->add_action('wp_ajax_get_master_user_role', $plugin_public_pegawai, 'get_master_user_role');
 
-		// Pegawai Hooks
-		$this->loader->add_action('wp_ajax_get_datatable_pegawai',  $plugin_public_pegawai, 'get_datatable_pegawai');
-		$this->loader->add_action('wp_ajax_tambah_data_pegawai',  $plugin_public_pegawai, 'tambah_data_pegawai');
-		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id',  $plugin_public_pegawai, 'get_data_pegawai_by_id');
-		$this->loader->add_action('wp_ajax_hapus_data_pegawai_by_id',  $plugin_public_pegawai, 'hapus_data_pegawai_by_id');
-        $this->loader->add_action('wp_ajax_copy_data_pegawai',  $plugin_public_pegawai, 'copy_data_pegawai');
-        $this->loader->add_action('wp_ajax_toggle_status_pegawai',  $plugin_public_pegawai, 'toggle_status_pegawai');
-		
+		$this->loader->add_action('wp_ajax_hapus_data_instansi_by_id', $plugin_public_instansi, 'hapus_data_instansi_by_id');
+		$this->loader->add_action('wp_ajax_get_data_instansi_by_id', $plugin_public_instansi, 'get_data_instansi_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_instansi', $plugin_public_instansi, 'tambah_data_instansi');
+		$this->loader->add_action('wp_ajax_get_datatable_instansi', $plugin_public_instansi, 'get_datatable_instansi');
+		$this->loader->add_action('wp_ajax_get_users_for_instansi', $plugin_public_instansi, 'get_users_for_instansi');
+		$this->loader->add_action('wp_ajax_get_users_for_instansi', $plugin_public_instansi, 'get_users_for_instansi');
+		$this->loader->add_action('wp_ajax_get_master_instansi', $plugin_public_instansi, 'get_master_instansi');
+		$this->loader->add_action('wp_ajax_toggle_status_instansi', $plugin_public_instansi, 'toggle_status_instansi');
+
+		$this->loader->add_action('wp_ajax_get_datatable_pegawai', $plugin_public_pegawai, 'get_datatable_pegawai');
+		$this->loader->add_action('wp_ajax_tambah_data_pegawai', $plugin_public_pegawai, 'tambah_data_pegawai');
+		$this->loader->add_action('wp_ajax_get_data_pegawai_by_id', $plugin_public_pegawai, 'get_data_pegawai_by_id');
+		$this->loader->add_action('wp_ajax_hapus_data_pegawai_by_id', $plugin_public_pegawai, 'hapus_data_pegawai_by_id');
+		$this->loader->add_action('wp_ajax_copy_data_pegawai', $plugin_public_pegawai, 'copy_data_pegawai');
+		$this->loader->add_action('wp_ajax_toggle_status_pegawai', $plugin_public_pegawai, 'toggle_status_pegawai');
+
+		$this->loader->add_action('wp_ajax_toggle_status_pegawai', $plugin_public_pegawai, 'toggle_status_pegawai');
+
 		// Kode Kerja Hooks
-		$this->loader->add_action('wp_ajax_get_datatable_kode_kerja',  $plugin_public_kode_kerja, 'get_datatable_kode_kerja');
-		$this->loader->add_action('wp_ajax_tambah_data_kode_kerja',  $plugin_public_kode_kerja, 'tambah_data_kode_kerja');
-		$this->loader->add_action('wp_ajax_get_data_kode_kerja_by_id',  $plugin_public_kode_kerja, 'get_data_kode_kerja_by_id');
-		$this->loader->add_action('wp_ajax_hapus_data_kode_kerja_by_id',  $plugin_public_kode_kerja, 'hapus_data_kode_kerja_by_id');
-		$this->loader->add_action('wp_ajax_toggle_status_kode_kerja',  $plugin_public_kode_kerja, 'toggle_status_kode_kerja');
-		$this->loader->add_action('wp_ajax_check_primary_kode_kerja',  $plugin_public_kode_kerja, 'check_primary_kode_kerja');
+		$this->loader->add_action('wp_ajax_get_datatable_kode_kerja', $plugin_public_kode_kerja, 'get_datatable_kode_kerja');
+		$this->loader->add_action('wp_ajax_tambah_data_kode_kerja', $plugin_public_kode_kerja, 'tambah_data_kode_kerja');
+		$this->loader->add_action('wp_ajax_get_data_kode_kerja_by_id', $plugin_public_kode_kerja, 'get_data_kode_kerja_by_id');
+		$this->loader->add_action('wp_ajax_hapus_data_kode_kerja_by_id', $plugin_public_kode_kerja, 'hapus_data_kode_kerja_by_id');
+		$this->loader->add_action('wp_ajax_toggle_status_kode_kerja', $plugin_public_kode_kerja, 'toggle_status_kode_kerja');
+		$this->loader->add_action('wp_ajax_check_primary_kode_kerja', $plugin_public_kode_kerja, 'check_primary_kode_kerja');
 
 		// Absensi Hooks
-		$this->loader->add_action('wp_ajax_get_server_time',  $plugin_public_absensi, 'get_server_time');
-		$this->loader->add_action('wp_ajax_get_valid_kode_kerja',  $plugin_public_absensi, 'get_valid_kode_kerja');
-		$this->loader->add_action('wp_ajax_submit_absensi_pegawai',  $plugin_public_absensi, 'submit_absensi_pegawai');
-		$this->loader->add_action('wp_ajax_check_status_absensi',  $plugin_public_absensi, 'check_status_absensi');
-		$this->loader->add_action('wp_ajax_check_status_absensi',  $plugin_public_absensi, 'check_status_absensi');
-		$this->loader->add_action('wp_ajax_get_datatable_absensi',  $plugin_public_absensi, 'get_datatable_absensi');
-		$this->loader->add_action('wp_ajax_get_data_absensi_by_id',  $plugin_public_absensi, 'get_data_absensi_by_id');
-		$this->loader->add_action('wp_ajax_tambah_data_absensi_manual',  $plugin_public_absensi, 'tambah_data_absensi_manual');
-        $this->loader->add_action('wp_ajax_hapus_data_absensi',  $plugin_public_absensi, 'hapus_data_absensi');
-		$this->loader->add_action('wp_ajax_get_master_pegawai_search',  $plugin_public_pegawai, 'get_master_pegawai_search');
+		$this->loader->add_action('wp_ajax_get_server_time', $plugin_public_absensi, 'get_server_time');
+		$this->loader->add_action('wp_ajax_get_valid_kode_kerja', $plugin_public_absensi, 'get_valid_kode_kerja');
+		$this->loader->add_action('wp_ajax_submit_absensi_pegawai', $plugin_public_absensi, 'submit_absensi_pegawai');
+		$this->loader->add_action('wp_ajax_check_status_absensi', $plugin_public_absensi, 'check_status_absensi');
+		$this->loader->add_action('wp_ajax_check_status_absensi', $plugin_public_absensi, 'check_status_absensi');
+		$this->loader->add_action('wp_ajax_get_datatable_absensi', $plugin_public_absensi, 'get_datatable_absensi');
+		$this->loader->add_action('wp_ajax_get_data_absensi_by_id', $plugin_public_absensi, 'get_data_absensi_by_id');
+		$this->loader->add_action('wp_ajax_tambah_data_absensi_manual', $plugin_public_absensi, 'tambah_data_absensi_manual');
+		$this->loader->add_action('wp_ajax_hapus_data_absensi', $plugin_public_absensi, 'hapus_data_absensi');
+		$this->loader->add_action('wp_ajax_get_master_pegawai_search', $plugin_public_pegawai, 'get_master_pegawai_search');
 
 		// Kegiatan Hooks
 		$this->loader->add_action('wp_ajax_get_datatable_kegiatan',  $plugin_public_kegiatan, 'get_datatable_kegiatan');
@@ -305,8 +318,8 @@ class Wp_Absen {
 		add_shortcode('management_data_ijin', array($plugin_public_ijin, 'management_data_ijin'));
 		add_shortcode('menu_absensi', array($plugin_public, 'menu_absensi'));
 
-		$this->loader->add_filter( 'login_redirect', $plugin_public, 'custom_login_redirect', 10, 3 );
-		$this->loader->add_filter( 'logout_redirect', $plugin_public, 'custom_logout_redirect', 10, 3 );
+		$this->loader->add_filter('login_redirect', $plugin_public, 'custom_login_redirect', 10, 3);
+		$this->loader->add_filter('logout_redirect', $plugin_public, 'custom_logout_redirect', 10, 3);
 	}
 
 	/**
@@ -314,7 +327,8 @@ class Wp_Absen {
 	 *
 	 * @since    1.0.0
 	 */
-	public function run() {
+	public function run()
+	{
 		$this->loader->run();
 	}
 
@@ -325,7 +339,8 @@ class Wp_Absen {
 	 * @since     1.0.0
 	 * @return    string    The name of the plugin.
 	 */
-	public function get_plugin_name() {
+	public function get_plugin_name()
+	{
 		return $this->plugin_name;
 	}
 
@@ -335,7 +350,8 @@ class Wp_Absen {
 	 * @since     1.0.0
 	 * @return    Wp_Absen_Loader    Orchestrates the hooks of the plugin.
 	 */
-	public function get_loader() {
+	public function get_loader()
+	{
 		return $this->loader;
 	}
 
@@ -345,7 +361,8 @@ class Wp_Absen {
 	 * @since     1.0.0
 	 * @return    string    The version number of the plugin.
 	 */
-	public function get_version() {
+	public function get_version()
+	{
 		return $this->version;
 	}
 
