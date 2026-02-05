@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-WP-ABSENSI is a WordPress attendance management plugin for Indonesian government institutions (SKPD). Built on WordPress Plugin Boilerplate architecture with Carbon Fields for admin options.
+WP-ABSENSI is a WordPress attendance management plugin for Indonesian government institutions (SKPD). Built on WordPress Plugin Boilerplate architecture with Carbon Fields for admin options. Features PWA support for mobile installation.
+
+**Current Version**: 1.0.1
 
 ## Commands
 
@@ -32,6 +34,8 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 - `public/` - Frontend: shortcode handlers, AJAX endpoints, view templates in `partials/`
 - `public/trait/` - Shared PHP traits for public classes
 - `public/partials/` - View templates for shortcodes
+- `public/img/` - Upload directories for attachments (absensi, kegiatan, ijin)
+- `public/images/` - PWA icons
 - `vendor/` - Composer dependencies (Carbon Fields)
 - `core/Libraries/` - Custom libraries (Plugin_Update_Warning)
 
@@ -45,8 +49,8 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | Wp_Absen_Deactivator | includes/class-wp-absen-deactivator.php | Plugin deactivation handler |
 | Wp_Absen_i18n | includes/class-wp-absen-i18n.php | Internationalization |
 | ABSEN_Functions | includes/class-wp-absen-functions.php | Utility library (API keys, uploads, Telegram, password management) |
-| Wp_Absen_Admin | admin/class-wp-absen-admin.php | Admin area, Carbon Fields options, Excel import, WP-SIPD integration |
-| Wp_Absen_Public | public/class-wp-absen-public.php | Attendance management, legacy employee handlers, menu shortcode |
+| Wp_Absen_Admin | admin/class-wp-absen-admin.php | Admin area, Carbon Fields options, Excel import, WP-SIPD integration, PWA management |
+| Wp_Absen_Public | public/class-wp-absen-public.php | Attendance management, legacy employee handlers, menu shortcode, PWA hooks |
 | Wp_Absen_Public_Instansi | public/class-wp-absen-public-instansi.php | Institution management with geofencing, auto user creation |
 | Wp_Absen_Public_Pegawai | public/class-wp-absen-public-pegawai.php | Employee management, master data, copy between years |
 | Wp_Absen_Public_Kode_Kerja | public/class-wp-absen-public-kode-kerja.php | Work code/schedule management with flexible hours |
@@ -112,6 +116,7 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 | `wp-absen-absensi-pegawai.php` | Employee attendance submission UI |
 | `wp-absen-management-data-kegiatan.php` | Activity/event management UI |
 | `wp-absen-management-data-ijin.php` | Leave/permission request UI |
+| `wp-absen-pwa-offline.php` | PWA offline fallback page with dino game |
 | `wp-absen-public-display.php` | Generic public display |
 
 ## AJAX Endpoints
@@ -121,6 +126,7 @@ No build process, automated tests, or npm scripts. Enable `WP_DEBUG` in wp-confi
 - `import_excel_absen_pegawai` - Import employees from Excel
 - `generate_user_absen` - Auto-generate WordPress users from employees
 - `get_data_unit_wpsipd` - Pull SKPD/account data from WP-SIPD API
+- `manage_pwa_files` - Toggle PWA (copy/delete manifest and service-worker to WordPress root)
 
 ### Pegawai Management (Wp_Absen_Public_Pegawai)
 - `get_datatable_pegawai` - DataTable with permission filtering
@@ -322,7 +328,7 @@ Leave and permission request management with approval workflow:
 - `ABSEN_PLUGIN_URL` - Plugin URL path
 - `ABSEN_PLUGIN_PATH` - Plugin file path
 - `ABSEN_APIKEY` - Option name: `_crb_apikey_absen`
-- `WP_ABSEN_VERSION` - Current version: 1.0.0
+- `WP_ABSEN_VERSION` - Current version: 1.0.1
 
 ## Frontend Libraries
 - Bootstrap 4.3.1 (CSS + Bundle JS)
@@ -441,3 +447,145 @@ Leave and permission request management with approval workflow:
 ## Maintenance
 
 When making significant changes to the codebase (new dependencies, refactoring, architectural changes), update this CLAUDE.md file to keep documentation in sync.
+
+## Progressive Web App (PWA)
+
+The plugin supports PWA functionality for mobile installation and offline access.
+
+### PWA Files
+| File | Location | Purpose |
+|------|----------|---------|
+| `manifest.json` | Plugin root (copied to WP root when enabled) | App manifest with name, icons, theme |
+| `service-worker.js` | Plugin root (copied to WP root when enabled) | Cache strategy and offline handling |
+| `pwa-register.js` | `public/js/` | PWA registration script |
+| `wp-absen-pwa-offline.php` | `public/partials/` | Offline fallback page with dino game |
+| `icon-192x192.png` | `public/images/` | PWA icon (small) |
+| `icon-512x512.png` | `public/images/` | PWA icon (large) |
+
+### PWA Toggle Mechanism
+```php
+// Carbon Fields option: crb_enable_pwa
+// When enabled:
+// 1. copy_pwa_files_to_root() copies manifest.json and service-worker.js to WordPress root
+// 2. add_pwa_manifest() adds <link rel="manifest"> to wp_head
+// 3. add_pwa_meta_tags() adds theme-color and apple-mobile-web-app meta tags
+// 4. add_pwa_script_inline() registers service worker and shows install button
+
+// When disabled:
+// 1. delete_pwa_files_from_root() removes files from WordPress root
+```
+
+### PWA Features
+- **Installable**: Shows "Tambahkan ke Layar Utama" button on mobile
+- **Offline Support**: Caches pages with network-first strategy
+- **Offline Page**: Fallback page with playable dinosaur jumping game
+- **Auto-reconnect**: Automatically reloads when network is restored
+- **Theme**: Purple gradient (#667eea to #764ba2)
+
+### Service Worker Cache Strategy
+- Network-first with cache fallback
+- Caches HTML, CSS, JS, and image files
+- Excludes admin-ajax.php and wp-admin paths
+- Maximum cache age: 24 hours
+
+## CustomTrait File Upload
+
+The `CustomTraitAbsen` trait provides a reusable file upload method used by Kegiatan, Ijin, and Absensi classes.
+
+### Method Signature
+```php
+public function uploadFileAbsen($api_key, $path, $file, $ext, $maxSize, $nama_file)
+```
+
+### Parameters
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `$api_key` | string | API key for validation |
+| `$path` | string | Upload directory path |
+| `$file` | array | $_FILES array element |
+| `$ext` | array | Allowed extensions (e.g., ['pdf', 'jpg', 'png']) |
+| `$maxSize` | int | Maximum file size in bytes |
+| `$nama_file` | string | Base filename (timestamp appended) |
+
+### Return Value
+```php
+array(
+    'status' => 'success' | 'error',
+    'message' => 'Status message',
+    'file' => 'filename.ext' // Only on success
+)
+```
+
+### Usage Example
+```php
+$result = $this->uploadFileAbsen(
+    $_POST['api_key'],
+    ABSEN_PLUGIN_PATH . 'public/img/kegiatan/',
+    $_FILES['file_lampiran'],
+    ['pdf', 'jpg', 'jpeg', 'png'],
+    5 * 1024 * 1024, // 5MB
+    'kegiatan_' . time()
+);
+```
+
+## Menu System ([menu_absensi])
+
+Dynamic menu shortcode that renders different interfaces based on user role.
+
+### Admin/Admin Instansi View
+Tabbed vertical pills interface with 6 sections:
+1. **Manajemen Data Instansi** - Institution links per fiscal year
+2. **Manajemen Data Pegawai** - Employee links per fiscal year
+3. **Manajemen Data Absensi** - Attendance links per fiscal year
+4. **Data Kode Kerja** - Work schedule link
+5. **Manajemen Data Kegiatan** - Activity links per fiscal year
+6. **Manajemen Data Ijin** - Leave request links per fiscal year
+
+### Pegawai View
+Horizontal tabs interface with 4 sections:
+1. **Absensi** - Attendance submission form (embedded partial)
+2. **Laporan** - Attendance report links
+3. **Ijin** - Leave request links
+4. **Kegiatan** - Activity links
+
+## Carbon Fields Admin Tabs
+
+Admin options organized in Carbon Fields theme options:
+
+### Main Container: "Absensi Options"
+1. **⚙️ Konfigurasi Umum**
+   - API Key (auto-generated)
+   - PWA Toggle checkbox
+   - SQL Migrate button
+   - Generate User button
+
+2. **🔌 API WP SIPD**
+   - URL Server WP-SIPD
+   - API KEY WP-SIPD
+   - Tahun Anggaran
+   - Pull Data button
+
+### Sub-container: "Menu Instansi"
+- ⚙️ Data Instansi - Links to institution management pages
+
+### Sub-container: "Menu Pegawai"
+- ⚙️ Data Pegawai - Employee links + field visibility toggles
+- 📋 Absensi Pegawai - Attendance record links
+- 📅 Data Kegiatan Pegawai - Activity links
+- 📝 Data Ijin Pegawai - Leave request links
+
+### Sub-container: "Menu Data Kerja"
+- ⚙️ Data Kerja - Work code management link
+
+## Field Visibility Options
+
+Carbon Fields checkboxes to hide form fields in employee management:
+- `crb_hide_tempat_lahir` - Hide birth place
+- `crb_hide_tanggal_lahir` - Hide birth date
+- `crb_hide_jenis_kelamin` - Hide gender
+- `crb_hide_agama` - Hide religion
+- `crb_hide_pendidikan_terakhir` - Hide last education
+- `crb_hide_pendidikan_sekarang` - Hide current education
+- `crb_hide_nama_sekolah` - Hide school name
+- `crb_hide_lulus` - Hide graduation year
+- `crb_hide_alamat` - Hide address
