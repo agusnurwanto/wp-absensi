@@ -143,21 +143,22 @@ class Wp_Absen_Public
 		$user_id = um_user('ID');
 		$user_meta = get_userdata($user_id);
 
-		$table_name = 'absensi_data_unit';
-		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+		// Check if absensi_tahun table exists
+		$table_tahun = 'absensi_tahun';
+		$tahun_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_tahun'") === $table_tahun;
 
 		$get_data_instansi = '';
 		$get_data_pegawai = '';
 		$get_data_absensi = '';
 		$get_data_kegiatan = '';
 		$get_data_ijin = '';
-		if ($table_exists) {
-			$get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
+		if ($tahun_exists) {
+			$get_tahun = $wpdb->get_results('SELECT tahun FROM absensi_tahun WHERE deleted_at IS NULL AND active = 1 ORDER BY tahun ASC', ARRAY_A);
 			if (!empty($get_tahun) && is_array($get_tahun)) {
 				foreach ($get_tahun as $k => $v) {
 					$management_data_instansi = $this->functions->generatePage(array(
-						'nama_page' => 'Management Data Instansi | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Management Data Instansi | ' . $v['tahun'],
+						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'publish'
@@ -165,8 +166,8 @@ class Wp_Absen_Public
 					$get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
 
 					$management_data_pegawai = $this->functions->generatePage(array(
-						'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Management Data Pegawai | ' . $v['tahun'],
+						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'publish'
@@ -174,8 +175,8 @@ class Wp_Absen_Public
 					$get_data_pegawai .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
 
 					$management_data_absensi = $this->functions->generatePage(array(
-						'nama_page' => 'Management Data Absensi | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Management Data Absensi | ' . $v['tahun'],
+						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'publish'
@@ -183,8 +184,8 @@ class Wp_Absen_Public
 					$get_data_absensi .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
 
 					$management_data_kegiatan = $this->functions->generatePage(array(
-						'nama_page' => 'Manajemen Data Kegiatan | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Manajemen Data Kegiatan | ' . $v['tahun'],
+						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'publish'
@@ -192,8 +193,8 @@ class Wp_Absen_Public
 					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
 
 					$management_data_ijin = $this->functions->generatePage(array(
-						'nama_page' => 'Manajemen Data Ijin | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Manajemen Data Ijin | ' . $v['tahun'],
+						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'publish'

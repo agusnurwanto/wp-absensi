@@ -127,7 +127,7 @@ class Wp_Absen_Public_Instansi {
                 if (!empty($params['tahun'])) {
                     $where_first .= $wpdb->prepare(" AND tahun = %d", $params['tahun']);
                 } else {
-                    $active_year = $wpdb->get_var("SELECT tahun_anggaran FROM absensi_data_unit WHERE active=1 ORDER BY id DESC LIMIT 1");
+                    $active_year = $wpdb->get_var("SELECT tahun FROM absensi_tahun WHERE active=1 AND deleted_at IS NULL ORDER BY tahun DESC LIMIT 1");
                     if($active_year) {
                         $where_first .= $wpdb->prepare(" AND tahun = %d", $active_year);
                     }

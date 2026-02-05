@@ -268,3 +268,15 @@ ALTER TABLE `absensi_data_kerja` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
 ALTER TABLE `absensi_harian` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
 ALTER TABLE `absensi_ijin` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
 ALTER TABLE `absensi_kegiatan` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+
+-- Year Management Table
+CREATE TABLE `absensi_tahun` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `tahun` YEAR(4) NOT NULL,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tahun` (`tahun`),
+  KEY `active` (`active`)
+);

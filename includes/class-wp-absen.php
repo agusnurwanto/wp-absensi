@@ -208,6 +208,8 @@ class Wp_Absen
 		$this->loader->add_action('carbon_fields_register_fields', $plugin_admin, 'crb_absen_options');
 
 		$this->loader->add_action('wp_ajax_sql_migrate_absen', $plugin_admin, 'sql_migrate_absen');
+		$this->loader->add_action('wp_ajax_tambah_tahun_absen', $plugin_admin, 'tambah_tahun_absen');
+		$this->loader->add_action('wp_ajax_hapus_tahun_absen', $plugin_admin, 'hapus_tahun_absen');
 		$this->loader->add_action('wp_ajax_import_excel_absen_pegawai', $plugin_admin, 'import_excel_absen_pegawai');
 		$this->loader->add_action('wp_ajax_generate_user_absen', $plugin_admin, 'generate_user_absen');
 		$this->loader->add_action('wp_ajax_get_data_unit_wpsipd', $plugin_admin, 'get_data_unit_wpsipd');

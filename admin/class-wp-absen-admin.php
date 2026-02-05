@@ -138,23 +138,34 @@ class Wp_Absen_Admin
 			update_option(ABSEN_APIKEY, $api_key);
 		}
 
-		$table_name = 'absensi_data_unit';
-		$table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") === $table_name;
+		// Check if absensi_tahun table exists
+		$table_tahun = 'absensi_tahun';
+		$tahun_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_tahun'") === $table_tahun;
 
 		$get_data = '';
 		$get_data_instansi = '';
 		$get_absensi_pegawai = '';
 		$get_data_kegiatan = '';
 		$get_data_ijin = '';
+		$get_list_tahun = '';
 
-		if ($table_exists) {
-			$get_tahun = $wpdb->get_results('SELECT tahun_anggaran FROM absensi_data_unit GROUP BY tahun_anggaran ORDER BY tahun_anggaran ASC', ARRAY_A);
+		if ($tahun_exists) {
+			$get_tahun = $wpdb->get_results('SELECT tahun FROM absensi_tahun WHERE deleted_at IS NULL AND active = 1 ORDER BY tahun ASC', ARRAY_A);
+
+			// Build list of years for display
+			if (!empty($get_tahun)) {
+				foreach ($get_tahun as $t) {
+					$get_list_tahun .= '<li>' . esc_html($t['tahun']) . ' <a href="#" onclick="hapus_tahun(' . $t['tahun'] . '); return false;" class="button button-small" style="color:red;">Hapus</a></li>';
+				}
+			} else {
+				$get_list_tahun = '<li style="color: orange;">Belum ada tahun yang ditambahkan.</li>';
+			}
 
 			if (!empty($get_tahun) && is_array($get_tahun)) {
 				foreach ($get_tahun as $k => $v) {
 					$management_data_pegawai = $this->functions->generatePage(array(
-						'nama_page' => 'Management Data Pegawai | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Management Data Pegawai | ' . $v['tahun'],
+						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'private'
@@ -162,8 +173,8 @@ class Wp_Absen_Admin
 
 					$get_data .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
 					$management_data_instansi = $this->functions->generatePage(array(
-						'nama_page' => 'Management Data Instansi | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Management Data Instansi | ' . $v['tahun'],
+						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'published'
@@ -171,8 +182,8 @@ class Wp_Absen_Admin
 
 					$get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
 					$management_data_absensi = $this->functions->generatePage(array(
-						'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun'],
+						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'private'
@@ -180,8 +191,8 @@ class Wp_Absen_Admin
 					$get_absensi_pegawai .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
 
 					$management_data_kegiatan = $this->functions->generatePage(array(
-						'nama_page' => 'Data Kegiatan Pegawai | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Data Kegiatan Pegawai | ' . $v['tahun'],
+						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'private'
@@ -189,8 +200,8 @@ class Wp_Absen_Admin
 					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
 
 					$management_data_ijin = $this->functions->generatePage(array(
-						'nama_page' => 'Data Ijin Pegawai | ' . $v['tahun_anggaran'],
-						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun_anggaran"] . '"]',
+						'nama_page' => 'Data Ijin Pegawai | ' . $v['tahun'],
+						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
 						'no_key' => 1,
 						'post_status' => 'private'
@@ -200,11 +211,13 @@ class Wp_Absen_Admin
 			}
 		} else {
 			$get_data = '<li style="color: red; font-weight: bold;">Tabel belum dibuat. Silakan jalankan SQL Migrate terlebih dahulu.</li>';
+			$get_list_tahun = '<li style="color: red; font-weight: bold;">Tabel belum dibuat. Silakan jalankan SQL Migrate terlebih dahulu.</li>';
 		}
 
 		$basic_options_container = Container::make('theme_options', 'Absensi Options')
 			->set_page_menu_position(3)
 			->add_tab('⚙️ Konfigurasi Umum', $this->generate_fields_options_konfigurasi_umum())
+			->add_tab('📅 Manajemen Tahun', $this->generate_fields_options_manajemen_tahun($get_list_tahun))
 			->add_tab('🔌 API WP SIPD', $this->generate_fields_options_api_wpsipd());
 
 		Container::make('theme_options', __('Menu Instansi'))
@@ -570,6 +583,99 @@ class Wp_Absen_Admin
 				->set_html('<a target="_blank" onclick="generate_user_absen(); return false;" href="#" class="button button-primary button-large">Generate User Pegawai</a>')
 				->set_help_text('Generate user dari tabel <b>data_pegawai</b>.')
 		];
+	}
+
+	public function generate_fields_options_manajemen_tahun($get_list_tahun)
+	{
+		return [
+			Field::make('html', 'crb_tahun_list')
+				->set_html('
+					<h5>DAFTAR TAHUN</h5>
+					<ol id="list-tahun">
+						' . $get_list_tahun . '
+					</ol>
+				'),
+
+			Field::make('html', 'crb_tambah_tahun')
+				->set_html('
+					<h5>TAMBAH TAHUN BARU</h5>
+					<div style="display: flex; gap: 10px; align-items: center;">
+						<input type="number" id="input_tahun_baru" placeholder="Contoh: ' . date('Y') . '" min="2000" max="2099" style="width: 120px;" value="' . date('Y') . '">
+						<a href="#" onclick="tambah_tahun(); return false;" class="button button-primary">Tambah Tahun</a>
+					</div>
+				')
+				->set_help_text('Masukkan tahun baru untuk ditambahkan ke sistem. Halaman manajemen data akan otomatis dibuat untuk tahun tersebut.')
+		];
+	}
+
+	public function tambah_tahun_absen()
+	{
+		global $wpdb;
+
+		$ret = array(
+			'status' => 'success',
+			'message' => 'Tahun berhasil ditambahkan!'
+		);
+
+		if (!empty($_POST['tahun'])) {
+			$tahun = intval($_POST['tahun']);
+
+			if ($tahun < 2000 || $tahun > 2099) {
+				$ret['status'] = 'error';
+				$ret['message'] = 'Tahun harus antara 2000-2099!';
+			} else {
+				// Check if already exists
+				$existing = $wpdb->get_var($wpdb->prepare(
+					"SELECT id FROM absensi_tahun WHERE tahun = %d AND deleted_at IS NULL",
+					$tahun
+				));
+
+				if ($existing) {
+					$ret['status'] = 'error';
+					$ret['message'] = 'Tahun ' . $tahun . ' sudah ada!';
+				} else {
+					$wpdb->insert('absensi_tahun', array(
+						'tahun' => $tahun,
+						'active' => 1,
+						'created_at' => current_time('mysql')
+					));
+					$ret['message'] = 'Tahun ' . $tahun . ' berhasil ditambahkan! Silakan refresh halaman.';
+				}
+			}
+		} else {
+			$ret['status'] = 'error';
+			$ret['message'] = 'Tahun tidak boleh kosong!';
+		}
+
+		die(json_encode($ret));
+	}
+
+	public function hapus_tahun_absen()
+	{
+		global $wpdb;
+
+		$ret = array(
+			'status' => 'success',
+			'message' => 'Tahun berhasil dihapus!'
+		);
+
+		if (!empty($_POST['tahun'])) {
+			$tahun = intval($_POST['tahun']);
+
+			// Soft delete
+			$wpdb->update(
+				'absensi_tahun',
+				array('deleted_at' => current_time('mysql')),
+				array('tahun' => $tahun)
+			);
+
+			$ret['message'] = 'Tahun ' . $tahun . ' berhasil dihapus! Silakan refresh halaman.';
+		} else {
+			$ret['status'] = 'error';
+			$ret['message'] = 'Tahun tidak valid!';
+		}
+
+		die(json_encode($ret));
 	}
 
 	public function generate_fields_options_api_wpsipd()

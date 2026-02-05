@@ -216,7 +216,72 @@ function sql_migrate_absen() {
         },
         error: (e) => {
             console.log(e);
+            jQuery("#wrap-loading").hide();
             return alert("Terjadi kesalahan: " + e.statusText);
+        },
+    });
+}
+
+function tambah_tahun() {
+    var tahun = jQuery("#input_tahun_baru").val();
+    if (!tahun || tahun < 2000 || tahun > 2099) {
+        alert("Tahun harus antara 2000-2099!");
+        return;
+    }
+
+    if (!confirm("Apakah anda yakin ingin menambahkan tahun " + tahun + "?")) {
+        return;
+    }
+
+    jQuery("#wrap-loading").show();
+    jQuery.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: {
+            action: "tambah_tahun_absen",
+            tahun: tahun
+        },
+        dataType: "json",
+        success: (data) => {
+            jQuery("#wrap-loading").hide();
+            alert(data.message);
+            if (data.status === "success") {
+                location.reload();
+            }
+        },
+        error: (e) => {
+            console.log(e);
+            jQuery("#wrap-loading").hide();
+            alert("Terjadi kesalahan: " + e.statusText);
+        },
+    });
+}
+
+function hapus_tahun(tahun) {
+    if (!confirm("Apakah anda yakin ingin menghapus tahun " + tahun + "? Data terkait tahun ini tidak akan dihapus.")) {
+        return;
+    }
+
+    jQuery("#wrap-loading").show();
+    jQuery.ajax({
+        url: ajaxurl,
+        type: "POST",
+        data: {
+            action: "hapus_tahun_absen",
+            tahun: tahun
+        },
+        dataType: "json",
+        success: (data) => {
+            jQuery("#wrap-loading").hide();
+            alert(data.message);
+            if (data.status === "success") {
+                location.reload();
+            }
+        },
+        error: (e) => {
+            console.log(e);
+            jQuery("#wrap-loading").hide();
+            alert("Terjadi kesalahan: " + e.statusText);
         },
     });
 }
