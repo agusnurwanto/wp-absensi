@@ -302,7 +302,7 @@ class Wp_Absen_Public_Pegawai {
 
                 $sql_tot = "SELECT count(id) as jml FROM `absensi_data_pegawai`";
                 $sql = "SELECT ".implode(', ', $columns)." FROM `absensi_data_pegawai`";
-                $where_first = $wpdb->prepare(" WHERE 1=1 AND tahun = %d", $_POST['tahun']);
+                $where_first = $wpdb->prepare(" WHERE deleted_at IS NULL AND tahun = %d", $_POST['tahun']);
 
                 // Filter for Admin Instansi
                 $current_user = wp_get_current_user();
@@ -479,15 +479,13 @@ class Wp_Absen_Public_Pegawai {
                     }
                 }
 
-                // Hapus Data WordPress User if exists
-                if (!empty($existing_data->id_user)) {
-                    require_once(ABSPATH.'wp-admin/includes/user.php');
-                    wp_delete_user($existing_data->id_user);
-                }
-
-                // Hapus data hard delete
-                $ret['data'] = $wpdb->delete('absensi_data_pegawai', array('id' => $_POST['id']));
-                $ret['message'] = 'Data pegawai dan akun user berhasil dihapus secara permanen!';
+                // Soft Delete: Set deleted_at timestamp
+                $wpdb->update(
+                    'absensi_data_pegawai',
+                    array('deleted_at' => current_time('mysql')),
+                    array('id' => $_POST['id'])
+                );
+                $ret['message'] = 'Data pegawai berhasil dihapus!';
             } else {
                 $ret['status']  = 'error';
                 $ret['message'] = 'Api key tidak ditemukan!';
@@ -789,7 +787,7 @@ class Wp_Absen_Public_Pegawai {
 
         if (!empty($_GET['api_key']) && $_GET['api_key'] == get_option(ABSEN_APIKEY)) {
             $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
-            $query = "SELECT id, nama, nik, id_instansi FROM absensi_data_pegawai WHERE active = 1";
+            $query = "SELECT id, nama, nik, id_instansi FROM absensi_data_pegawai WHERE active = 1 AND deleted_at IS NULL";
 
             // Instansi Filter
             $current_user = wp_get_current_user();

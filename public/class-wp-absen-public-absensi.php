@@ -65,9 +65,9 @@ class Wp_Absen_Public_Absensi
 
             if ($id_instansi) {
                 $results = $wpdb->get_results($wpdb->prepare("
-                    SELECT id, nama_kerja, jam_masuk, jam_pulang, jenis 
-                    FROM absensi_data_kerja 
-                    WHERE id_instansi = %d AND active = 1
+                    SELECT id, nama_kerja, jam_masuk, jam_pulang, jenis
+                    FROM absensi_data_kerja
+                    WHERE id_instansi = %d AND active = 1 AND deleted_at IS NULL
                 ", $id_instansi), ARRAY_A);
                 
                 $ret['data'] = $results;
@@ -423,7 +423,7 @@ class Wp_Absen_Public_Absensi
                 FROM absensi_harian ah
                 JOIN absensi_data_pegawai p ON ah.id_pegawai = p.id
                 JOIN absensi_data_kerja k ON ah.id_kode_kerja = k.id
-                WHERE 1=1
+                WHERE ah.deleted_at IS NULL
             ";
             
             // Filter Instansi or Pegawai
@@ -564,7 +564,12 @@ class Wp_Absen_Public_Absensi
                 }
 
                 if ($allow) {
-                    $wpdb->delete('absensi_harian', array('id' => $id_delete));
+                    // Soft Delete: Set deleted_at timestamp
+                    $wpdb->update(
+                        'absensi_harian',
+                        array('deleted_at' => current_time('mysql')),
+                        array('id' => $id_delete)
+                    );
                     $ret['status'] = 'success';
                     $ret['message'] = 'Data Absensi berhasil dihapus!';
                 } else {

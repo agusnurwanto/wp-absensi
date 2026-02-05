@@ -60,7 +60,7 @@ class Wp_Absen_Public_Ijin {
 			}
 		} elseif ($is_admin) {
 			// Fetch List Pegawai
-			$sql_pegawai = "SELECT id, nama, nik FROM absensi_data_pegawai WHERE active = 1";
+			$sql_pegawai = "SELECT id, nama, nik FROM absensi_data_pegawai WHERE active = 1 AND deleted_at IS NULL";
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
 				$sql_pegawai .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
 			}
@@ -93,10 +93,10 @@ class Wp_Absen_Public_Ijin {
 			$search_value = isset($params['search']['value']) ? $params['search']['value'] : '';
 			$draw = isset($params['draw']) ? intval($params['draw']) : 0;
 
-			$sql_base = "SELECT i.*, p.nama as nama_pegawai 
+			$sql_base = "SELECT i.*, p.nama as nama_pegawai
 						 FROM absensi_ijin i
 						 LEFT JOIN absensi_data_pegawai p ON i.id_pegawai = p.id
-						 WHERE 1=1"; // active not explicitly in 'absensi_ijin' schema but usually nice to have if soft delete
+						 WHERE i.deleted_at IS NULL";
 
 			// Filter Tahun
 			$sql_base .= $wpdb->prepare(" AND i.tahun = %s", $tahun);
@@ -345,10 +345,15 @@ class Wp_Absen_Public_Ijin {
     public function hapus_data_ijin_by_id() {
 		global $wpdb;
 		$ret = array('status' => 'error', 'message' => 'Gagal hapus data!');
-		
+
 		if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
 			$id = intval($_POST['id']);
-            $wpdb->delete('absensi_ijin', array('id' => $id));
+            // Soft Delete: Set deleted_at timestamp
+            $wpdb->update(
+                'absensi_ijin',
+                array('deleted_at' => current_time('mysql')),
+                array('id' => $id)
+            );
             $ret['status'] = 'success';
             $ret['message'] = 'Data berhasil dihapus';
 		}

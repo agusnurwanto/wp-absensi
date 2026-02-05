@@ -36,32 +36,34 @@ CREATE TABLE `absensi_data_unit` (
   `update_at` datetime DEFAULT NULL,
   `tahun_anggaran` year(4) NOT NULL DEFAULT '2021',
   `active` tinyint(4) NOT NULL DEFAULT '1',
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY  (id)
 );
 
 CREATE TABLE `absensi_data_pegawai` (
   `id` int(11) NOT NULL auto_increment,
-  `nik` varchar(20) DEFAULT NULL, 
-  `nama` text DEFAULT NULL,    
+  `nik` varchar(20) DEFAULT NULL,
+  `nama` text DEFAULT NULL,
   `jabatan` varchar(100) DEFAULT NULL,
-  `tempat_lahir` text DEFAULT NULL, 
-  `tanggal_lahir` date DEFAULT NULL, 
-  `jenis_kelamin` varchar(2) DEFAULT NULL COMMENT 'L=Laki-laki, P=Perempuan', 
-  `agama` text DEFAULT NULL, 
-  `no_hp` varchar(50) DEFAULT NULL, 
-  `alamat` text DEFAULT NULL, 
-  `pendidikan_terakhir` text DEFAULT NULL, 
-  `pendidikan_sekarang` text DEFAULT NULL, 
-  `nama_sekolah` text DEFAULT NULL, 
-  `lulus` year(4) DEFAULT NULL, 
-  `email` text DEFAULT NULL, 
+  `tempat_lahir` text DEFAULT NULL,
+  `tanggal_lahir` date DEFAULT NULL,
+  `jenis_kelamin` varchar(2) DEFAULT NULL COMMENT 'L=Laki-laki, P=Perempuan',
+  `agama` text DEFAULT NULL,
+  `no_hp` varchar(50) DEFAULT NULL,
+  `alamat` text DEFAULT NULL,
+  `pendidikan_terakhir` text DEFAULT NULL,
+  `pendidikan_sekarang` text DEFAULT NULL,
+  `nama_sekolah` text DEFAULT NULL,
+  `lulus` year(4) DEFAULT NULL,
+  `email` text DEFAULT NULL,
   `id_user` int(11) DEFAULT NULL,
   `id_instansi` int(11) DEFAULT NULL,
-  `user_role` text DEFAULT NULL COMMENT 'kepala dan pegawai', 
-  `status_kerja` int(11) DEFAULT NULL COMMENT '0=Tidak Aktif, 1=Aktif', 
+  `user_role` text DEFAULT NULL COMMENT 'kepala dan pegawai',
+  `status_kerja` int(11) DEFAULT NULL COMMENT '0=Tidak Aktif, 1=Aktif',
   `tahun` year(4) DEFAULT NULL,
   `update_at` datetime NOT NULL,
   `active` tinyint(4) DEFAULT 1,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY  (id)
 );
 
@@ -92,6 +94,7 @@ CREATE TABLE `absensi_data` (
   `created_at` datetime NOT NULL,
   `update_at` datetime NOT NULL,
   `active` tinyint(4) DEFAULT '1' COMMENT '0=hapus, 1=aktif',
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY  (id)
 );
 
@@ -117,6 +120,7 @@ CREATE TABLE `absensi_data_detail` (
   `jml_pajak` double DEFAULT NULL,
   `jenis_user` varchar(50) DEFAULT NULL,
   `update_user` text DEFAULT NULL,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY  (id)
 );
 
@@ -129,6 +133,7 @@ CREATE TABLE `absensi_data_rekening_akun` (
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_akun` (`id_akun`),
   KEY `kode_akun` (`kode_akun`),
@@ -144,6 +149,7 @@ CREATE TABLE `absensi_data_satuan` (
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_satuan` (`id_satuan`),
   KEY `tahun_anggaran` (`tahun_anggaran`),
@@ -161,6 +167,7 @@ CREATE TABLE `absensi_data_instansi` (
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `tahun` (`tahun`),
   KEY `active` (`active`)
@@ -179,6 +186,7 @@ CREATE TABLE `absensi_data_kerja` (
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_instansi` (`id_instansi`),
   KEY `active` (`active`)
@@ -200,6 +208,7 @@ CREATE TABLE `absensi_harian` (
   `tahun` YEAR(4) NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_pegawai` (`id_pegawai`),
   KEY `id_instansi` (`id_instansi`),
@@ -220,6 +229,7 @@ CREATE TABLE `absensi_ijin` (
   `tahun` YEAR(4) NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_pegawai` (`id_pegawai`),
   KEY `id_instansi` (`id_instansi`)
@@ -240,9 +250,21 @@ CREATE TABLE `absensi_kegiatan` (
   `active` TINYINT(1) NOT NULL DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_instansi` (`id_instansi`),
   KEY `active` (`active`)
 );
 
-ALTER TABLE `absensi_kegiatan` ADD `file_lampiran` TEXT NULL AFTER `uraian`;
+-- Migration: Add deleted_at column to existing tables
+ALTER TABLE `absensi_data_unit` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data_pegawai` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data_detail` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data_rekening_akun` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data_satuan` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data_instansi` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_data_kerja` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_harian` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_ijin` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
+ALTER TABLE `absensi_kegiatan` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;

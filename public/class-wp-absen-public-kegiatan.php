@@ -84,7 +84,7 @@ class Wp_Absen_Public_Kegiatan {
 			}
 		} elseif ($is_admin) {
 			// Fetch List Pegawai
-			$sql_pegawai = "SELECT id, nama, nik FROM absensi_data_pegawai WHERE active = 1";
+			$sql_pegawai = "SELECT id, nama, nik FROM absensi_data_pegawai WHERE active = 1 AND deleted_at IS NULL";
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
 				$sql_pegawai .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
 			}
@@ -123,10 +123,10 @@ class Wp_Absen_Public_Kegiatan {
 			// Columns mapping: 0=no, 1=nama_pegawai, 2=nama_kegiatan...
 			// Update Frontend Columns to match
 
-			$sql_base = "SELECT k.*, p.nama as nama_pegawai 
+			$sql_base = "SELECT k.*, p.nama as nama_pegawai
 						 FROM absensi_kegiatan k
 						 LEFT JOIN absensi_data_pegawai p ON k.id_pegawai = p.id
-						 WHERE k.active = 1";
+						 WHERE k.active = 1 AND k.deleted_at IS NULL";
 			
 			// Filter Tahun
 			$sql_base .= $wpdb->prepare(" AND k.tahun = %s", $tahun);
@@ -403,7 +403,12 @@ class Wp_Absen_Public_Kegiatan {
 				if (in_array('admin_instansi', (array) $current_user->roles) && $data->id_instansi == $current_user->ID) $allow = true;
 
 				if ($allow) {
-					$wpdb->delete('absensi_kegiatan', array('id' => $id));
+					// Soft Delete: Set deleted_at timestamp
+					$wpdb->update(
+						'absensi_kegiatan',
+						array('deleted_at' => current_time('mysql')),
+						array('id' => $id)
+					);
 					$ret['status'] = 'success';
 					$ret['message'] = 'Data berhasil dihapus';
 				} else {

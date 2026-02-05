@@ -213,10 +213,32 @@ $this->loader->add_action('wp_ajax_nopriv_action_name', $instance, 'method_name'
 add_shortcode('shortcode_name', array($instance, 'method_name'));
 ```
 
-### Soft Delete (never use DELETE)
+### Soft Delete Pattern (using deleted_at)
+All management data uses soft delete with `deleted_at` column instead of hard delete:
+
 ```php
-$wpdb->update('absensi_data_pegawai', array('active' => 0), array('id' => $id));
+// Delete data (soft delete)
+$wpdb->update('table_name', array('deleted_at' => current_time('mysql')), array('id' => $id));
+
+// Query non-deleted data
+$results = $wpdb->get_results("SELECT * FROM table_name WHERE deleted_at IS NULL");
+
+// Query with additional filters
+$sql = "SELECT * FROM table_name WHERE deleted_at IS NULL AND active = 1";
 ```
+
+Tables with `deleted_at` column:
+- `absensi_data_unit`
+- `absensi_data_pegawai`
+- `absensi_data_instansi`
+- `absensi_data_kerja`
+- `absensi_harian`
+- `absensi_kegiatan`
+- `absensi_ijin`
+- `absensi_data` (legacy)
+- `absensi_data_detail` (legacy)
+- `absensi_data_rekening_akun`
+- `absensi_data_satuan`
 
 ### Toggle Status Pattern
 ```php

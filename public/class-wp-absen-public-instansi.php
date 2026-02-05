@@ -122,7 +122,7 @@ class Wp_Absen_Public_Instansi {
                     implode(", ", $columns) .
                     ", id_user FROM `absensi_data_instansi`";
 
-                $where_first = " WHERE 1=1";
+                $where_first = " WHERE deleted_at IS NULL";
 
                 if (!empty($params['tahun'])) {
                     $where_first .= $wpdb->prepare(" AND tahun = %d", $params['tahun']);
@@ -275,18 +275,23 @@ class Wp_Absen_Public_Instansi {
                 $instansi = $wpdb->get_row($wpdb->prepare("SELECT id_user FROM absensi_data_instansi WHERE id = %d", $_POST['id']));
 
                 if ($instansi) {
-                    // Hapus Data WordPress User if exists
+                    // Soft Delete: Set deleted_at timestamp
+                    $wpdb->update(
+                        'absensi_data_instansi',
+                        array('deleted_at' => current_time('mysql')),
+                        array('id' => $_POST['id'])
+                    );
+
+                    // Also soft delete related Data Kerja
                     if (!empty($instansi->id_user)) {
-                        require_once(ABSPATH.'wp-admin/includes/user.php');
-                        wp_delete_user($instansi->id_user);
-                        
-                        // Delete related Data Kerja (Work Codes) linked by id_user
-                        $wpdb->delete('absensi_data_kerja', array('id_instansi' => $instansi->id_user));
+                        $wpdb->update(
+                            'absensi_data_kerja',
+                            array('deleted_at' => current_time('mysql')),
+                            array('id_instansi' => $instansi->id_user)
+                        );
                     }
 
-                    // Hard Delete Instansi
-                    $ret['data'] = $wpdb->delete('absensi_data_instansi', array('id' => $_POST['id']));
-                    $ret['message'] = 'Data Instansi dan akun User berhasil dihapus permanent!';
+                    $ret['message'] = 'Data Instansi berhasil dihapus!';
                 } else {
                     $ret['status'] = 'error';
                     $ret['message'] = 'Data tidak ditemukan!';
@@ -627,7 +632,7 @@ class Wp_Absen_Public_Instansi {
                 $current_user = wp_get_current_user();
                 $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
 
-                $where = " WHERE active=1";
+                $where = " WHERE active=1 AND deleted_at IS NULL";
                 if ($is_admin_instansi) {
                     $where .= " AND id_user = " . $current_user->ID;
                 }

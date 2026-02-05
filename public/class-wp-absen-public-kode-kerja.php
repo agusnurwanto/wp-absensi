@@ -73,7 +73,7 @@ class Wp_Absen_Public_Kode_Kerja {
                 $sql = "SELECT k.*, i.username as nama_instansi FROM `absensi_data_kerja` k 
                         LEFT JOIN absensi_data_instansi i ON k.id_instansi = i.id_user"; // User ID join
 
-                $where_first = " WHERE 1=1";
+                $where_first = " WHERE k.deleted_at IS NULL";
 
                 // Filter for Admin Instansi
                 $current_user = wp_get_current_user();
@@ -164,7 +164,7 @@ class Wp_Absen_Public_Kode_Kerja {
 
                 // Validation: One Primary per Instansi
                 if ($_POST['jenis'] == 'Primary') {
-                    $check_sql = $wpdb->prepare("SELECT id FROM absensi_data_kerja WHERE id_instansi = %d AND jenis = 'Primary' AND active = 1", $id_instansi);
+                    $check_sql = $wpdb->prepare("SELECT id FROM absensi_data_kerja WHERE id_instansi = %d AND jenis = 'Primary' AND active = 1 AND deleted_at IS NULL", $id_instansi);
                     $existing_primary = $wpdb->get_row($check_sql);
                     if ($existing_primary) {
                         // If Create Mode OR (Edit Mode AND ID != Existing Primary ID)
@@ -258,7 +258,12 @@ class Wp_Absen_Public_Kode_Kerja {
                 }
             }
 
-            $wpdb->delete('absensi_data_kerja', array('id' => $_POST['id']));
+            // Soft Delete: Set deleted_at timestamp
+            $wpdb->update(
+                'absensi_data_kerja',
+                array('deleted_at' => current_time('mysql')),
+                array('id' => $_POST['id'])
+            );
         }
 
         die(json_encode($ret));
@@ -300,7 +305,7 @@ class Wp_Absen_Public_Kode_Kerja {
             $id_instansi = intval($_POST['id_instansi']);
             $exclude_id = !empty($_POST['exclude_id']) ? intval($_POST['exclude_id']) : 0;
 
-            $sql = $wpdb->prepare("SELECT id FROM absensi_data_kerja WHERE id_instansi = %d AND jenis = 'Primary' AND active = 1 AND id != %d", $id_instansi, $exclude_id);
+            $sql = $wpdb->prepare("SELECT id FROM absensi_data_kerja WHERE id_instansi = %d AND jenis = 'Primary' AND active = 1 AND deleted_at IS NULL AND id != %d", $id_instansi, $exclude_id);
             $existing = $wpdb->get_var($sql);
             if($existing) {
                 $ret['data']['primary_exists'] = true;
