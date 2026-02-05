@@ -216,7 +216,7 @@ function sql_migrate_absen() {
         },
         error: (e) => {
             console.log(e);
-            return alert(data.message);
+            return alert("Terjadi kesalahan: " + e.statusText);
         },
     });
 }
