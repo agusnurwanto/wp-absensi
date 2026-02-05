@@ -199,11 +199,6 @@ class Wp_Absen_Public
 						'post_status' => 'publish'
 					));
 					$get_data_ijin .= '<li><a target="_blank" href="' . $management_data_ijin['url'] . '">' . esc_html($management_data_ijin['title']) . '</a></li>';
-						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'publish'
-					));
-				}
 				}
 			}
 		}
