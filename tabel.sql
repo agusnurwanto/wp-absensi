@@ -256,19 +256,6 @@ CREATE TABLE `absensi_kegiatan` (
   KEY `active` (`active`)
 );
 
--- Migration: Add deleted_at column to existing tables
-ALTER TABLE `absensi_data_unit` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data_pegawai` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data_detail` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data_rekening_akun` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data_satuan` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data_instansi` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_data_kerja` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_harian` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_ijin` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-ALTER TABLE `absensi_kegiatan` ADD COLUMN `deleted_at` DATETIME DEFAULT NULL;
-
 -- Year Management Table
 CREATE TABLE `absensi_tahun` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,

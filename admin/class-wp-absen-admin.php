@@ -495,9 +495,12 @@ class Wp_Absen_Admin
 			}
 
 			$id_user = username_exists($username);
+			$prefix = carbon_get_theme_option('crb_default_password_prefix');
+			$password = $prefix . $_POST['pass'];
+
 			$options = array(
 				'user_login' => $username,
-				'user_pass' => $_POST['pass'],
+				'user_pass' => $password,
 				'user_email' => $email,
 				'first_name' => $user['nama'],
 				'display_name' => $user['nama'],
@@ -569,6 +572,9 @@ class Wp_Absen_Admin
 			Field::make('checkbox', 'crb_enable_pwa', 'Aktifkan Progressive Web App (PWA)')
 				->set_option_value('1')
 				->set_help_text('Centang untuk mengaktifkan fitur PWA. PWA memungkinkan aplikasi diinstall di home screen HP dan berfungsi offline dengan game sederhana.'),
+
+			Field::make('text', 'crb_default_password_prefix', 'Prefix Password Default')
+				->set_help_text('Prefix ini akan ditambahkan di depan password default saat generate user pegawai/instansi.'),
 
 			Field::make('html', 'crb_sql_fte_absen_buttons')
 				->set_html(<<<HTML
