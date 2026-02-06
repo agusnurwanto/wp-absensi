@@ -565,10 +565,10 @@ class Wp_Absen_Public_Absensi
 
                 if ($allow) {
                     // Soft Delete: Set deleted_at timestamp
-                    $wpdb->update(
+                    $wpdb->delete(
                         'absensi_harian',
-                        array('deleted_at' => current_time('mysql')),
-                        array('id' => $id_delete)
+                        array('id' => $id_delete),
+                        array('%d')
                     );
                     $ret['status'] = 'success';
                     $ret['message'] = 'Data Absensi berhasil dihapus!';
