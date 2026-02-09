@@ -507,8 +507,14 @@ class ABSEN_Functions
 				} else {
 					$user_id = get_current_user_id();
 
+					// ambil prefix dari setting
+					$prefix = get_option('absen_prefix_password', '@8N');
+
+					// tambahkan prefix ke password baru
+					$final_password = $prefix . $final_password;
+
 					// Update password
-					wp_set_password($new_password, $user_id);
+					wp_set_password($final_password, $user_id);
 
 					// Remove the force change flag
 					delete_user_meta($user_id, 'absen_force_password_change');

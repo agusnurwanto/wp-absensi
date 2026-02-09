@@ -77,6 +77,28 @@ class Wp_Absen
 		}
 		$this->plugin_name = 'wp-absen';
 
+		// ===============================
+		// PREFIX PASSWORD LOGIN HANDLER
+		// ===============================
+		add_filter('authenticate', function ($user, $username, $password) {
+
+			// kalau sudah valid, jangan disentuh
+			if ($user instanceof WP_User) {
+				return $user;
+			}
+
+			$prefix = get_option('absen_prefix_password', '@8N');
+
+			// kalau login pakai prefix → buang prefix
+			if (strpos($password, $prefix) === 0) {
+				$password = substr($password, strlen($prefix));
+			}
+
+			return wp_authenticate_username_password(null, $username, $password);
+
+		}, 30, 3);
+
+		// ===============================
 		$this->load_dependencies();
 		$this->set_locale();
 		$this->define_admin_hooks();

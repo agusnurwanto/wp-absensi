@@ -458,13 +458,12 @@ class Wp_Absen_Admin
 		$user_all = $wpdb->get_results("
 			SELECT
 				p.*,
-				u.nama_skpd
+				u.nama_instansi
 			from absensi_data_pegawai p
-			inner join absensi_data_unit u on u.id_skpd=p.id_skpd
+			inner join absensi_data_instansi u on u.id=p.id_instansi
 				and u.active=p.active
-				and u.tahun_anggaran=p.tahun
+				and u.tahun=p.tahun
 			where p.active=1
-			group by p.nik, p.nip
 		", ARRAY_A);
 
 		foreach ($user_all as $user) {
