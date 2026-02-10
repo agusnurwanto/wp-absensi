@@ -19,36 +19,36 @@ $input = shortcode_atts(array(
         <h3 class="text-center" style="margin: 3rem">
             Manajemen Data Ijin / Cuti / Sakit<br />Tahun <?php echo esc_html($input['tahun_anggaran']); ?>
         </h3>
-        
+
         <div style="margin-bottom: 25px">
             <button class="btn btn-primary" onclick="tambah_data_ijin()">
                 <span class="dashicons dashicons-plus"></span> Tambah Data
             </button>
         </div>
 
-        <div class="wrap-table">
-        <table id="management_data_ijin_table" cellpadding="2" cellspacing="0" class="table table-striped table-bordered" style="width:100%">
-            <thead>
-                <tr>
-                    <th class="text-center">No</th>
-                    <th class="text-center">Nama Pegawai</th>
-                    <th class="text-center">Tipe</th>
-                    <th class="text-center">Tanggal</th>
-                    <th class="text-center">Alasan</th>
-                    <th class="text-center">Lampiran</th>
-                    <th class="text-center">Status</th>
-                    <th class="text-center" style="width: 120px;">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="management_data_ijin_table">
+                <thead>
+                    <tr>
+                        <th class="text-center">No</th>
+                        <th class="text-center">Nama Pegawai</th>
+                        <th class="text-center">Tipe</th>
+                        <th class="text-center">Tanggal</th>
+                        <th class="text-center">Alasan</th>
+                        <th class="text-center">Lampiran</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center" style="width: 120px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
-    </div>          
+    </div>
 </div>
 
 <!-- Modal Tambah/Edit Data -->
-<div class="modal fade" id="modalTambahDataIjin" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataIjinLabel" aria-hidden="true">
+<div class="modal fade" id="modalTambahDataIjin" tabindex="-1" data-backdrop="static" data-keyboard="false" role="dialog" aria-labelledby="modalTambahDataIjinLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -74,7 +74,7 @@ $input = shortcode_atts(array(
                             <input type="text" class="form-control" id="nama_pegawai_readonly" value="<?php echo esc_attr($pegawai_info['nama']); ?>" readonly>
                         <?php endif; ?>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="tipe_ijin">Tipe Ijin</label>
                         <select class="form-control" id="tipe_ijin" name="tipe_ijin" required>
@@ -122,243 +122,279 @@ $input = shortcode_atts(array(
 </div>
 
 <script>
-jQuery(document).ready(function($) {
-    let ajaxurl = ajax.url;
-    let apikey = ajax.api_key;
-    let dataijin;
+    jQuery(document).ready(function($) {
+        let ajaxurl = ajax.url;
+        let apikey = ajax.api_key;
+        let dataijin;
 
-    // Initialize Select2 if exists
-    if ($('#nama_pegawai_select').length) {
-        $('#nama_pegawai_select').select2({
-            dropdownParent: $('#modalTambahDataIjin')
-        });
-    }
-
-    get_data_ijin();
-
-    function get_data_ijin() {
-        if (typeof dataijin == 'undefined') {
-            dataijin = $('#management_data_ijin_table').on('preXhr.dt', function (e, settings, data) {
-                $("#wrap-loading").show();
-            }).DataTable({
-                "processing": true,
-                "serverSide": true,
-                "responsive": true,
-                "ajax": {
-                    url: ajaxurl,
-                    type: 'post',
-                    dataType: 'json',
-                    data: {
-                        'action': 'get_datatable_ijin',
-                        'api_key': apikey,
-                        'tahun': '<?php echo $input['tahun_anggaran']; ?>',
-                    }
-                },
-                lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-                "drawCallback": function(settings) {
-                    $("#wrap-loading").hide();
-                },
-                "columns": [
-                    { "data": 'no', className: "text-center" },
-                    { "data": 'nama_pegawai' },
-                    { "data": 'tipe_ijin', className: "text-center" },
-                    { "data": 'tanggal', className: "text-center" },
-                    { "data": 'alasan' },
-                    { "data": 'lampiran', className: "text-center" },
-                    { "data": 'status', className: "text-center" },
-                    { "data": 'aksi', className: "text-center" }
-                ],
-                "columnDefs": [
-                    { "orderable": false, "targets": [0, 5, 7] }
-                ]
+        // Initialize Select2 if exists
+        if ($('#nama_pegawai_select').length) {
+            $('#nama_pegawai_select').select2({
+                dropdownParent: $('#modalTambahDataIjin')
             });
-        } else {
-            dataijin.draw();
         }
-    }
 
-    window.tambah_data_ijin = function() {
-        $('#id_data').val('');
-        if ($('#nama_pegawai_select').length) {
-            $('#nama_pegawai_select').val('').trigger('change');
+        get_data_ijin();
+
+        function get_data_ijin() {
+            if (typeof dataijin == 'undefined') {
+                dataijin = $('#management_data_ijin_table').on('preXhr.dt', function(e, settings, data) {
+                    $("#wrap-loading").show();
+                }).DataTable({
+                    "processing": true,
+                    "serverSide": true,
+                    "responsive": true,
+                    "rowReorder": {
+                        selector: 'td:nth-child(2)'
+                    },
+                    "ajax": {
+                        url: ajaxurl,
+                        type: 'post',
+                        dataType: 'json',
+                        data: {
+                            'action': 'get_datatable_ijin',
+                            'api_key': apikey,
+                            'tahun': '<?php echo $input['tahun_anggaran']; ?>',
+                        }
+                    },
+                    lengthMenu: [
+                        [20, 50, 100, -1],
+                        [20, 50, 100, "All"]
+                    ],
+                    "drawCallback": function(settings) {
+                        $("#wrap-loading").hide();
+                    },
+                    "columns": [{
+                            "data": 'no',
+                            className: "text-center"
+                        },
+                        {
+                            "data": 'nama_pegawai'
+                        },
+                        {
+                            "data": 'tipe_ijin',
+                            className: "text-center"
+                        },
+                        {
+                            "data": 'tanggal',
+                            className: "text-center"
+                        },
+                        {
+                            "data": 'alasan'
+                        },
+                        {
+                            "data": 'lampiran',
+                            className: "text-center"
+                        },
+                        {
+                            "data": 'status',
+                            className: "text-center"
+                        },
+                        {
+                            "data": 'aksi',
+                            className: "text-center"
+                        }
+                    ],
+                    "columnDefs": [{
+                        "orderable": false,
+                        "targets": [0, 5, 7]
+                    }]
+                });
+            } else {
+                dataijin.draw();
+            }
         }
-        $('#tipe_ijin').val('');
-        $('#tanggal_mulai').val('');
-        $('#tanggal_selesai').val('');
-        $('#alasan').val('');
-        $('#file_lampiran').val('');
-        $('#file_existing').text('');
-        
-        $('#modalTambahDataIjinLabel').text('Pengajuan Ijin');
-        $('#modalTambahDataIjin').modal('show');
-    }
 
-    window.edit_data_ijin = function(id) {
-        $("#wrap-loading").show();
-        $.ajax({
-            url: ajaxurl,
-            type: 'post',
-            data: {
-                action: 'get_data_ijin_by_id',
-                api_key: apikey,
-                id: id
-            },
-            dataType: 'json',
-            success: function(response) {
-                $("#wrap-loading").hide();
-                if (response.status == 'success') {
-                    let data = response.data;
-                    $('#id_data').val(data.id);
-                    
-                    if ($('#nama_pegawai_select').length) {
-                        $('#nama_pegawai_select').val(data.id_pegawai).trigger('change');
-                    }
+        window.tambah_data_ijin = function() {
+            $('#id_data').val('');
+            if ($('#nama_pegawai_select').length) {
+                $('#nama_pegawai_select').val('').trigger('change');
+            }
+            $('#tipe_ijin').val('');
+            $('#tanggal_mulai').val('');
+            $('#tanggal_selesai').val('');
+            $('#alasan').val('');
+            $('#file_lampiran').val('');
+            $('#file_existing').text('');
 
-                    $('#tipe_ijin').val(data.tipe_ijin);
-                    $('#tanggal_mulai').val(data.tanggal_mulai);
-                    $('#tanggal_selesai').val(data.tanggal_selesai);
-                    $('#alasan').val(data.alasan);
-                    
-                    if (data.file_lampiran) {
-                        $('#file_existing').text('Lampiran Saat Ini: ' + data.file_lampiran);
+            $('#modalTambahDataIjinLabel').text('Pengajuan Ijin');
+            $('#modalTambahDataIjin').modal('show');
+        }
+
+        window.edit_data_ijin = function(id) {
+            $("#wrap-loading").show();
+            $.ajax({
+                url: ajaxurl,
+                type: 'post',
+                data: {
+                    action: 'get_data_ijin_by_id',
+                    api_key: apikey,
+                    id: id
+                },
+                dataType: 'json',
+                success: function(response) {
+                    $("#wrap-loading").hide();
+                    if (response.status == 'success') {
+                        let data = response.data;
+                        $('#id_data').val(data.id);
+
+                        if ($('#nama_pegawai_select').length) {
+                            $('#nama_pegawai_select').val(data.id_pegawai).trigger('change');
+                        }
+
+                        $('#tipe_ijin').val(data.tipe_ijin);
+                        $('#tanggal_mulai').val(data.tanggal_mulai);
+                        $('#tanggal_selesai').val(data.tanggal_selesai);
+                        $('#alasan').val(data.alasan);
+
+                        if (data.file_lampiran) {
+                            $('#file_existing').text('Lampiran Saat Ini: ' + data.file_lampiran);
+                        } else {
+                            $('#file_existing').text('');
+                        }
+
+                        $('#modalTambahDataIjinLabel').text('Edit Ijin');
+                        $('#modalTambahDataIjin').modal('show');
                     } else {
-                        $('#file_existing').text('');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: response.message
+                        });
                     }
-
-                    $('#modalTambahDataIjinLabel').text('Edit Ijin');
-                    $('#modalTambahDataIjin').modal('show');
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Gagal', text: response.message });
+                },
+                error: function() {
+                    $("#wrap-loading").hide();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Koneksi Gagal!'
+                    });
                 }
-            },
-            error: function() {
-                $("#wrap-loading").hide();
-                Swal.fire({ icon: 'error', title: 'Error', text: 'Koneksi Gagal!' });
-            }
-        });
-    }
+            });
+        }
 
-    window.hapus_data_ijin = function(id) {
-        Swal.fire({
-            title: 'Hapus Data',
-            text: "Apakah anda yakin ingin menghapus data ini?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Ya, Hapus!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $("#wrap-loading").show();
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'post',
-                    data: {
-                        action: 'hapus_data_ijin_by_id',
-                        api_key: apikey,
-                        id: id
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        $("#wrap-loading").hide();
-                        if (response.status == 'success') {
-                            Swal.fire('Terhapus!', response.message, 'success');
-                            dataijin.ajax.reload();
-                        } else {
-                            Swal.fire('Gagal!', response.message, 'error');
+        window.hapus_data_ijin = function(id) {
+            Swal.fire({
+                title: 'Hapus Data',
+                text: "Apakah anda yakin ingin menghapus data ini?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $("#wrap-loading").show();
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'post',
+                        data: {
+                            action: 'hapus_data_ijin_by_id',
+                            api_key: apikey,
+                            id: id
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            $("#wrap-loading").hide();
+                            if (response.status == 'success') {
+                                Swal.fire('Terhapus!', response.message, 'success');
+                                dataijin.ajax.reload();
+                            } else {
+                                Swal.fire('Gagal!', response.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            $("#wrap-loading").hide();
                         }
-                    },
-                    error: function() {
-                        $("#wrap-loading").hide();
-                    }
-                });
-            }
-        })
-    }
-
-    window.update_status_ijin = function(id, status) {
-        Swal.fire({
-            title: status == 'Approved' ? 'Setujui Ijin?' : 'Tolak Ijin?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: status == 'Approved' ? '#28a745' : '#dc3545',
-            confirmButtonText: 'Ya'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $("#wrap-loading").show();
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'post',
-                    data: {
-                        action: 'update_status_ijin',
-                        api_key: apikey,
-                        id: id,
-                        status: status
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        $("#wrap-loading").hide();
-                        if (response.status == 'success') {
-                            Swal.fire('Berhasil!', response.message, 'success');
-                            dataijin.ajax.reload();
-                        } else {
-                            Swal.fire('Gagal!', response.message, 'error');
-                        }
-                    },
-                    error: function() {
-                        $("#wrap-loading").hide();
-                    }
-                });
-            }
-        })
-    }
-
-    window.submitTambahDataFormIjin = function() {
-        let fd = new FormData(document.getElementById('formTambahDataIjin'));
-        fd.append('action', 'tambah_data_ijin');
-        fd.append('api_key', apikey);
-        fd.set('id', $('#id_data').val()); // FormData takes name, but ensuring
-
-        // Validation
-        let id_pegawai = 0;
-        if ($('#nama_pegawai_select').length) {
-            id_pegawai = $('#nama_pegawai_select').val();
-            if(!id_pegawai) {
-               return Swal.fire('Gagal', 'Pilih Pegawai', 'error');
-            }
-        }
-        
-        // Ensure id_pegawai is in FormData if it's admin select
-        if (id_pegawai > 0) {
-             fd.set('id_pegawai', id_pegawai);
-        }
-
-        if ($('#tipe_ijin').val() == '' || $('#tanggal_mulai').val() == '') {
-            return Swal.fire('Gagal', 'Lengkapi form wajib', 'error');
-        }
-
-        $("#wrap-loading").show();
-        $.ajax({
-            url: ajaxurl,
-            type: 'post',
-            data: fd,
-            contentType: false,
-            processData: false,
-            dataType: 'json',
-            success: function(response) {
-                $("#wrap-loading").hide();
-                if (response.status == 'success') {
-                    Swal.fire('Berhasil', response.message, 'success');
-                    $('#modalTambahDataIjin').modal('hide');
-                    dataijin.ajax.reload();
-                } else {
-                    Swal.fire('Gagal', response.message, 'error');
+                    });
                 }
-            },
-            error: function() {
-                $("#wrap-loading").hide();
-                Swal.fire('Error', 'Koneksi Gagal', 'error');
+            })
+        }
+
+        window.update_status_ijin = function(id, status) {
+            Swal.fire({
+                title: status == 'Approved' ? 'Setujui Ijin?' : 'Tolak Ijin?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: status == 'Approved' ? '#28a745' : '#dc3545',
+                confirmButtonText: 'Ya'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $("#wrap-loading").show();
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'post',
+                        data: {
+                            action: 'update_status_ijin',
+                            api_key: apikey,
+                            id: id,
+                            status: status
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            $("#wrap-loading").hide();
+                            if (response.status == 'success') {
+                                Swal.fire('Berhasil!', response.message, 'success');
+                                dataijin.ajax.reload();
+                            } else {
+                                Swal.fire('Gagal!', response.message, 'error');
+                            }
+                        },
+                        error: function() {
+                            $("#wrap-loading").hide();
+                        }
+                    });
+                }
+            })
+        }
+
+        window.submitTambahDataFormIjin = function() {
+            let fd = new FormData(document.getElementById('formTambahDataIjin'));
+            fd.append('action', 'tambah_data_ijin');
+            fd.append('api_key', apikey);
+            fd.set('id', $('#id_data').val()); // FormData takes name, but ensuring
+
+            // Validation
+            let id_pegawai = 0;
+            if ($('#nama_pegawai_select').length) {
+                id_pegawai = $('#nama_pegawai_select').val();
+                if (!id_pegawai) {
+                    return Swal.fire('Gagal', 'Pilih Pegawai', 'error');
+                }
             }
-        });
-    }
-});
+
+            // Ensure id_pegawai is in FormData if it's admin select
+            if (id_pegawai > 0) {
+                fd.set('id_pegawai', id_pegawai);
+            }
+
+            if ($('#tipe_ijin').val() == '' || $('#tanggal_mulai').val() == '') {
+                return Swal.fire('Gagal', 'Lengkapi form wajib', 'error');
+            }
+
+            $("#wrap-loading").show();
+            $.ajax({
+                url: ajaxurl,
+                type: 'post',
+                data: fd,
+                contentType: false,
+                processData: false,
+                dataType: 'json',
+                success: function(response) {
+                    $("#wrap-loading").hide();
+                    if (response.status == 'success') {
+                        Swal.fire('Berhasil', response.message, 'success');
+                        $('#modalTambahDataIjin').modal('hide');
+                        dataijin.ajax.reload();
+                    } else {
+                        Swal.fire('Gagal', response.message, 'error');
+                    }
+                },
+                error: function() {
+                    $("#wrap-loading").hide();
+                    Swal.fire('Error', 'Koneksi Gagal', 'error');
+                }
+            });
+        }
+    });
 </script>

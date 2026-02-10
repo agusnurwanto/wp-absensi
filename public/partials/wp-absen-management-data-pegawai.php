@@ -14,20 +14,20 @@ $idtahun = $wpdb->get_results("
         tahun_anggaran 
     FROM absensi_data_unit        
     ORDER BY tahun_anggaran DESC
-",ARRAY_A);
+", ARRAY_A);
 $tahun = '<option value="0">Pilih Tahun</option>';
 
 foreach ($idtahun as $val) {
-    if($val['tahun_anggaran'] == $input['tahun_anggaran']){
+    if ($val['tahun_anggaran'] == $input['tahun_anggaran']) {
         continue;
     }
 
     $selected = '';
-    if($val['tahun_anggaran'] == $input['tahun_anggaran']-1){
+    if ($val['tahun_anggaran'] == $input['tahun_anggaran'] - 1) {
         $selected = 'selected';
     }
 
-    $tahun .= '<option value="'. $val['tahun_anggaran']. '" '. $selected .'>'. $val['tahun_anggaran'] .'</option>';
+    $tahun .= '<option value="' . $val['tahun_anggaran'] . '" ' . $selected . '>' . $val['tahun_anggaran'] . '</option>';
 }
 
 // Get field visibility options
@@ -52,10 +52,10 @@ $current_user_id = $current_user->ID;
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style type="text/css">
-    .wrap-table{
+    .wrap-table {
         overflow: auto;
-        max-height: 100vh; 
-        width: 100%; 
+        max-height: 100vh;
+        width: 100%;
     }
 
     .hidden {
@@ -89,8 +89,8 @@ $current_user_id = $current_user->ID;
         margin: 0 5px;
     }
 
-    input[readonly], 
-    textarea[readonly], 
+    input[readonly],
+    textarea[readonly],
     select[disabled] {
         background-color: #e9ecef !important;
         cursor: not-allowed !important;
@@ -116,14 +116,14 @@ $current_user_id = $current_user->ID;
 
 <div class="cetak">
     <div style="padding: 10px;margin:0 0 3rem 0;">
-        <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key">
-    <h1 class="text-center" style="margin:3rem;">Manajemen Data Pegawai<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
+        <input type="hidden" value="<?php echo get_option(ABSEN_APIKEY); ?>" id="api_key">
+        <h1 class="text-center" style="margin:3rem;">Manajemen Data Pegawai<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
         <div class="filter-container">
             <button class="btn btn-primary" onclick="tambah_data_pegawai();"><i class="dashicons dashicons-plus"></i> Tambah Data</button>
             <button class="btn btn-danger" onclick="copy_data();"><i class="dashicons dashicons-admin-page"></i> Copy Data</button>
         </div>
-        <div class="wrap-table">
-            <table id="management_data_table" cellpadding="2" cellspacing="0"  class="table table-bordered">
+        <div class="table-responsive">
+            <table id="management_data_table">
                 <thead>
                     <tr>
                         <th class="text-center">NIP / NIK</th>
@@ -143,7 +143,7 @@ $current_user_id = $current_user->ID;
     </div>
 </div>
 
-<div class="modal fade mt-4" id="modalTambahDataPegawai" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataPegawaiLabel" aria-hidden="true">
+<div class="modal fade mt-4" id="modalTambahDataPegawai" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" aria-labelledby="modalTambahDataPegawaiLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
 
@@ -173,24 +173,24 @@ $current_user_id = $current_user->ID;
                         <input type="text" id="jabatan" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_tempat_lahir) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_tempat_lahir) echo ' style="display:none;"'; ?>>
                         <label>Tempat Lahir</label>
                         <input type="text" id="tempat_lahir" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_tanggal_lahir) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_tanggal_lahir) echo ' style="display:none;"'; ?>>
                         <label>Tanggal Lahir</label>
                         <input type="date" id="tanggal_lahir" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_jenis_kelamin) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_jenis_kelamin) echo ' style="display:none;"'; ?>>
                         <label>Jenis Kelamin <span class="text-danger">*</span></label>
                         <select id="jenis_kelamin" class="form-control">
                             <option value="">-- Pilih Jenis Kelamin --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_agama) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_agama) echo ' style="display:none;"'; ?>>
                         <label>Agama</label>
                         <select id="agama" class="form-control">
                             <option value="">-- Pilih Agama --</option>
@@ -202,26 +202,26 @@ $current_user_id = $current_user->ID;
                         <input type="number" id="no_hp" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_pendidikan_terakhir) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_pendidikan_terakhir) echo ' style="display:none;"'; ?>>
                         <label>Pendidikan Terakhir</label>
                         <select id="pendidikan_terakhir" class="form-control">
                             <option value="">-- Pilih Pendidikan --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_pendidikan_sekarang) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_pendidikan_sekarang) echo ' style="display:none;"'; ?>>
                         <label>Pendidikan Sekarang</label>
                         <select id="pendidikan_sekarang" class="form-control">
                             <option value="">-- Pilih Pendidikan --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_nama_sekolah) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_nama_sekolah) echo ' style="display:none;"'; ?>>
                         <label>Nama Sekolah</label>
                         <input type="text" id="nama_sekolah" class="form-control">
                     </div>
 
-                    <div class="col-md-4 form-group"<?php if($hide_lulus) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-4 form-group" <?php if ($hide_lulus) echo ' style="display:none;"'; ?>>
                         <label>Lulus (Tahun)</label>
                         <input type="number" id="lulus" class="form-control">
                     </div>
@@ -231,7 +231,7 @@ $current_user_id = $current_user->ID;
                         <input type="email" id="email" class="form-control">
                     </div>
 
-                    <div class="col-md-12 form-group"<?php if($hide_alamat) echo ' style="display:none;"'; ?>>
+                    <div class="col-md-12 form-group" <?php if ($hide_alamat) echo ' style="display:none;"'; ?>>
                         <label>Alamat</label>
                         <textarea id="alamat" class="form-control"></textarea>
                     </div>
@@ -255,7 +255,7 @@ $current_user_id = $current_user->ID;
     </div>
 </div>
 
-<div class="modal fade" id="modal" data-backdrop="static"  role="dialog" aria-labelledby="modal-label" aria-hidden="true">
+<div class="modal fade" id="modal" data-backdrop="static" role="dialog" data-backdrop="static" data-keyboard="false" aria-labelledby="modal-label" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -311,7 +311,7 @@ $current_user_id = $current_user->ID;
             </button>
         `);
 
-        jQuery("#modal").find('.modal-dialog').css('maxWidth','700');
+        jQuery("#modal").find('.modal-dialog').css('maxWidth', '700');
         jQuery("#modal").modal('show');
     }
 
@@ -324,19 +324,19 @@ $current_user_id = $current_user->ID;
         let tahun = jQuery("#tahunAnggaranCopy").val();
 
         ajax_copy_data({
-            tahun: tahun
-        })
-        .then(() => {
-            alert('Berhasil Copy Data Pegawai.');
-            jQuery("#modal").modal('hide');
-            jQuery('#wrap-loading').hide();
-            get_data_pegawai();
-        })
-        .catch((err) => {
-            console.log('err', err);
-            alert('Ada kesalahan sistem!');
-            jQuery('#wrap-loading').hide();
-        });
+                tahun: tahun
+            })
+            .then(() => {
+                alert('Berhasil Copy Data Pegawai.');
+                jQuery("#modal").modal('hide');
+                jQuery('#wrap-loading').hide();
+                get_data_pegawai();
+            })
+            .catch((err) => {
+                console.log('err', err);
+                alert('Ada kesalahan sistem!');
+                jQuery('#wrap-loading').hide();
+            });
     }
 
     function ajax_copy_data(options) {
@@ -345,9 +345,9 @@ $current_user_id = $current_user->ID;
                 method: 'post',
                 url: '<?php echo admin_url('admin-ajax.php'); ?>',
                 dataType: 'json',
-                data:{
+                data: {
                     action: 'copy_data_pegawai',
-                    api_key: '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                    api_key: '<?php echo get_option(ABSEN_APIKEY); ?>',
                     tahun_sumber: options.tahun,
                     tahun_tujuan: <?php echo $input['tahun_anggaran']; ?>
                 },
@@ -362,16 +362,16 @@ $current_user_id = $current_user->ID;
         });
     }
 
-    function load_master_data(callback){
+    function load_master_data(callback) {
         jQuery('#wrap-loading').show();
 
         jQuery.ajax({
             method: 'post',
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
             dataType: 'json',
-            data:{
+            data: {
                 'action': 'get_master_data',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>'
             },
             success: (res) => {
                 if (res.status == 'success') {
@@ -392,7 +392,7 @@ $current_user_id = $current_user->ID;
         });
     }
 
-    function get_master_options(){
+    function get_master_options() {
         let jk_select = jQuery('#jenis_kelamin');
         jk_select.find('option:not(:first)').remove();
         jQuery.each(masterData.jenis_kelamin, (i, item) => {
@@ -446,30 +446,38 @@ $current_user_id = $current_user->ID;
 
     function get_data_pegawai() {
         if (typeof datapegawai == 'undefined') {
-            window.datapegawai = jQuery('#management_data_table').on('preXhr.dt', ( e, settings, data ) => {
+            window.datapegawai = jQuery('#management_data_table').on('preXhr.dt', (e, settings, data) => {
                 jQuery("#wrap-loading").show();
             }).DataTable({
-                "processing": true, 
+                "processing": true,
                 "serverSide": true,
+                "responsive": true,
+                "rowReorder": {
+                    selector: 'td:nth-child(2)'
+                },
                 "ajax": {
                     url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                    type:'post',
+                    type: 'post',
                     dataType: 'json',
                     data: (d) => {
                         d.action = 'get_datatable_pegawai';
-                        d.api_key = '<?php echo get_option( ABSEN_APIKEY ); ?>';
+                        d.api_key = '<?php echo get_option(ABSEN_APIKEY); ?>';
                         d.tahun = '<?php echo $input['tahun_anggaran']; ?>';
 
                         return d;
                     }
                 },
-                lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-                order: [[0, 'asc']],
+                lengthMenu: [
+                    [20, 50, 100, -1],
+                    [20, 50, 100, "All"]
+                ],
+                order: [
+                    [0, 'asc']
+                ],
                 "drawCallback": (settings) => {
                     jQuery("#wrap-loading").hide();
                 },
-                "columns": [
-                    {
+                "columns": [{
                         "data": 'nik',
                         className: "text-center"
                     },
@@ -530,12 +538,12 @@ $current_user_id = $current_user->ID;
 
         jQuery.ajax({
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
-            type:'post',
-            data:{
-                'action' : 'hapus_data_pegawai_by_id',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
-                'id'     : id,
-                'tipe'   : tipe
+            type: 'post',
+            data: {
+                'action': 'hapus_data_pegawai_by_id',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                'id': id,
+                'tipe': tipe
             },
             dataType: 'json',
             success: (response) => {
@@ -548,7 +556,7 @@ $current_user_id = $current_user->ID;
                         timer: 2000,
                         showConfirmButton: false
                     });
-                    get_data_pegawai(); 
+                    get_data_pegawai();
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -583,7 +591,7 @@ $current_user_id = $current_user->ID;
                     dataType: 'json',
                     data: {
                         'action': 'toggle_status_pegawai',
-                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                         'id': id,
                         'status': status
                     },
@@ -629,7 +637,7 @@ $current_user_id = $current_user->ID;
             dataType: 'json',
             data: {
                 'action': 'get_data_pegawai_by_id',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                 'id': _id,
             },
             success: (res) => {
@@ -704,7 +712,7 @@ $current_user_id = $current_user->ID;
         //     jQuery('#modalTambahDataPegawai input').prop('disabled', false).prop('readonly', false);
         //     jQuery('#modalTambahDataPegawai select').prop('disabled', false);
         //     jQuery('#modalTambahDataPegawai textarea').prop('disabled', false).prop('readonly', false);
-            
+
         //     if(isAdminInstansi){
         //         jQuery('#admin_instansi').prop('disabled', true);
         //     }
@@ -781,7 +789,7 @@ $current_user_id = $current_user->ID;
             dataType: 'json',
             data: {
                 'action': 'tambah_data_pegawai',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                 'id_data': id_data,
                 'admin_instansi': admin_instansi,
                 'nik': nik,

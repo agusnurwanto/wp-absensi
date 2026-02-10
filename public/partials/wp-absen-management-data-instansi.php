@@ -44,8 +44,8 @@ $input = shortcode_atts(array(
                 </button>
             </div>
         <?php endif; ?>
-        <div class="wrap-table">
-            <table id="management_data_table" cellpadding="2" cellspacing="0">
+        <div class="table-responsive">
+            <table id="management_data_table">
                 <thead>
                     <tr>
                         <th class="text-center">Nama Instansi</th>
@@ -62,7 +62,7 @@ $input = shortcode_atts(array(
     </div>
 </div>
 <div class="modal fade mt-4" id="modalTambahDataInstansi" tabindex="-1" role="dialog"
-    aria-labelledby="modalTambahDataInstansiLabel" aria-hidden="true">
+    aria-labelledby="modalTambahDataInstansiLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -134,7 +134,7 @@ $input = shortcode_atts(array(
                                     'Sunday' => 'Minggu'
                                 ];
                                 foreach ($days as $key => $label):
-                                    ?>
+                                ?>
                                     <tr>
                                         <td class="text-center">
                                             <input type="checkbox" class="day-check" name="hari_kerja[]"
@@ -183,6 +183,10 @@ $input = shortcode_atts(array(
             }).DataTable({
                 "processing": true,
                 "serverSide": true,
+                "responsive": true,
+                "rowReorder": {
+                    selector: 'td:nth-child(2)'
+                },
                 "ajax": {
                     url: '<?php echo admin_url('admin-ajax.php'); ?>',
                     type: 'post',
@@ -191,16 +195,19 @@ $input = shortcode_atts(array(
                         'action': 'get_datatable_instansi',
                         'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                         'tahun': '<?php echo $input['tahun_anggaran']; ?>',
-
                     }
                 },
-                lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-                order: [[0, 'asc']],
+                lengthMenu: [
+                    [20, 50, 100, -1],
+                    [20, 50, 100, "All"]
+                ],
+                order: [
+                    [0, 'asc']
+                ],
                 "drawCallback": (settings) => {
                     jQuery("#wrap-loading").hide();
                 },
-                "columns": [
-                    {
+                "columns": [{
                         "data": 'nama_instansi',
                         className: "text-center"
                     },
@@ -551,7 +558,9 @@ $input = shortcode_atts(array(
         if (marker) {
             marker.setLatLng([lat, lng]);
         } else {
-            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+            marker = L.marker([lat, lng], {
+                draggable: true
+            }).addTo(map);
             marker.on('dragend', (e) => {
                 let position = marker.getLatLng();
                 updateInput(position.lat, position.lng);
@@ -632,7 +641,7 @@ $input = shortcode_atts(array(
         let jam_masuk = {};
         let jam_pulang = {};
 
-        jQuery('.day-check:checked').each(function (index, element) {
+        jQuery('.day-check:checked').each(function(index, element) {
             let day = jQuery(element).val();
             hari_kerja.push(day);
             jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
@@ -695,5 +704,4 @@ $input = shortcode_atts(array(
             }
         });
     }
-
 </script>

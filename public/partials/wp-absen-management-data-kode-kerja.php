@@ -11,19 +11,23 @@ $current_user_id = $current_user->ID;
 
 ?>
 
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style type="text/css">
-    .wrap-table { overflow: auto; max-height: 100vh; width: 100%; }
+    .wrap-table {
+        overflow: auto;
+        max-height: 100vh;
+        width: 100%;
+    }
 </style>
 
 <div class="cetak">
     <div style="padding: 10px; margin: 0 0 3rem 0">
-        <input type="hidden" value="<?php echo get_option( ABSEN_APIKEY ); ?>" id="api_key" />
+        <input type="hidden" value="<?php echo get_option(ABSEN_APIKEY); ?>" id="api_key" />
         <h1 class="text-center" style="margin: 3rem">
             Manajemen Data Kode Kerja
         </h1>
@@ -32,8 +36,8 @@ $current_user_id = $current_user->ID;
                 <span class="dashicons dashicons-plus"></span> Tambah Data
             </button>
         </div>
-        <div class="wrap-table">
-            <table id="management_data_table" cellpadding="2" cellspacing="0" class="table table-bordered">
+        <div class="table-responsive">
+            <table id="management_data_table">
                 <thead>
                     <tr>
                         <th class="text-center">Nama Kode Kerja</th>
@@ -49,7 +53,7 @@ $current_user_id = $current_user->ID;
     </div>
 </div>
 
-<div class="modal fade mt-4" id="modalTambahDataKodeKerja" tabindex="-1" role="dialog" aria-labelledby="modalTambahDataKodeKerjaLabel" aria-hidden="true">
+<div class="modal fade mt-4" id="modalTambahDataKodeKerja" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" aria-labelledby="modalTambahDataKodeKerjaLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -105,14 +109,14 @@ $current_user_id = $current_user->ID;
                                 <?php
                                 $days = ['Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Minggu'];
                                 foreach ($days as $key => $label) : ?>
-                                <tr>
-                                    <td class="text-center">
-                                        <input type="checkbox" class="day-check" name="hari_kerja[]" value="<?php echo $key; ?>" id="check_<?php echo $key; ?>" onchange="toggleTimeInputs('<?php echo $key; ?>')">
-                                    </td>
-                                    <td><label for="check_<?php echo $key; ?>" style="font-weight: normal; cursor: pointer; margin:0;"><?php echo $label; ?></label></td>
-                                    <td><input type="time" class="form-control time-input time-in" id="jam_masuk_<?php echo $key; ?>" disabled value="08:00"></td>
-                                    <td><input type="time" class="form-control time-input time-out" id="jam_pulang_<?php echo $key; ?>" disabled value="16:00"></td>
-                                </tr>
+                                    <tr>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="day-check" name="hari_kerja[]" value="<?php echo $key; ?>" id="check_<?php echo $key; ?>" onchange="toggleTimeInputs('<?php echo $key; ?>')">
+                                        </td>
+                                        <td><label for="check_<?php echo $key; ?>" style="font-weight: normal; cursor: pointer; margin:0;"><?php echo $label; ?></label></td>
+                                        <td><input type="time" class="form-control time-input time-in" id="jam_masuk_<?php echo $key; ?>" disabled value="08:00"></td>
+                                        <td><input type="time" class="form-control time-input time-out" id="jam_pulang_<?php echo $key; ?>" disabled value="16:00"></td>
+                                    </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
@@ -147,24 +151,49 @@ $current_user_id = $current_user->ID;
             }).DataTable({
                 "processing": true,
                 "serverSide": true,
+                "responsive": true,
+                "rowReorder": {
+                    selector: 'td:nth-child(2)'
+                },
                 "ajax": {
                     url: '<?php echo admin_url('admin-ajax.php'); ?>',
                     type: 'post',
                     dataType: 'json',
                     data: {
                         'action': 'get_datatable_kode_kerja',
-                        'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>'
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>'
                     }
                 },
-                lengthMenu: [[20, 50, 100, -1], [20, 50, 100, "All"]],
-                order: [[2, 'desc']], // ID Desc
-                "drawCallback": ( settings ) => { jQuery("#wrap-loading").hide(); },
-                "columns": [
-                    { "data": 'nama_kerja', className: "text-center" },
-                    { "data": 'jenis', className: "text-center" },
-                    { "data": 'nama_instansi', className: "text-center" }, // Verify this key matches backend
-                    { "data": 'status_badge', className: "text-center" },
-                    { "data": 'aksi', className: "text-center" }
+                lengthMenu: [
+                    [20, 50, 100, -1],
+                    [20, 50, 100, "All"]
+                ],
+                order: [
+                    [2, 'desc']
+                ], // ID Desc
+                "drawCallback": (settings) => {
+                    jQuery("#wrap-loading").hide();
+                },
+                "columns": [{
+                        "data": 'nama_kerja',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'jenis',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'nama_instansi',
+                        className: "text-center"
+                    }, // Verify this key matches backend
+                    {
+                        "data": 'status_badge',
+                        className: "text-center"
+                    },
+                    {
+                        "data": 'aksi',
+                        className: "text-center"
+                    }
                 ]
             });
         } else {
@@ -172,10 +201,15 @@ $current_user_id = $current_user->ID;
         }
     }
 
-    function load_master_data(){
+    function load_master_data() {
         jQuery.ajax({
-            method: 'post', url: '<?php echo admin_url('admin-ajax.php'); ?>', dataType: 'json',
-            data:{ 'action': 'get_master_data', 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>' },
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data: {
+                'action': 'get_master_data',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>'
+            },
             success: (res) => {
                 if (res.status == 'success') {
                     let options = '<option value="">-- Pilih Admin Instansi --</option>';
@@ -195,7 +229,7 @@ $current_user_id = $current_user->ID;
         jQuery('#koordinat').val('');
         jQuery('#radius_meter').val('100');
         jQuery('#admin_instansi').val('');
-        
+
         // Handle Restricted Access and Auto-Check
         if (isAdminInstansi) {
             jQuery('#admin_instansi').val(currentUserId).trigger('change').prop('disabled', true);
@@ -208,17 +242,19 @@ $current_user_id = $current_user->ID;
         jQuery('.day-check').prop('checked', false);
         jQuery('.time-input').prop('disabled', true).val('08:00');
         jQuery('.time-out').val('16:00');
-        
+
         // Set Default Days (Mon-Fri)
         let defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         defaultDays.forEach((day) => {
             jQuery('#check_' + day).prop('checked', true).trigger('change');
         });
-        
+
         jQuery('#modalTambahDataKodeKerja').modal('show');
-        setTimeout(() => { initMap(); }, 500);
+        setTimeout(() => {
+            initMap();
+        }, 500);
     }
-    
+
     // Add Admin Instansi Listener
     jQuery('#admin_instansi').on('change', () => {
         let id_instansi = jQuery(this).val();
@@ -231,10 +267,12 @@ $current_user_id = $current_user->ID;
 
     function checkPrimaryAvailability(id_instansi, exclude_id = 0) {
         jQuery.ajax({
-            method: 'post', url: '<?php echo admin_url('admin-ajax.php'); ?>', dataType: 'json',
-            data: { 
-                'action': 'check_primary_kode_kerja', 
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>', 
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data: {
+                'action': 'check_primary_kode_kerja',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                 'id_instansi': id_instansi,
                 'exclude_id': exclude_id
             },
@@ -245,7 +283,7 @@ $current_user_id = $current_user->ID;
                         // Option 1: Disable user interaction but keep value
                         // jQuery('#jenis option[value="Primary"]').prop('disabled', true);
                         // jQuery('#jenis').prop('disabled', false); // Allow seeing it's secondary
-                        
+
                         // User request: "Select secondary by default... and if not allow both"
                         // Making Primary unselectable/hidden is safer
                         jQuery('#jenis option[value="Primary"]').prop('disabled', true).hide();
@@ -263,8 +301,14 @@ $current_user_id = $current_user->ID;
     function edit_data(id) {
         jQuery('#wrap-loading').show();
         jQuery.ajax({
-            method: 'post', url: '<?php echo admin_url('admin-ajax.php'); ?>', dataType: 'json',
-            data: { 'action': 'get_data_kode_kerja_by_id', 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>', 'id': id },
+            method: 'post',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            dataType: 'json',
+            data: {
+                'action': 'get_data_kode_kerja_by_id',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                'id': id
+            },
             success: (res) => {
                 if (res.status == 'success') {
                     jQuery('#id_data').val(res.data.id);
@@ -273,7 +317,7 @@ $current_user_id = $current_user->ID;
                     jQuery('#koordinat').val(res.data.koordinat);
                     jQuery('#radius_meter').val(res.data.radius_meter);
                     jQuery('#admin_instansi').val(res.data.id_instansi);
-                    
+
                     if (isAdminInstansi) {
                         jQuery('#admin_instansi').prop('disabled', true);
                     } else {
@@ -283,7 +327,7 @@ $current_user_id = $current_user->ID;
                     // Check availability excluding current ID
                     // Note: If current is Primary, we want to allow it to stay Primary
                     // If current is Secondary, we check if Primary exists elsewhere
-                    
+
                     // Simple logic: Trigger check but handle current status
                     if (res.data.jenis == 'Primary') {
                         jQuery('#jenis').prop('disabled', false);
@@ -295,12 +339,12 @@ $current_user_id = $current_user->ID;
                     // Populate Schedule
                     jQuery('.day-check').prop('checked', false);
                     jQuery('.time-input').prop('disabled', true);
-                    
+
                     try {
                         let days = res.data.hari_kerja || [];
                         let jamMasuk = res.data.jam_masuk || {};
                         let jamPulang = res.data.jam_pulang || {};
-                        
+
                         // Fallback string parsing if not auto-decoded by simple JSON
                         if (typeof days === 'string') days = JSON.parse(days);
                         if (typeof jamMasuk === 'string') jamMasuk = JSON.parse(jamMasuk);
@@ -311,16 +355,22 @@ $current_user_id = $current_user->ID;
                                 jQuery('#check_' + d).prop('checked', true);
                                 jQuery('#jam_masuk_' + d).prop('disabled', false);
                                 jQuery('#jam_pulang_' + d).prop('disabled', false);
-                                
+
                                 if (jamMasuk[d]) jQuery('#jam_masuk_' + d).val(jamMasuk[d]);
                                 if (jamPulang[d]) jQuery('#jam_pulang_' + d).val(jamPulang[d]);
                             });
                         }
-                    } catch(e) { console.log(e); }
+                    } catch (e) {
+                        console.log(e);
+                    }
 
                     jQuery('#modalTambahDataKodeKerja').modal('show');
-                    setTimeout(() => { initMap(res.data.koordinat); }, 500);
-                } else { alert(res.message); }
+                    setTimeout(() => {
+                        initMap(res.data.koordinat);
+                    }, 500);
+                } else {
+                    alert(res.message);
+                }
                 jQuery('#wrap-loading').hide();
             }
         });
@@ -340,11 +390,17 @@ $current_user_id = $current_user->ID;
             if (result.isConfirmed) {
                 jQuery('#wrap-loading').show();
                 jQuery.ajax({
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>', type: 'post', dataType: 'json',
-                    data: { 'action': 'hapus_data_kode_kerja_by_id', 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>', 'id': id },
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    dataType: 'json',
+                    data: {
+                        'action': 'hapus_data_kode_kerja_by_id',
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                        'id': id
+                    },
                     success: (res) => {
                         jQuery('#wrap-loading').hide();
-                        if(res.status == 'success') {
+                        if (res.status == 'success') {
                             Swal.fire('Terhapus!', res.message, 'success');
                             get_data_kode_kerja();
                         } else {
@@ -378,8 +434,15 @@ $current_user_id = $current_user->ID;
             if (result.isConfirmed) {
                 jQuery('#wrap-loading').show();
                 jQuery.ajax({
-                    url: '<?php echo admin_url('admin-ajax.php'); ?>', type: 'post', dataType: 'json',
-                    data: { 'action': 'toggle_status_kode_kerja', 'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>', 'id': id, 'current_status': current_status },
+                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                    type: 'post',
+                    dataType: 'json',
+                    data: {
+                        'action': 'toggle_status_kode_kerja',
+                        'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                        'id': id,
+                        'current_status': current_status
+                    },
                     success: (res) => {
                         jQuery('#wrap-loading').hide();
                         if (res.status == 'success') {
@@ -403,9 +466,9 @@ $current_user_id = $current_user->ID;
         let id_data = jQuery('#id_data').val();
         let nama_kerja = jQuery('#nama_kerja').val();
         let admin_instansi = jQuery('#admin_instansi').val();
-         // If disabled (for admin instansi), value might not submit normally, but we handle it in backend via user ID session check too. 
-         // However, ensure value is grabbed.
-        
+        // If disabled (for admin instansi), value might not submit normally, but we handle it in backend via user ID session check too. 
+        // However, ensure value is grabbed.
+
         if (nama_kerja == '') return alert('Nama Kode Kerja wajib diisi!');
         if (admin_instansi == '') return alert('Admin Instansi wajib dipilih!');
         if (jQuery('#jenis').val() == '') return alert('Jenis Kode Kerja wajib dipilih!');
@@ -427,10 +490,12 @@ $current_user_id = $current_user->ID;
 
         jQuery('#wrap-loading').show();
         jQuery.ajax({
-            url: '<?php echo admin_url('admin-ajax.php'); ?>', type: 'post', dataType: 'json',
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            type: 'post',
+            dataType: 'json',
             data: {
                 'action': 'tambah_data_kode_kerja',
-                'api_key': '<?php echo get_option( ABSEN_APIKEY ); ?>',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
                 'id_data': id_data,
                 'nama_kerja': nama_kerja,
                 'jenis': jQuery('#jenis').val(),
@@ -473,21 +538,32 @@ $current_user_id = $current_user->ID;
             });
         }
 
-        if (map) { map.remove(); marker = null; }
+        if (map) {
+            map.remove();
+            marker = null;
+        }
         map = L.map('map').setView([defaultLat, defaultLng], zoomLevel);
-        setTimeout(() => { map.invalidateSize(); }, 100);
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
 
         if (initialCoords) updateMarker(defaultLat, defaultLng);
 
-        map.on('click', (e) => { updateMarker(e.latlng.lat, e.latlng.lng); });
+        map.on('click', (e) => {
+            updateMarker(e.latlng.lat, e.latlng.lng);
+        });
     }
 
     function updateMarker(lat, lng) {
         if (marker) marker.setLatLng([lat, lng]);
         else {
-            marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+            marker = L.marker([lat, lng], {
+                draggable: true
+            }).addTo(map);
             marker.on('dragend', (e) => {
                 let position = marker.getLatLng();
                 updateInput(position.lat, position.lng);
@@ -497,12 +573,17 @@ $current_user_id = $current_user->ID;
         map.panTo([lat, lng]);
     }
 
-    function updateInput(lat, lng) { jQuery('#koordinat').val(lat + ", " + lng); }
-    function toggleAllDays(el) { jQuery('.day-check').prop('checked', el.checked).trigger('change'); }
+    function updateInput(lat, lng) {
+        jQuery('#koordinat').val(lat + ", " + lng);
+    }
+
+    function toggleAllDays(el) {
+        jQuery('.day-check').prop('checked', el.checked).trigger('change');
+    }
+
     function toggleTimeInputs(day) {
         let isChecked = jQuery('#check_' + day).is(':checked');
         jQuery('#jam_masuk_' + day).prop('disabled', !isChecked);
         jQuery('#jam_pulang_' + day).prop('disabled', !isChecked);
     }
 </script>
-

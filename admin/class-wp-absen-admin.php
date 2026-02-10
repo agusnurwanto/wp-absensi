@@ -858,7 +858,7 @@ class Wp_Absen_Admin
 		$absensi_data_unit = $data_get_skpd->data;
 		$absensi_data_rekening_akun = $data_get_rekening->items;
 		$absensi_data_satuan = $data_get_satuan->data;
-
+		
 		if ($data_get_skpd->status == 'success' && !empty($absensi_data_unit)) {
 			$wpdb->update(
 				'absensi_data_unit',
@@ -947,7 +947,7 @@ class Wp_Absen_Admin
 						WHERE id_akun = %d
 						AND kode_akun = %s
 						AND tahun_anggaran = %d
-					', $vdata->id_akun, $vdata->kode_akun, $vdata->tahun_anggaran)
+					', $vdata->id_akun, $vdata->kode_akun, $api_params_get_rekening['tahun_anggaran'])
 				);
 
 				$data = array(
