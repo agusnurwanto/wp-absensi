@@ -393,7 +393,7 @@ class ABSEN_Functions
     public static function uploadFile(
 		string $api_key = '', 
 		string $path = '', 
-		array $file = array(), 
+		array $file = array(),  
 		array $ext = array(),
 		int $maxSize = 1048576, // default 1MB
 		string $nama_file = ''
