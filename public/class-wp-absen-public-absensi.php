@@ -142,7 +142,7 @@ class Wp_Absen_Public_Absensi
             $existing = $wpdb->get_row($wpdb->prepare("
                 SELECT id, waktu_masuk, waktu_pulang
                 FROM absensi_harian
-                WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s
+                WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s AND deleted_at IS NULL
             ", $id_pegawai, $id_kode_kerja, $tanggal));
 
             if ($tipe_absen == 'masuk') {
@@ -244,7 +244,7 @@ class Wp_Absen_Public_Absensi
                 $data = $wpdb->get_row($wpdb->prepare("
                     SELECT waktu_masuk, waktu_pulang 
                     FROM absensi_harian 
-                    WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s
+                    WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s AND deleted_at IS NULL
                 ", $pegawai_id, $id_kode_kerja, $tanggal));
                 
                 if ($data) {
@@ -565,10 +565,10 @@ class Wp_Absen_Public_Absensi
 
                 if ($allow) {
                     // Soft Delete: Set deleted_at timestamp
-                    $wpdb->delete(
+                    $wpdb->update(
                         'absensi_harian',
-                        array('id' => $id_delete),
-                        array('%d')
+                        array('deleted_at' => current_time('mysql')),
+                        array('id' => $id_delete)
                     );
                     $ret['status'] = 'success';
                     $ret['message'] = 'Data Absensi berhasil dihapus!';
