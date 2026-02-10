@@ -88,6 +88,12 @@ trait CustomTraitAbsen
 				throw new Exception('Lokasi folder belum ditentukan ' . json_encode($file));
 			}
 
+			// hard limit 15MB
+			$hardLimit = 15 * 1024 * 1024; // 15MB
+			if ($file['size'] > $hardLimit) {
+				throw new Exception('File terlalu besar, maksimal 15MB');
+			}
+
 			$imageFileType = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 			if (!in_array($imageFileType, $ext)) {
 				throw new Exception('Lampiran wajib ber-type ' . implode(', ', $ext));
