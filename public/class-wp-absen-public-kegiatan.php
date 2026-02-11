@@ -229,7 +229,8 @@ class Wp_Absen_Public_Kegiatan {
         $sql = "SELECT k.*, p.nama as nama_pegawai
                 FROM absensi_kegiatan k
                 LEFT JOIN absensi_data_pegawai p ON k.id_pegawai = p.id
-                WHERE k.active = 1 AND k.deleted_at IS NULL";
+                WHERE k.active = 1 
+                AND k.deleted_at IS NULL";
 
         $sql .= $wpdb->prepare(" AND k.tahun = %s", $tahun);
 
@@ -237,9 +238,36 @@ class Wp_Absen_Public_Kegiatan {
             $sql .= $wpdb->prepare(" AND MONTH(k.tanggal) = %d", intval($bulan));
         }
 
+        $current_user = wp_get_current_user();
+        $user_roles = (array) $current_user->roles;
+
+        if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
+
+            $sql .= $wpdb->prepare(" AND k.id_instansi = %d", $current_user->ID);
+
+        } elseif (in_array('pegawai', $user_roles) 
+            && !in_array('administrator', $user_roles) 
+            && !in_array('admin_instansi', $user_roles)) {
+
+            // Ambil ID Pegawai milik user login
+            $pegawai_id = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+                    $current_user->ID
+                )
+            );
+
+            if ($pegawai_id) {
+                $sql .= $wpdb->prepare(" AND k.id_pegawai = %d", $pegawai_id);
+            } else {
+                $sql .= " AND 1=0"; 
+            }
+        }
+
         $sql .= " ORDER BY k.tanggal DESC";
 
         $data = $wpdb->get_results($sql);
+
         ?>
         <!DOCTYPE html>
         <html>
