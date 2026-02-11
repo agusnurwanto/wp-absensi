@@ -326,6 +326,8 @@ class Wp_Absen
 		$this->loader->add_action('wp_ajax_tambah_data_kegiatan',  $plugin_public_kegiatan, 'tambah_data_kegiatan');
 		$this->loader->add_action('wp_ajax_get_data_kegiatan_by_id',  $plugin_public_kegiatan, 'get_data_kegiatan_by_id');
 		$this->loader->add_action('wp_ajax_hapus_data_kegiatan_by_id',  $plugin_public_kegiatan, 'hapus_data_kegiatan_by_id');
+		$this->loader->add_action('wp_ajax_print_laporan_kegiatan',   $plugin_public_kegiatan,   'print_laporan_kegiatan');
+
 		
 		// Ijin Hooks
 		$this->loader->add_action('wp_ajax_get_datatable_ijin',  $plugin_public_ijin, 'get_datatable_ijin');
