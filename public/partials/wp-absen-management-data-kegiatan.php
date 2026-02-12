@@ -22,9 +22,34 @@ $input = shortcode_atts(array(
     <div style="padding: 10px;margin:0 0 3rem 0;">
         <input type="hidden" value="<?php echo get_option(ABSEN_APIKEY); ?>" id="api_key">
         <h1 class="text-center" style="margin:3rem;">Manajemen Data Kegiatan<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
-        <div style="margin-bottom: 25px;">
-            <button class="btn btn-primary" onclick="tambah_data_kegiatan();"><i class="dashicons dashicons-plus"></i> Tambah Data Kegiatan</button>
+       <div class="no-print"
+        style="margin-bottom:25px; display:flex; gap:10px; align-items:center; flex-wrap:nowrap;">
+        <div style="display:flex; gap:10px;">
+            <button type="button" class="btn btn-primary" onclick="tambah_data_kegiatan();">
+                <i class="dashicons dashicons-plus"></i> Tambah Data
+            </button>
+            <button type="button" class="btn btn-danger" onclick="print_laporan_kegiatan();">
+                <i class="dashicons dashicons-printer"></i> Print
+            </button>
         </div>
+        <div>
+            <select id="filter_bulan" style="height:38px; width:auto;">
+                <option value="">Semua Bulan</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+            </select>
+            </div>
+        </div>    
         <div class="table-responsive">
             <table id="management_data_kegiatan_table">
                 <thead>
@@ -108,7 +133,7 @@ $input = shortcode_atts(array(
                         <textarea class="form-control" id="uraian" name="uraian" rows="3"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="file_lampiran">Lampiran (Foto/Dokumen) <small class="text-muted">*Maks 5MB (PDF/JPG/PNG)</small></label>
+                        <label for="file_lampiran">Lampiran (Foto/Dokumen) <small class="text-muted">*Maks 2MB (JPG/PNG)</small></label>
                         <input type="file" class="form-control-file" id="file_lampiran" name="file_lampiran">
                         <small id="file_existing" class="form-text text-info"></small>
                     </div>
@@ -152,10 +177,11 @@ $input = shortcode_atts(array(
                         url: ajaxurl,
                         type: 'post',
                         dataType: 'json',
-                        data: {
-                            'action': 'get_datatable_kegiatan',
-                            'api_key': apikey,
-                            'tahun': '<?php echo $input['tahun_anggaran']; ?>', // Pass Year
+                        data: function(d) {
+                        d.action = 'get_datatable_kegiatan';
+                        d.api_key = apikey;
+                        d.tahun = '<?php echo $input['tahun_anggaran']; ?>';
+                        d.bulan = $('#filter_bulan').val();
                         }
                     },
                     lengthMenu: [
@@ -211,6 +237,9 @@ $input = shortcode_atts(array(
                 datakegiatan.draw();
             }
         }
+        $('#filter_bulan').on('change', function () {
+            datakegiatan.ajax.reload();
+        });
 
         window.tambah_data_kegiatan = () => {
             $('#id_data').val('');
@@ -396,6 +425,27 @@ $input = shortcode_atts(array(
                 }
             });
         }
+        window.print_laporan_kegiatan = function() {
 
+            let bulan = document.getElementById('filter_bulan').value;
+
+            let form = document.createElement("form");
+            form.method = "POST";
+            form.action = "<?php echo admin_url('admin-ajax.php'); ?>";
+            form.target = "_blank";
+
+            form.innerHTML = `
+                <input type="hidden" name="action" value="print_laporan_kegiatan">
+                <input type="hidden" name="api_key" value="<?php echo get_option(ABSEN_APIKEY); ?>">
+                <input type="hidden" name="tahun" value="<?php echo $input['tahun_anggaran']; ?>">
+                <input type="hidden" name="bulan" value="${bulan}">
+            `;
+
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        };
     });
+    
+
 </script>

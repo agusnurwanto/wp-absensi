@@ -113,6 +113,8 @@ class Wp_Absen_Public_Kegiatan {
 		if (!empty($_POST) && !empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
 			$params = $_REQUEST;
 			$tahun = isset($_POST['tahun']) ? sanitize_text_field($_POST['tahun']) : date('Y');
+			$bulan = isset($_POST['bulan']) ? sanitize_text_field($_POST['bulan']) : '';
+
 			
 			// Default params if missing
 			$start = isset($params['start']) ? intval($params['start']) : 0;
@@ -130,6 +132,9 @@ class Wp_Absen_Public_Kegiatan {
 			
 			// Filter Tahun
 			$sql_base .= $wpdb->prepare(" AND k.tahun = %s", $tahun);
+			if (!empty($bulan)) {
+				$sql_base .= $wpdb->prepare(" AND MONTH(k.tanggal) = %d", intval($bulan));
+			}
 
 			$current_user = wp_get_current_user();
 			$user_roles = (array) $current_user->roles;
@@ -166,12 +171,18 @@ class Wp_Absen_Public_Kegiatan {
 					$tanggal = date_i18n( 'd F Y', strtotime( $row['tanggal'] ) );
 					$nama_pegawai = !empty($row['nama_pegawai']) ? $row['nama_pegawai'] : '-';
 
-                    $files = '-';
+					$files = '-';
 					if (!empty($row['file_lampiran'])) {
-                        // Path: public/img/kegiatan/
+						// Path: public/img/kegiatan/
 						$file_url = ABSEN_PLUGIN_URL . 'public/img/kegiatan/' . $row['file_lampiran'];
-						$files = '<a href="'.$file_url.'" target="_blank" class="btn btn-sm btn-info"><i class="dashicons dashicons-paperclip"></i> Lihat</a>';
+
+						$files = '
+							<a href="'.$file_url.'" target="_blank">
+								<img src="'.$file_url.'" style="max-width:80px; display:block; margin:0 auto 5px;">
+							</a>
+						';
 					}
+
 
 					$nestedData = array(); 
 					$nestedData['no'] = $no++;
@@ -207,6 +218,154 @@ class Wp_Absen_Public_Kegiatan {
 			wp_send_json($ret);
 		}
 	}
+	public function print_laporan_kegiatan() {
+    global $wpdb;
+
+    if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
+
+        $tahun = sanitize_text_field($_POST['tahun']);
+        $bulan = sanitize_text_field($_POST['bulan']);
+
+        $sql = "SELECT k.*, p.nama as nama_pegawai
+                FROM absensi_kegiatan k
+                LEFT JOIN absensi_data_pegawai p ON k.id_pegawai = p.id
+                WHERE k.active = 1 
+                AND k.deleted_at IS NULL";
+
+        $sql .= $wpdb->prepare(" AND k.tahun = %s", $tahun);
+
+        if (!empty($bulan)) {
+            $sql .= $wpdb->prepare(" AND MONTH(k.tanggal) = %d", intval($bulan));
+        }
+
+        $current_user = wp_get_current_user();
+        $user_roles = (array) $current_user->roles;
+
+        if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
+
+            $sql .= $wpdb->prepare(" AND k.id_instansi = %d", $current_user->ID);
+
+        } elseif (in_array('pegawai', $user_roles) 
+            && !in_array('administrator', $user_roles) 
+            && !in_array('admin_instansi', $user_roles)) {
+
+            // Ambil ID Pegawai milik user login
+            $pegawai_id = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+                    $current_user->ID
+                )
+            );
+
+            if ($pegawai_id) {
+                $sql .= $wpdb->prepare(" AND k.id_pegawai = %d", $pegawai_id);
+            } else {
+                $sql .= " AND 1=0"; 
+            }
+        }
+
+        $sql .= " ORDER BY k.tanggal DESC";
+
+        $data = $wpdb->get_results($sql);
+
+        ?>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Laporan Data Kegiatan <?php echo esc_html($tahun); ?></title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    font-size: 12px;
+                }
+                h2 {
+                    text-align: center;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                table, th, td {
+                    border: 1px solid #000;
+                }
+                th, td {
+                    padding: 5px;
+                    text-align: left;
+                    vertical-align: middle;
+                }
+                th {
+                    background: #eee;
+                }
+                img {
+                    max-width: 100px;
+                    height: auto;
+                }
+				
+            </style>
+        </head>
+        <body onload="window.print()">
+
+        <h2>
+            LAPORAN DATA KEGIATAN<br>
+            Tahun <?php echo esc_html($tahun); ?>
+        </h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Nama Pegawai</th>
+                    <th>Nama Kegiatan</th>
+                    <th>Tanggal</th>
+                    <th>Tempat</th>
+                    <th>Uraian</th>
+                    <th>Foto</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php
+            $no = 1;
+            foreach ($data as $row) {
+
+                echo "<tr>";
+                echo "<td>".$no++."</td>";
+                echo "<td>".esc_html($row->nama_pegawai)."</td>";
+                echo "<td>".esc_html($row->nama_kegiatan)."</td>";
+                echo "<td>".date_i18n('d F Y', strtotime($row->tanggal))."</td>";
+                echo "<td>".esc_html($row->tempat)."</td>";
+                echo "<td>".esc_html($row->uraian)."</td>";
+
+                echo "<td>";
+
+                if (!empty($row->file_lampiran)) {
+
+                    $file_url = plugins_url(
+                        'public/img/kegiatan/' . $row->file_lampiran,
+                        dirname(__FILE__)
+                    );
+
+                    echo '<img src="'.esc_url($file_url).'">';
+                } else {
+                    echo "-";
+                }
+
+                echo "</td>";
+                echo "</tr>";
+            }
+            ?>
+            </tbody>
+        </table>
+
+        </body>
+        </html>
+        <?php
+        exit;
+    }
+
+    wp_die();
+}
+
 
 	public function tambah_data_kegiatan() {
 		global $wpdb;
