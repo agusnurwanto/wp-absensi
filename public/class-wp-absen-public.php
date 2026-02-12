@@ -181,8 +181,13 @@ class Wp_Absen_Public
 						'no_key' => 1,
 						'post_status' => 'publish'
 					));
-					$get_data_absensi .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
-
+					$get_data_absensi .= '
+					<a target="_blank"
+					href="' . esc_url($management_data_absensi['url']) . '"
+					class="btn btn-primary m-1">
+					<span class="dashicons dashicons-calendar-alt"></span>
+					' . esc_html($management_data_absensi['title']) . '
+					</a>';
 					$management_data_kegiatan = $this->functions->generatePage(array(
 						'nama_page' => 'Manajemen Data Kegiatan | ' . $v['tahun'],
 						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun"] . '"]',
