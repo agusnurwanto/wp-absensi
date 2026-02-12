@@ -1,11 +1,12 @@
-(function( $ ) {
-	'use strict';
+jQuery(document).ready(() => {
+    window.options_skpd = {};
+    let loading = ''
+        + '<div id="wrap-loading">'
+        + '<div class="lds-hourglass"></div>'
+        + '<div id="persen-loading"></div>'
+        + '</div>';
 
-	/**
-	 * Public JS Logic
-	 */
-	$(window).load(function() {
-        // Init logic if needed
-	});
-
-})( jQuery );
+    if (jQuery('#wrap-loading').length == 0) {
+        jQuery('body').prepend(loading);
+    }
+});
