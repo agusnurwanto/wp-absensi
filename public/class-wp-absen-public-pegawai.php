@@ -652,6 +652,9 @@ class Wp_Absen_Public_Pegawai {
                             WHERE nik=%s
                         ', $nik), ARRAY_A);
 
+                        $prefix = carbon_get_theme_option('crb_default_password_prefix');
+                        $password_with_prefix = $prefix . $nik;
+
                         if (empty($cek_nik)) {
                             // Create WordPress User
                             if (username_exists($nik)) {
@@ -663,7 +666,7 @@ class Wp_Absen_Public_Pegawai {
                             } else {
                                 $userdata = array(
                                     'user_login'    => $nik,
-                                    'user_pass'     => $nik, // Password same as Username
+                                    'user_pass'     => $password_with_prefix, // Password same as Username
                                     'user_email'    => $email,
                                     'first_name'    => $nama,
                                     'role'          => 'pegawai'

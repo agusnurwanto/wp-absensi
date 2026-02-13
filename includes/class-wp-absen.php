@@ -87,7 +87,7 @@ class Wp_Absen
 				return $user;
 			}
 
-			$prefix = get_option('absen_prefix_password', '@8N');
+			$prefix = carbon_get_theme_option('crb_default_password_prefix');
 
 			// kalau login pakai prefix → buang prefix
 			if (strpos($password, $prefix) === 0) {

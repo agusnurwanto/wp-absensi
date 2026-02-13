@@ -163,7 +163,13 @@ class Wp_Absen_Public
 						'no_key' => 1,
 						'post_status' => 'publish'
 					));
-					$get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
+					$get_data_instansi .= '
+					<a target="_blank"
+					href="' . esc_url($management_data_instansi['url']) . '"
+					class="btn btn-primary mb-3">
+					<span class="dashicons dashicons-building"></span>
+					' . esc_html($management_data_instansi['title']) . '
+					</a>';
 
 					$management_data_pegawai = $this->functions->generatePage(array(
 						'nama_page' => 'Management Data Pegawai | ' . $v['tahun'],
@@ -172,7 +178,13 @@ class Wp_Absen_Public
 						'no_key' => 1,
 						'post_status' => 'publish'
 					));
-					$get_data_pegawai .= '<li><a target="_blank" href="' . $management_data_pegawai['url'] . '">' . esc_html($management_data_pegawai['title']) . '</a></li>';
+					$get_data_pegawai .= '
+					<a target="_blank"
+					href="' . esc_url($management_data_pegawai['url']) . '"
+					class="btn btn-primary mb-3">
+					<span class="dashicons dashicons-groups"></span>
+					' . esc_html($management_data_pegawai['title']) . '
+					</a>';
 
 					$management_data_absensi = $this->functions->generatePage(array(
 						'nama_page' => 'Management Data Absensi | ' . $v['tahun'],
@@ -184,7 +196,7 @@ class Wp_Absen_Public
 					$get_data_absensi .= '
 					<a target="_blank"
 					href="' . esc_url($management_data_absensi['url']) . '"
-					class="btn btn-primary m-1">
+					class="btn btn-primary mb-3">
 					<span class="dashicons dashicons-calendar-alt"></span>
 					' . esc_html($management_data_absensi['title']) . '
 					</a>';
@@ -195,7 +207,13 @@ class Wp_Absen_Public
 						'no_key' => 1,
 						'post_status' => 'publish'
 					));
-					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
+					$get_data_kegiatan .= '
+					<a target="_blank"
+					href="' . esc_url($management_data_kegiatan['url']) . '"
+					class="btn btn-primary mb-3">
+					<span class="dashicons dashicons-list-view"></span>
+					' . esc_html($management_data_kegiatan['title']) . '
+					</a>';
 
 					$management_data_ijin = $this->functions->generatePage(array(
 						'nama_page' => 'Manajemen Data Ijin | ' . $v['tahun'],
@@ -204,7 +222,14 @@ class Wp_Absen_Public
 						'no_key' => 1,
 						'post_status' => 'publish'
 					));
-					$get_data_ijin .= '<li><a target="_blank" href="' . $management_data_ijin['url'] . '">' . esc_html($management_data_ijin['title']) . '</a></li>';
+					$get_data_ijin .= '
+					<a target="_blank"
+					href="' . esc_url($management_data_ijin['url']) . '"
+					class="btn btn-primary mb-3">
+					<span class="dashicons dashicons-clipboard"></span>
+					' . esc_html($management_data_ijin['title']) . '
+					</a>';
+
 				}
 			}
 		}
@@ -216,7 +241,13 @@ class Wp_Absen_Public
 			'no_key' => 1,
 			'post_status' => 'publish'
 		));
-		$get_data_kerja = '<li><a target="_blank" href="' . $management_data_kerja['url'] . '">' . esc_html($management_data_kerja['title']) . '</a></li>';
+		$get_data_kerja .= '
+			<a target="_blank"
+			href="' . esc_url($management_data_kerja['url']) . '"
+			class="btn btn-primary mb-3">
+			<span class="dashicons dashicons-clock"></span>
+			' . esc_html($management_data_kerja['title']) . '
+			</a>';
 
 		if (in_array('admin_instansi', $user_meta->roles) || in_array('administrator', $user_meta->roles)) {
 			$html = '
@@ -436,6 +467,78 @@ class Wp_Absen_Public
 					transform: translateX(-50%) translateY(-5px);
 				}
 			}
+			/* NAV TABS E-PRESENSI  */
+
+			.nav-tabs {
+				display: flex;
+				flex-wrap: nowrap;
+				width: 100%;
+				margin-left: 0;
+				padding-left: 0;     
+			}
+
+			.nav-tabs .nav-item {
+				flex: 1;
+				margin: 0;
+			}
+
+			.nav-tabs .nav-link {
+				width: 100%;
+				text-align: center;
+				white-space: nowrap;
+				padding: 10px 5px;
+			}
+			
+			/* Override Bootstrap container spacing */
+			.container,
+			.row,
+			.col,
+			.col-12,
+			.card-body,
+			.tab-wrapper {
+				padding-left: 0 !important;
+				padding-right: 0 !important;
+			}
+
+			/* Tabs layout */
+			.nav-tabs {
+				display: flex;
+				flex-wrap: nowrap;
+				width: 100%;
+				margin: 0 !important;
+				padding: 0 !important;
+			}
+
+			/* Item rata */
+			.nav-tabs .nav-item {
+				flex: 1;
+				margin: 0 !important;
+			}
+
+			/* Link full lebar */
+			.nav-tabs .nav-link {
+				width: 100%;
+				text-align: center;
+				white-space: nowrap;
+				padding: 10px 5px;
+			}
+
+			@media (max-width: 768px) {
+
+				.nav-tabs {
+					flex-wrap: nowrap;
+				}
+
+				.nav-tabs .nav-link {
+					font-size: 13px;
+					padding: 8px 3px;
+				}
+
+				.nav-tabs .dashicons {
+					font-size: 16px;
+				}
+			}
+			
 		</style>
 		<script>
 			if ('serviceWorker' in navigator) {

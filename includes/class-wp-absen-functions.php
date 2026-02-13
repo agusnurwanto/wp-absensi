@@ -508,7 +508,7 @@ class ABSEN_Functions
 					$user_id = get_current_user_id();
 
 					// ambil prefix dari setting
-					$prefix = get_option('absen_prefix_password', '@8N');
+					$prefix = carbon_get_theme_option('crb_default_password_prefix');
 
 					// tambahkan prefix ke password baru
 					$final_password = $prefix . $final_password;
