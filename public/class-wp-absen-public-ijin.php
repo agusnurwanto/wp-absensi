@@ -87,6 +87,7 @@ class Wp_Absen_Public_Ijin {
 		if (!empty($_POST) && !empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
 			$params = $_REQUEST;
 			$tahun = isset($_POST['tahun']) ? sanitize_text_field($_POST['tahun']) : date('Y');
+			$bulan = isset($_POST['bulan']) ? sanitize_text_field($_POST['bulan']) : '';
 			
 			$start = isset($params['start']) ? intval($params['start']) : 0;
 			$length = isset($params['length']) ? intval($params['length']) : 10;
@@ -100,6 +101,10 @@ class Wp_Absen_Public_Ijin {
 
 			// Filter Tahun
 			$sql_base .= $wpdb->prepare(" AND i.tahun = %s", $tahun);
+			if (!empty($bulan)) {
+				$sql_base .= $wpdb->prepare(" AND MONTH(i.tanggal_mulai) = %d", intval($bulan));
+			}
+
 
 			$current_user = wp_get_current_user();
 			$user_roles = (array) $current_user->roles;
@@ -140,7 +145,16 @@ class Wp_Absen_Public_Ijin {
 					if (!empty($row['file_lampiran'])) {
                         // Path: public/img/ijin/
 						$file_url = ABSEN_PLUGIN_URL . 'public/img/ijin/' . $row['file_lampiran'];
-						$files = '<a href="'.$file_url.'" target="_blank" class="btn btn-sm btn-info"><i class="dashicons dashicons-paperclip"></i> Lihat</a>';
+						$files = '-';
+					if (!empty($row['file_lampiran'])) {
+                        // Path: public/img/ijin/
+						$file_url = ABSEN_PLUGIN_URL . 'public/img/ijin/' . $row['file_lampiran'];
+						$files = '
+						<a href="'.$file_url.'" target="_blank">
+							<img src="'.$file_url.'" style="max-width:80px; display:block; margin:0 auto 5px;">
+						</a>
+						';
+					}
 					}
 
                     // Status Badge
@@ -197,6 +211,152 @@ class Wp_Absen_Public_Ijin {
 			ob_end_clean();
 			wp_send_json($ret);
 		}
+	}
+	public function print_laporan_perijinan() {
+		global $wpdb;
+
+		if (!empty($_GET['api_key']) && $_GET['api_key'] == get_option(ABSEN_APIKEY)) {
+
+			$tahun = sanitize_text_field($_GET['tahun']);
+			$bulan = sanitize_text_field($_GET['bulan']);
+
+			$sql = "SELECT i.*, p.nama as nama_pegawai
+					FROM absensi_ijin i
+					LEFT JOIN absensi_data_pegawai p ON i.id_pegawai = p.id
+					WHERE i.deleted_at IS NULL";
+
+			$sql .= $wpdb->prepare(" AND i.tahun = %s", $tahun);
+
+			if (!empty($bulan)) {
+				$sql .= $wpdb->prepare(" AND MONTH(i.tanggal_mulai) = %d", intval($bulan));
+			}
+
+			$current_user = wp_get_current_user();
+			$user_roles = (array) $current_user->roles;
+
+			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
+
+				$sql .= $wpdb->prepare(" AND i.id_instansi = %d", $current_user->ID);
+
+			} elseif (in_array('pegawai', $user_roles)
+				&& !in_array('administrator', $user_roles)
+				&& !in_array('admin_instansi', $user_roles)) {
+
+				$pegawai_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				if ($pegawai_id) {
+					$sql .= $wpdb->prepare(" AND i.id_pegawai = %d", $pegawai_id);
+				} else {
+					$sql .= " AND 1=0";
+				}
+			}
+
+			$sql .= " ORDER BY i.tanggal_mulai DESC";
+
+			$data = $wpdb->get_results($sql);
+
+			?>
+			<!DOCTYPE html>
+			<html lang="id">
+			<head>
+				<meta charset="UTF-8">
+				<title>Laporan Data Perijinan <?php echo esc_html($tahun); ?></title>
+				<style>
+					body {
+						font-family: Arial, sans-serif;
+						font-size: 12px;
+					}
+					h2 {
+						text-align: center;
+					}
+					table {
+						width: 100%;
+						border-collapse: collapse;
+					}
+					table, th, td {
+						border: 1px solid #000;
+					}
+					th, td {
+						padding: 5px;
+						vertical-align: middle;
+					}
+					th {
+						background: #eee;
+					}
+				</style>
+			</head>
+			<body onload="window.print()">
+
+			<h2>
+				LAPORAN DATA IJIN / CUTI / SAKIT<br>
+				Tahun <?php echo esc_html($tahun); ?>
+			</h2>
+
+			<table>
+				<thead>
+					<tr>
+						<th>No</th>
+						<th>Nama Pegawai</th>
+						<th>Tipe</th>
+						<th>Tanggal</th>
+						<th>Alasan</th>
+						<th>Lampiran</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+				<tbody>
+				<?php
+				$no = 1;
+				foreach ($data as $row) {
+
+					$tanggal = date_i18n('d F Y', strtotime($row->tanggal_mulai));
+
+					if ($row->tanggal_mulai != $row->tanggal_selesai) {
+						$tanggal .= ' - ' . date_i18n('d F Y', strtotime($row->tanggal_selesai));
+					}
+
+					echo "<tr>";
+					echo "<td>".$no++."</td>";
+					echo "<td>".esc_html($row->nama_pegawai)."</td>";
+					echo "<td>".esc_html($row->tipe_ijin)."</td>";
+					echo "<td>".$tanggal."</td>";
+					echo "<td>".esc_html($row->alasan)."</td>";
+
+					echo "<td>";
+
+					if (!empty($row->file_lampiran)) {
+
+						$file_url = plugins_url(
+							'public/img/ijin/' . $row->file_lampiran,
+							dirname(__FILE__)
+						);
+
+						echo '<img src="'.esc_url($file_url).'" style="max-width:80px;">';
+
+					} else {
+						echo "-";
+					}
+
+					echo "</td>";
+					echo "<td>".esc_html($row->status)."</td>";
+					echo "</tr>";
+				}
+				?>
+				</tbody>
+			</table>
+
+			</body>
+			</html>
+			<?php
+			exit;
+		}
+
+		wp_die();
 	}
 
 	public function tambah_data_ijin() {

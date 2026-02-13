@@ -20,12 +20,30 @@ $input = shortcode_atts(array(
             Manajemen Data Ijin / Cuti / Sakit<br />Tahun <?php echo esc_html($input['tahun_anggaran']); ?>
         </h3>
 
-        <div style="margin-bottom: 25px">
+        <div style="margin-bottom: 25px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <button class="btn btn-primary" onclick="tambah_data_ijin()">
                 <span class="dashicons dashicons-plus"></span> Tambah Data
             </button>
+            <button type="button" class="btn btn-danger" onclick="print_laporan_perijinan();">
+                <i class="dashicons dashicons-printer"></i> Print
+            </button>
+        <div>
+            <select id="filter_bulan" style="height:38px; width:auto; margin-left:auto;">
+                <option value="">Semua Bulan</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+            </select>
         </div>
-
         <div class="table-responsive">
             <table id="management_data_ijin_table">
                 <thead>
@@ -151,10 +169,11 @@ $input = shortcode_atts(array(
                         url: ajaxurl,
                         type: 'post',
                         dataType: 'json',
-                        data: {
-                            'action': 'get_datatable_ijin',
-                            'api_key': apikey,
-                            'tahun': '<?php echo $input['tahun_anggaran']; ?>',
+                        data: function(d) {
+                            d.action = 'get_datatable_ijin';
+                            d.api_key = apikey;
+                            d.tahun = '<?php echo $input['tahun_anggaran']; ?>';
+                            d.bulan = $('#filter_bulan').val(); // 🔥 INI PENTING
                         }
                     },
                     lengthMenu: [
@@ -204,6 +223,9 @@ $input = shortcode_atts(array(
                 dataijin.draw();
             }
         }
+        $('#filter_bulan').on('change', function () {
+            dataijin.ajax.reload();
+        });
 
         window.tambah_data_ijin = function() {
             $('#id_data').val('');
@@ -397,4 +419,20 @@ $input = shortcode_atts(array(
             });
         }
     });
+    window.print_laporan_perijinan = function() {
+
+        let bulan = jQuery('#filter_bulan').val();
+        let tahun = '<?php echo esc_html($input['tahun_anggaran']); ?>';
+
+        window.open(
+            ajax.url + 
+            '?action=print_laporan_perijinan' +
+            '&api_key=' + ajax.api_key +
+            '&tahun=' + tahun +
+            '&bulan=' + bulan,
+            '_blank'
+        );
+    }
+
+
 </script>

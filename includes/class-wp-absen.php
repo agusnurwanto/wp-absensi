@@ -335,6 +335,9 @@ class Wp_Absen
 		$this->loader->add_action('wp_ajax_get_data_ijin_by_id',  $plugin_public_ijin, 'get_data_ijin_by_id');
 		$this->loader->add_action('wp_ajax_hapus_data_ijin_by_id',  $plugin_public_ijin, 'hapus_data_ijin_by_id');
 		$this->loader->add_action('wp_ajax_update_status_ijin',  $plugin_public_ijin, 'update_status_ijin');
+		$this->loader->add_action('wp_ajax_print_laporan_perijinan', $plugin_public_ijin, 'print_laporan_perijinan');
+		$this->loader->add_action('wp_ajax_nopriv_print_laporan_perijinan', $plugin_public_ijin, 'print_laporan_perijinan');
+
 
 		add_shortcode('management_data_pegawai_absensi', array($plugin_public_pegawai, 'management_data_pegawai_absensi'));
 		add_shortcode('management_data_instansi', array($plugin_public_instansi, 'management_data_instansi'));
