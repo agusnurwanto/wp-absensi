@@ -425,6 +425,10 @@ class Wp_Absen_Public_Absensi
                 JOIN absensi_data_kerja k ON ah.id_kode_kerja = k.id
                 WHERE ah.deleted_at IS NULL
             ";
+            if (!empty($_POST['bulan'])) {
+                $bulan = intval($_POST['bulan']);
+                $sql_base .= $wpdb->prepare(" AND MONTH(ah.tanggal) = %d", $bulan);
+            }
             
             // Filter Instansi or Pegawai
             $current_user = wp_get_current_user();
@@ -540,6 +544,199 @@ class Wp_Absen_Public_Absensi
 
         die(json_encode($ret));
     }
+    public function print_laporan_presensi() {
+		global $wpdb;
+
+		if (!empty($_GET['api_key']) && $_GET['api_key'] == get_option(ABSEN_APIKEY)) {
+
+			$tahun = sanitize_text_field($_GET['tahun']);
+			$bulan = sanitize_text_field($_GET['bulan']);
+
+			$sql = "
+                SELECT 
+                    ah.*, 
+                    p.nama as nama_pegawai,
+                    k.nama_kerja
+                FROM absensi_harian ah
+                JOIN absensi_data_pegawai p ON ah.id_pegawai = p.id
+                JOIN absensi_data_kerja k ON ah.id_kode_kerja = k.id
+                WHERE ah.deleted_at IS NULL
+            ";
+
+			$sql .= $wpdb->prepare(" AND ah.tahun = %s", $tahun);
+
+			if (!empty($bulan)) {
+                $sql .= $wpdb->prepare(" AND MONTH(ah.tanggal) = %d", intval($bulan));
+            }
+
+			$current_user = wp_get_current_user();
+			$user_roles = (array) $current_user->roles;
+
+			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
+
+				$sql .= $wpdb->prepare(" AND ah.id_instansi = %d", $current_user->ID);
+
+			} elseif (in_array('pegawai', $user_roles)
+				&& !in_array('administrator', $user_roles)
+				&& !in_array('admin_instansi', $user_roles)) {
+
+				$pegawai_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				if ($pegawai_id) {
+					$sql .= $wpdb->prepare(" AND ah.id_pegawai = %d", $pegawai_id);
+				} else {
+					$sql .= " AND 1=0";
+				}
+			}
+
+			$sql .= " ORDER BY ah.tanggal DESC";
+
+			$data = $wpdb->get_results($sql);
+
+			?>
+			<!DOCTYPE html>
+			<html lang="id">
+			<head>
+				<meta charset="UTF-8">
+				<title>Laporan Data Absensi <?php echo esc_html($tahun); ?></title>
+				<style>
+					body {
+                        font-family: Arial, sans-serif;
+                        font-size: 12px;
+                    }
+                    h2 {
+                        text-align: center;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        text-align: center;
+                    }
+                    table, th, td {
+                        border: 1px solid #000;
+                        text-align: center;
+                    }
+                    th {
+                        background: #eee;
+                    }
+                    img {
+                        max-width: 100px;
+                        height: auto;
+                    }
+                    td img {
+                        display: block;
+                        margin: 0 auto;
+                        max-width: 80px;
+                        height: auto;
+                    }
+                    th, td {
+                        padding: 5px;
+                        text-align: center;
+                        vertical-align: middle;
+                    }
+
+                    td:nth-child(6) {
+                        text-align: center; 
+                    }
+
+                    td:nth-child(6) img {
+                        display: inline-block; 
+                        max-width: 80px;
+                        height: auto;
+                    }
+
+				</style>
+			</head>
+			<body onload="window.print()">
+			<h2>
+				LAPORAN DATA ABSENSI<br>
+				TAHUN <?php echo esc_html($tahun); ?>
+			</h2>
+
+			<table>
+				<thead>
+					<tr>
+                    <th>No</th>
+                    <th>Nama Pegawai</th>
+                    <th>Tanggal</th>
+                    <th>Status</th>
+                    <th>Waktu</th>
+                    <th>Foto Masuk</th>
+                    <th>Foto Pulang</th>
+                    <th>Kode Kerja</th>
+                </tr>
+				</thead>
+				<tbody>
+				<?php
+                $no = 1;
+                foreach ($data as $row) {
+
+                    $tanggal = date_i18n('d F Y', strtotime($row->tanggal));
+
+                    $waktu_masuk  = $row->waktu_masuk ? date('H:i', strtotime($row->waktu_masuk)) : '-';
+                    $waktu_pulang = $row->waktu_pulang ? date('H:i', strtotime($row->waktu_pulang)) : '-';
+
+                    $waktu = $waktu_masuk . ' - ' . $waktu_pulang;
+
+                    echo "<tr>";
+                    echo "<td>".$no++."</td>";
+                    echo "<td>".esc_html($row->nama_pegawai)."</td>";
+                    echo "<td>".$tanggal."</td>";
+                    echo "<td>".esc_html($row->status)."</td>";
+                    echo "<td>".$waktu."</td>";
+
+                    echo "<td>";
+
+                    if (!empty($row->foto_masuk)) {
+
+                        $foto_masuk_url = plugins_url(
+                            'public/img/absensi/' . $row->foto_masuk,
+                            dirname(__FILE__)
+                        );
+
+                        echo '<img src="'.esc_url($foto_masuk_url).'">';
+                    } else {
+                        echo "-";
+                    }
+
+                    echo "</td>";
+
+                    echo "<td>";
+
+                    if (!empty($row->foto_pulang)) {
+
+                        $foto_pulang_url = plugins_url(
+                            'public/img/absensi/' . $row->foto_pulang,
+                            dirname(__FILE__)
+                        );
+
+                        echo '<img src="'.esc_url($foto_pulang_url).'">';
+                    } else {
+                        echo "-";
+                    }
+
+                    echo "</td>";
+
+                    echo "<td>".esc_html($row->nama_kerja)."</td>";
+                    echo "</tr>";
+                }
+                ?>
+				</tbody>
+			</table>
+
+			</body>
+			</html>
+			<?php
+			exit;
+		}
+
+		wp_die();
+	}
 
     public function hapus_data_absensi() {
         global $wpdb;

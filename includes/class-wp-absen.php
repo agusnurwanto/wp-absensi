@@ -320,6 +320,7 @@ class Wp_Absen
 		$this->loader->add_action('wp_ajax_tambah_data_absensi_manual', $plugin_public_absensi, 'tambah_data_absensi_manual');
 		$this->loader->add_action('wp_ajax_hapus_data_absensi', $plugin_public_absensi, 'hapus_data_absensi');
 		$this->loader->add_action('wp_ajax_get_master_pegawai_search', $plugin_public_pegawai, 'get_master_pegawai_search');
+		$this->loader->add_action('wp_ajax_print_laporan_presensi',   $plugin_public_absensi,   'print_laporan_presensi');
 
 		// Kegiatan Hooks
 		$this->loader->add_action('wp_ajax_get_datatable_kegiatan',  $plugin_public_kegiatan, 'get_datatable_kegiatan');

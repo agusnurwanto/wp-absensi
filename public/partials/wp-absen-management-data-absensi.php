@@ -30,14 +30,39 @@ $date = date('d-m-Y');
     <div style="padding: 10px;margin:0 0 3rem 0;">
         <input type="hidden" value="<?php echo get_option(ABSEN_APIKEY); ?>" id="api_key">
         <h1 class="text-center" style="margin:3rem;">Manajemen Data Absensi<br>Tahun <?php echo $input['tahun_anggaran']; ?></h1>
-        <div style="margin-bottom: 25px;">
+        <div style="margin-bottom: 25px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <?php
             $current_user = wp_get_current_user();
-            $is_pegawai = in_array('pegawai', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles) && !in_array('admin_instansi', (array) $current_user->roles);
+            $is_pegawai = in_array('pegawai', (array) $current_user->roles) 
+                && !in_array('administrator', (array) $current_user->roles) 
+                && !in_array('admin_instansi', (array) $current_user->roles);
 
             if (!$is_pegawai): ?>
-                <button class="btn btn-primary" onclick="tambah_data_absensi();"><i class="dashicons dashicons-plus"></i> Tambah Data Manual</button>
+                <button class="btn btn-primary" onclick="tambah_data_absensi();">
+                    <i class="dashicons dashicons-plus"></i> Tambah Data Manual
+                </button>
             <?php endif; ?>
+
+            <button type="button" class="btn btn-danger" onclick="print_laporan_presensi();">
+                <i class="dashicons dashicons-printer"></i> Print
+            </button>
+
+            <select id="filter_bulan" style="height:38px; width:auto;">
+                <option value="">Semua Bulan</option>
+                <option value="01">Januari</option>
+                <option value="02">Februari</option>
+                <option value="03">Maret</option>
+                <option value="04">April</option>
+                <option value="05">Mei</option>
+                <option value="06">Juni</option>
+                <option value="07">Juli</option>
+                <option value="08">Agustus</option>
+                <option value="09">September</option>
+                <option value="10">Oktober</option>
+                <option value="11">November</option>
+                <option value="12">Desember</option>
+            </select>
+
         </div>
         <div class="table-responsive">
             <table id="management_data_table">
@@ -175,9 +200,10 @@ $date = date('d-m-Y');
                         url: ajaxurl,
                         type: 'post',
                         dataType: 'json',
-                        data: {
-                            'action': 'get_datatable_absensi',
-                            'api_key': apikey,
+                        data: function(d){
+                            d.action = 'get_datatable_absensi';
+                            d.api_key = apikey;
+                            d.bulan = jQuery('#filter_bulan').val();
                         }
                     },
                     lengthMenu: [
@@ -335,6 +361,9 @@ $date = date('d-m-Y');
                 }
             });
         }
+        jQuery('#filter_bulan').on('change', function(){
+            dataabsensi.ajax.reload();
+        });
 
         // Delete Function
         window.hapus_data_absensi = (id) => {
@@ -449,5 +478,20 @@ $date = date('d-m-Y');
                 }
             });
         }
+        window.print_laporan_presensi = function() {
+
+            let bulan = document.getElementById('filter_bulan').value;
+            let tahun = '<?php echo esc_js($input['tahun_anggaran']); ?>';
+
+            window.open(
+                '<?php echo admin_url('admin-ajax.php'); ?>' +
+                '?action=print_laporan_presensi' +
+                '&api_key=' + document.getElementById('api_key').value +
+                '&tahun=' + tahun +
+                '&bulan=' + bulan,
+                '_blank'
+            );
+        }
+
     });
 </script>
