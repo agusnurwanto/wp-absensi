@@ -273,7 +273,7 @@ class Wp_Absen_Public_Kegiatan {
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Laporan Data Kegiatan <?php echo esc_html($tahun); ?></title>
+            <title>LAPORAN DATA KEGIATAN <?php echo esc_html($tahun); ?></title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -308,7 +308,7 @@ class Wp_Absen_Public_Kegiatan {
 
         <h2>
             LAPORAN DATA KEGIATAN<br>
-            Tahun <?php echo esc_html($tahun); ?>
+            TAHUN <?php echo esc_html($tahun); ?>
         </h2>
 
         <table>

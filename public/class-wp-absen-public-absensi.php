@@ -509,12 +509,70 @@ class Wp_Absen_Public_Absensi
                     $foto_masuk_url = ABSEN_PLUGIN_URL . 'public/img/absensi/' . $row['foto_masuk'];
                     $foto_masuk_html = '<a href="'.$foto_masuk_url.'" target="_blank"><img src="'.$foto_masuk_url.'" style="max-width:50px;max-height:50px;border-radius:5px;" title="Lihat Foto Masuk"></a>';
                 }
+                if (!empty($row['koordinat_masuk'])) {
+
+                    $koordinat = esc_attr($row['koordinat_masuk']);
+
+                    $foto_masuk_html .= '
+                        <div class="aksi-lokasi" style="margin-top:6px;">
+                            <a target="_blank"
+                            href="https://www.google.com/maps?q='.$koordinat.'"
+                            class="btn btn-sm btn-success">
+                            🗺️ Lihat Lokasi
+                            </a>
+                        </div>';
+                }
+                if (!empty($row['foto_masuk'])) {
+
+                    $tanggal = date_i18n('l, d F Y', strtotime($row['tanggal']));
+                       $jam = !empty($row['waktu_masuk'])
+                            ? date('H.i', strtotime($row['waktu_masuk'])) . ' WIB'
+                            : '-';
+
+                        $alamat = !empty($row['koordinat_masuk'])
+                            ? $row['koordinat_masuk']
+                            : '-';
+                    $foto_masuk_html .= '
+                        <div class="info-absensi">
+                            <div>'.$tanggal.'</div>
+                            <div>'.$jam.'</div>
+                            <div>'.$alamat.'</div>
+                        </div>';
+                }
 
                 // Foto Pulang
                 $foto_pulang_html = '-';
                 if (!empty($row['foto_pulang'])) {
                     $foto_pulang_url = ABSEN_PLUGIN_URL . 'public/img/absensi/' . $row['foto_pulang'];
                     $foto_pulang_html = '<a href="'.$foto_pulang_url.'" target="_blank"><img src="'.$foto_pulang_url.'" style="max-width:50px;max-height:50px;border-radius:5px;" title="Lihat Foto Pulang"></a>';
+                }
+                if (!empty($row['koordinat_pulang'])) {
+
+                    $koordinat_pulang = esc_attr($row['koordinat_pulang']);
+
+                    $foto_pulang_html .= '
+                    <div class="aksi-lokasi" style="margin-top:6px;">
+                        <a target="_blank"
+                        href="https://www.google.com/maps?q='.$koordinat.'"
+                        class="btn btn-sm btn-success">
+                        🗺️ Lihat Lokasi
+                        </a>
+                    </div>';
+                }
+                if (!empty($row['foto_pulang'])) {
+
+                    $tanggal = date_i18n('l, d F Y', strtotime($row['tanggal']));
+                    $jam     = date('H.i', strtotime($row['waktu_pulang'])) . ' WIB';
+
+                    $alamat  = !empty($row['alamat_pulang'])
+                        ? $row['alamat_pulang']
+                        : $row['koordinat_pulang'];
+                    $foto_pulang_html .= '
+                        <div class="info-absensi">
+                            <div>'.$tanggal.'</div>
+                            <div>'.$jam.'</div>
+                            <div>'.$alamat.'</div>
+                        </div>';
                 }
 
                 $btn_aksi = '';
@@ -603,7 +661,7 @@ class Wp_Absen_Public_Absensi
 			<html lang="id">
 			<head>
 				<meta charset="UTF-8">
-				<title>Laporan Data Absensi <?php echo esc_html($tahun); ?></title>
+				<title>LAPORAN DATA ABSENSI <?php echo esc_html($tahun); ?></title>
 				<style>
 					body {
                         font-family: Arial, sans-serif;

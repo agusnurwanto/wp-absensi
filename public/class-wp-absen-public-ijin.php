@@ -294,7 +294,7 @@ class Wp_Absen_Public_Ijin {
 
 			<h2>
 				LAPORAN DATA IJIN / CUTI / SAKIT<br>
-				Tahun <?php echo esc_html($tahun); ?>
+				TAHUN <?php echo esc_html($tahun); ?>
 			</h2>
 
 			<table>
