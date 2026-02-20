@@ -225,7 +225,13 @@ $current_user_id = $current_user->ID;
     function tambah_data_kode_kerja() {
         jQuery('#id_data').val('');
         jQuery('#nama_kerja').val('');
-        jQuery('#jenis').val('Primary').prop('disabled', true); // Disable initially
+        jQuery('#jenis')
+            .val('Primary')
+            .prop('disabled', true);
+
+        jQuery('#jenis option[value="Primary"]')
+            .prop('disabled', false)
+            .show();
         jQuery('#koordinat').val('');
         jQuery('#radius_meter').val('100');
         jQuery('#admin_instansi').val('');
@@ -256,7 +262,7 @@ $current_user_id = $current_user->ID;
     }
 
     // Add Admin Instansi Listener
-    jQuery('#admin_instansi').on('change', () => {
+    jQuery('#admin_instansi').on('change', function() {
         let id_instansi = jQuery(this).val();
         if (id_instansi) {
             checkPrimaryAvailability(id_instansi);
@@ -479,8 +485,8 @@ $current_user_id = $current_user->ID;
         let jam_masuk = {};
         let jam_pulang = {};
 
-        jQuery('.day-check:checked').each(() => {
-            let day = jQuery(this).val();
+        jQuery('.day-check:checked').map(function(a, b) {
+            let day = jQuery(b).val();
             hari_kerja.push(day);
             jam_masuk[day] = jQuery('#jam_masuk_' + day).val();
             jam_pulang[day] = jQuery('#jam_pulang_' + day).val();
