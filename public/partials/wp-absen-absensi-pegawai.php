@@ -44,6 +44,9 @@ $current_user = wp_get_current_user();
         border-radius: 5px;
         margin-bottom: 20px;
     }
+    .absensi-action-area .btn + .btn {
+    margin-left: 12px;
+    }
 </style>
 
 <div class="row">
@@ -87,13 +90,21 @@ $current_user = wp_get_current_user();
                         <div id="foto-preview" style="margin-top: 10px;"></div>
                     </div>
 
-                    <button id="btn-absen-masuk" class="btn btn-lg btn-primary mb-2" style="display:none;" onclick="submit_absensi('masuk')">
-                        <i class="dashicons dashicons-location-alt"></i> Absen Masuk
-                    </button>
+                    <div class="d-flex justify-content-center gap-3">
+                        <button id="btn-absen-masuk"
+                            class="btn btn-lg btn-primary w-100"
+                            onclick="submit_absensi('masuk')">
+                            <i class="dashicons dashicons-location-alt"></i>
+                            Absen<br>Masuk
+                        </button>
 
-                    <button id="btn-absen-pulang" class="btn btn-lg btn-success mb-2" style="display:none;" onclick="submit_absensi('pulang')">
-                        <i class="dashicons dashicons-location-alt"></i> Absen Pulang
-                    </button>
+                        <button id="btn-absen-pulang"
+                            class="btn btn-lg btn-success w-100"
+                            onclick="submit_absensi('pulang')">
+                            <i class="dashicons dashicons-location-alt"></i>
+                            Absen<br>Pulang
+                        </button>
+                    </div>
 
                     <div id="location-status" class="text-muted mt-2"><small>Mencari Lokasi...</small></div>
                 </div>
@@ -168,8 +179,8 @@ function checkStatusAbsensi() {
     let id_kode = jQuery('#id_kode_kerja_pegawai').val();
 
     // Hide buttons and foto input initially
-    jQuery('#btn-absen-masuk').hide();
-    jQuery('#btn-absen-pulang').hide();
+    jQuery('#btn-absen-masuk').prop('disabled', false);
+    jQuery('#btn-absen-pulang').prop('disabled', false);
     jQuery('#absensi-status-box').hide();
     jQuery('#jadwal-info').hide();
     jQuery('#foto-lampiran-group').hide();
@@ -177,6 +188,7 @@ function checkStatusAbsensi() {
     jQuery('#foto-preview').html('');
 
     if (!id_kode) return;
+    jQuery('#foto-lampiran-group').show();
 
     // Show Details
     let selectedOption = jQuery('#id_kode_kerja_pegawai').find(':selected');
@@ -215,19 +227,18 @@ function checkStatusAbsensi() {
                 jQuery('#info-masuk').text(waktu_masuk ? waktu_masuk : '-');
                 jQuery('#info-pulang').text(waktu_pulang ? waktu_pulang : '-');
 
-                if (!waktu_masuk) {
-                    // Belum Absen Masuk
-                    jQuery('#btn-absen-masuk').show();
-                    jQuery('#foto-lampiran-group').show();
-                } else {
-                    // Sudah Masuk, bisa Pulang (atau update pulang)
-                    jQuery('#btn-btn-absen-masuk').hide();
-                    jQuery('#btn-absen-pulang').show();
-                    jQuery('#foto-lampiran-group').show();
-                    // Optional: If already pulang, maybe change text to "Update Pulang"
-                    if (waktu_pulang) {
-                        jQuery('#btn-absen-pulang').html('<i class="dashicons dashicons-update"></i> Update Absen Pulang');
-                    }
+                if (waktu_masuk) {
+                    // Sudah masuk → tombol masuk dikunci
+                    jQuery('#btn-absen-masuk')
+                        .prop('disabled', true)
+                        .html('<i class="dashicons dashicons-yes"></i> Sudah Absen Masuk');
+                }
+
+                if (waktu_pulang) {
+                    // Sudah pulang → tombol pulang dikunci
+                    jQuery('#btn-absen-pulang')
+                        .prop('disabled', true)
+                        .html('<i class="dashicons dashicons-yes"></i> Sudah Absen Pulang');
                 }
             } else if (response.status == 'error') {
                 Swal.fire({
