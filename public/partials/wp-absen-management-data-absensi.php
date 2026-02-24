@@ -142,6 +142,25 @@ $date = date('d-m-Y');
         </div>
     </div>
 </div>
+</div> 
+<!-- modalTambahDataAbsensi -->
+
+<!-- ✅ TAMBAH DI SINI -->
+<div class="modal fade" id="modalMap" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Lokasi Absensi</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="map_view" style="height:400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     jQuery(document).ready(() => {
@@ -491,6 +510,36 @@ $date = date('d-m-Y');
                 '&bulan=' + bulan,
                 '_blank'
             );
+        }
+        let mapInstance = null;
+
+        window.lihat_lokasi = function(koordinat){
+
+            if (!koordinat) return;
+
+            let coords = koordinat.split(',');
+            let lat = parseFloat(coords[0]);
+            let lng = parseFloat(coords[1]);
+
+            jQuery('#modalMap').modal('show');
+
+            setTimeout(() => {
+
+                if (mapInstance) {
+                    mapInstance.remove();
+                }
+
+                mapInstance = L.map('map_view').setView([lat, lng], 16);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap'
+                }).addTo(mapInstance);
+
+                L.marker([lat, lng]).addTo(mapInstance)
+                    .bindPopup('Lokasi Absensi')
+                    .openPopup();
+
+            }, 300);
         }
 
     });

@@ -50,3 +50,9 @@
     transform: rotate(1800deg);
   }
 }
+.info-absensi {
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.4;
+    color: #444;
+}
