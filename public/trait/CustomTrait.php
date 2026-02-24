@@ -17,12 +17,12 @@ trait CustomTraitAbsen
 		}
 
 		$ratio = $height / $width;
-		$newWidth  = $maxWidth;
+		$newWidth = $maxWidth;
 		$newHeight = (int) ($maxWidth * $ratio);
 
 		$src = match ($mime) {
 			'image/jpeg' => imagecreatefromjpeg($tmpPath),
-			'image/png'  => imagecreatefrompng($tmpPath),
+			'image/png' => imagecreatefrompng($tmpPath),
 			'image/webp' => imagecreatefromwebp($tmpPath),
 			default => throw new Exception('Tipe gambar tidak didukung'),
 		};
@@ -52,9 +52,11 @@ trait CustomTraitAbsen
 
 		match ($mime) {
 			'image/jpeg' => imagejpeg($dst, $tmpNew, $quality),
-			'image/png'  => imagepng($dst, $tmpNew, 7),
+			'image/png' => imagepng($dst, $tmpNew, 7),
 			'image/webp' => imagewebp($dst, $tmpNew, $quality),
 		};
+
+		chmod($tmpNew, 0644);
 
 		// PHP 8.3: biarkan GC handle GdImage
 		$src = null;
@@ -132,8 +134,9 @@ trait CustomTraitAbsen
 			$moved = rename($file['tmp_name'], $target);
 
 			if ($moved) {
+				chmod($target, 0644);
 				return [
-					'status'   => true,
+					'status' => true,
 					'filename' => $file['name']
 				];
 			}
@@ -141,7 +144,7 @@ trait CustomTraitAbsen
 			throw new Exception('Oops, gagal upload file ' . $file['name']);
 		} catch (Exception $e) {
 			return [
-				'status'  => false,
+				'status' => false,
 				'message' => $e->getMessage()
 			];
 		}
