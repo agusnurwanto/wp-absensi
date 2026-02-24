@@ -57,7 +57,7 @@ CREATE TABLE `absensi_data_pegawai` (
   `lulus` year(4) DEFAULT NULL,
   `email` text DEFAULT NULL,
   `id_user` int(11) DEFAULT NULL,
-  `id_instansi` int(11) DEFAULT NULL,
+  `id_instansi` text DEFAULT NULL,
   `user_role` text DEFAULT NULL COMMENT 'kepala dan pegawai',
   `status_kerja` int(11) DEFAULT NULL COMMENT '0=Tidak Aktif, 1=Aktif',
   `tahun` year(4) DEFAULT NULL,
@@ -266,4 +266,20 @@ CREATE TABLE `absensi_tahun` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `tahun` (`tahun`),
   KEY `active` (`active`)
+);
+
+CREATE TABLE `absensi_data_pegawai_instansi` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_pegawai` INT(11) NOT NULL,
+  `id_instansi` INT(11) NOT NULL,
+  `id_kode_kerja` INT(11) NOT NULL,
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  `tahun` YEAR(4) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `update_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` DATETIME DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id_pegawai` (`id_pegawai`),
+  KEY `id_instansi` (`id_instansi`),
+  KEY `id_kode_kerja` (`id_kode_kerja`)
 );

@@ -50,6 +50,8 @@ $current_user_id = $current_user->ID;
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <style type="text/css">
     .wrap-table {
@@ -131,7 +133,7 @@ $current_user_id = $current_user->ID;
                         <th class="text-center">Jabatan</th>
                         <th class="text-center">No Handphone</th>
                         <th class="text-center">Email</th>
-                        <th class="text-center">Admin Instansi</th>
+                        <th class="text-center">Instansi</th>
                         <th class="text-center">Status</th>
                         <th class="text-center" style="width: 150px;">Aksi</th>
                     </tr>
@@ -237,9 +239,11 @@ $current_user_id = $current_user->ID;
                     </div>
 
                     <div class="col-md-4 form-group">
-                        <label>Admin Instansi (Parent Role) <span class="text-danger">*</span></label>
-                        <select id="admin_instansi" class="form-control">
-                            <option value="">-- Pilih Admin Instansi --</option>
+                        <label>Instansi (Parent Role) <span class="text-danger">*</span></label>
+                        <select id="admin_instansi" 
+                                name="admin_instansi[]" 
+                                class="form-control select2" 
+                                multiple="multiple">
                         </select>
                     </div>
 
@@ -283,6 +287,10 @@ $current_user_id = $current_user->ID;
 
         load_master_data(() => {
             get_data_pegawai();
+        });
+        jQuery('#admin_instansi').select2({
+            placeholder: "Pilih Instansi",
+            width: '100%'
         });
     });
 
@@ -653,7 +661,9 @@ $current_user_id = $current_user->ID;
                     jQuery('#tanggal_lahir').val(res.data.tanggal_lahir);
                     jQuery('#lulus').val(res.data.lulus);
                     jQuery('#email').val(res.data.email);
-                    jQuery('#admin_instansi').val(res.data.id_instansi);
+                    jQuery('#admin_instansi')
+                        .val(res.data.id_instansi)
+                        .trigger('change');
                     jQuery('#no_hp').val(res.data.no_hp);
                     jQuery('#tahun').val(res.data.tahun);
 
@@ -693,7 +703,7 @@ $current_user_id = $current_user->ID;
 
     function tambah_data_pegawai() {
         jQuery('#id_data').val('');
-        jQuery('#admin_instansi').val('');
+        jQuery('#admin_instansi').val(null).trigger('change');
         jQuery('#no_hp').val('');
         jQuery('#nama').val('');
         jQuery('#jabatan').val('');

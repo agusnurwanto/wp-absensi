@@ -308,7 +308,10 @@ class Wp_Absen_Public_Pegawai {
                 $current_user = wp_get_current_user();
                 $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
                 if ($is_admin_instansi) {
-                    $where_first .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
+                    $where_first .= $wpdb->prepare(
+                        " AND FIND_IN_SET(%d, id_instansi)",
+                        $current_user->ID
+                    );
                 }
 
                 $sqlTot .= $sql_tot.$where_first;
@@ -338,17 +341,18 @@ class Wp_Absen_Public_Pegawai {
                 $queryRecords = $wpdb->get_results($sqlRec, ARRAY_A);
 
                 foreach ($queryRecords as $recKey => $recVal) {
+
+                    // ===============================
                     // SYNC DATA WITH WORDPRESS USER
+                    // ===============================
                     $wp_user = false;
                     $user_data_changed = false;
                     $update_data = array();
 
-                    // 1. Try to get user by id_user
                     if (!empty($recVal['id_user'])) {
                         $wp_user = get_user_by('id', $recVal['id_user']);
                     }
 
-                    // 2. If not found, try by NIK (username)
                     if (!$wp_user && !empty($recVal['nik'])) {
                         $wp_user = get_user_by('login', $recVal['nik']);
                         if ($wp_user) {
@@ -357,7 +361,6 @@ class Wp_Absen_Public_Pegawai {
                         }
                     }
 
-                    // 3. If still not found, try by Email
                     if (!$wp_user && !empty($recVal['email'])) {
                         $wp_user = get_user_by('email', $recVal['email']);
                         if ($wp_user) {
@@ -366,63 +369,72 @@ class Wp_Absen_Public_Pegawai {
                         }
                     }
 
-                    // 4. If User Found, Compare and Sync
                     if ($wp_user) {
-                        // Check NIK (Username)
+
                         if ($recVal['nik'] !== $wp_user->user_login) {
                             $update_data['nik'] = $wp_user->user_login;
-                            $recVal['nik'] = $wp_user->user_login; // Update local var for display
+                            $recVal['nik'] = $wp_user->user_login;
                             $user_data_changed = true;
                         }
 
-                        // Check Nama (First Name)
-                        // Note: WP first_name might be empty, if so keep DB name? 
-                        // Prompt says "Nama (first name user wordpress)". We assume WP is master.
                         if (!empty($wp_user->first_name) && $recVal['nama'] !== $wp_user->first_name) {
                             $update_data['nama'] = $wp_user->first_name;
                             $recVal['nama'] = $wp_user->first_name;
                             $user_data_changed = true;
                         }
 
-                        // Check Email
                         if ($recVal['email'] !== $wp_user->user_email) {
                             $update_data['email'] = $wp_user->user_email;
                             $recVal['email'] = $wp_user->user_email;
                             $user_data_changed = true;
                         }
 
-                        // Execute Update if needed
                         if ($user_data_changed && !empty($update_data)) {
                             $wpdb->update('absensi_data_pegawai', $update_data, array('id' => $recVal['id']));
                         }
                     }
 
-                    // Get Admin Instansi Name
+                    // ===============================
+                    // GET ADMIN INSTANSI NAME (MULTI)
+                    // ===============================
                     $instansi_name = '-';
+
                     if (!empty($recVal['id_instansi'])) {
-                        $instansi_user = get_userdata($recVal['id_instansi']);
-                        if ($instansi_user) {
-                            $instansi_name = $instansi_user->display_name;
+
+                        $ids = explode(',', $recVal['id_instansi']);
+                        $nama_instansi = array();
+
+                        foreach ($ids as $id_inst) {
+                            $instansi_user = get_userdata($id_inst);
+                            if ($instansi_user) {
+                                $nama_instansi[] = $instansi_user->display_name;
+                            }
+                        }
+
+                        if (!empty($nama_instansi)) {
+                            $instansi_name = implode(', ', $nama_instansi);
                         }
                     }
 
                     $queryRecords[$recKey]['admin_instansi_name'] = $instansi_name;
-                    foreach ($queryRecords as $recKey => $recVal) {
-                        $btn = '';
-                        $btn .= '<a class="btn btn-sm btn-warning" onclick="edit_data(\''.$recVal['id'].'\'); return false;" href="#" title="Edit Data"><i class="dashicons dashicons-edit"></i></a>';
-                        $btn .= ' <a class="btn btn-sm btn-danger" onclick="hapus_data(\''.$recVal['id'].'\'); return false;" href="#" title="Hapus Data"><i class="dashicons dashicons-trash"></i></a>';
 
-                        if ($recVal["active"] == 1) {
-                            $btn .= ' <a class="btn btn-sm btn-secondary" onclick="toggle_status_pegawai(\'' . $recVal["id"] . '\', 0); return false;" href="#" title="Nonaktifkan"><i class="dashicons dashicons-hidden"></i></a>';
-                            $status_badge = '<span class="badge badge-success" style="background-color: #28a745; color: white; padding: 5px 10px; border-radius: 4px;">Aktif</span>';
-                        } else {
-                            $btn .= ' <a class="btn btn-sm btn-success" onclick="toggle_status_pegawai(\'' . $recVal["id"] . '\', 1); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
-                            $status_badge = '<span class="badge badge-secondary" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px;">Tidak Aktif</span>';
-                        }
+                    // ===============================
+                    // BUTTON & STATUS
+                    // ===============================
+                    $btn = '';
+                    $btn .= '<a class="btn btn-sm btn-warning" onclick="edit_data(\''.$recVal['id'].'\'); return false;" href="#" title="Edit Data"><i class="dashicons dashicons-edit"></i></a>';
+                    $btn .= ' <a class="btn btn-sm btn-danger" onclick="hapus_data(\''.$recVal['id'].'\'); return false;" href="#" title="Hapus Data"><i class="dashicons dashicons-trash"></i></a>';
 
-                        $queryRecords[$recKey]["status_badge"] = $status_badge;
-                        $queryRecords[$recKey]['aksi'] = $btn;
+                    if ($recVal["active"] == 1) {
+                        $btn .= ' <a class="btn btn-sm btn-secondary" onclick="toggle_status_pegawai(\''.$recVal["id"].'\',0); return false;" href="#" title="Nonaktifkan"><i class="dashicons dashicons-hidden"></i></a>';
+                        $status_badge = '<span class="badge badge-success" style="background-color:#28a745;color:white;padding:5px 10px;border-radius:4px;">Aktif</span>';
+                    } else {
+                        $btn .= ' <a class="btn btn-sm btn-success" onclick="toggle_status_pegawai(\''.$recVal["id"].'\',1); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
+                        $status_badge = '<span class="badge badge-secondary" style="background-color:#6c757d;color:white;padding:5px 10px;border-radius:4px;">Tidak Aktif</span>';
                     }
+
+                    $queryRecords[$recKey]["status_badge"] = $status_badge;
+                    $queryRecords[$recKey]['aksi'] = $btn;
                 }
 
                 $json_data = array(
@@ -472,10 +484,13 @@ class Wp_Absen_Public_Pegawai {
                 }
 
                 if ($is_admin_instansi) {
-                    if ($existing_data->id_instansi != $current_user->ID) {
+
+                    $ids = explode(',', $existing_data->id_instansi);
+
+                    if (!in_array($current_user->ID, $ids)) {
                         $ret['status'] = 'error';
                         $ret['message'] = 'Anda tidak memiliki hak akses untuk menghapus data ini!';
-                        die(json_encode($ret)); // Stop execution
+                        die(json_encode($ret));
                     }
                 }
 
@@ -514,6 +529,10 @@ class Wp_Absen_Public_Pegawai {
                     FROM absensi_data_pegawai
                     WHERE id=%d
                 ', $_POST['id']), ARRAY_A);
+
+                if (!empty($ret['data']['id_instansi'])) {
+                    $ret['data']['id_instansi'] = explode(',', $ret['data']['id_instansi']);
+                }
             } else {
                 $ret['status']  = 'error';
                 $ret['message'] = 'Api key tidak ditemukan!';
@@ -573,10 +592,14 @@ class Wp_Absen_Public_Pegawai {
                     $lulus = !empty($_POST['lulus']) ? $_POST['lulus'] : null;
 
                     $current_user = wp_get_current_user();
-                    if (in_array('admin_instansi', (array) $current_user->roles)) {
-                        $id_instansi = $current_user->ID;
+                    if (!empty($_POST['admin_instansi'])) {
+                        if (is_array($_POST['admin_instansi'])) {
+                            $id_instansi = implode(',', $_POST['admin_instansi']);
+                        } else {
+                            $id_instansi = $_POST['admin_instansi'];
+                        }
                     } else {
-                        $id_instansi = !empty($_POST['admin_instansi']) ? $_POST['admin_instansi'] : 0;
+                        $id_instansi = '';
                     }
 
                     $user_role = 'pegawai';
@@ -617,7 +640,10 @@ class Wp_Absen_Public_Pegawai {
                         $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
 
                         if ($is_admin_instansi) {
-                            if ($existing_data->id_instansi != $current_user->ID) {
+
+                            $ids = explode(',', $existing_data->id_instansi);
+
+                            if (!in_array($current_user->ID, $ids)) {
                                 $ret['status'] = 'error';
                                 $ret['message'] = 'Anda tidak memiliki hak akses untuk mengedit data ini!';
                                 die(json_encode($ret));
@@ -715,7 +741,6 @@ class Wp_Absen_Public_Pegawai {
         die(json_encode($ret));
     }
 
-
     public function toggle_status_pegawai() {
         global $wpdb;
 
@@ -755,10 +780,12 @@ class Wp_Absen_Public_Pegawai {
                 }
 
                 if (!$is_admin && $is_admin_instansi) {
-                    if ($existing_data->id_instansi != $current_user->ID) {
+
+                    $ids = explode(',', $existing_data->id_instansi);
+
+                    if (!in_array($current_user->ID, $ids)) {
                         $ret['status'] = 'error';
                         $ret['message'] = 'Akses Ditolak! Data ini bukan milik anda.';
-
                         die(json_encode($ret));
                     }
                 }
