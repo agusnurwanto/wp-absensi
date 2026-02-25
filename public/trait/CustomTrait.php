@@ -20,12 +20,20 @@ trait CustomTraitAbsen
 		$newWidth = $maxWidth;
 		$newHeight = (int) ($maxWidth * $ratio);
 
-		$src = match ($mime) {
-			'image/jpeg' => imagecreatefromjpeg($tmpPath),
-			'image/png' => imagecreatefrompng($tmpPath),
-			'image/webp' => imagecreatefromwebp($tmpPath),
-			default => throw new Exception('Tipe gambar tidak didukung'),
-		};
+		$src = null;
+		switch ($mime) {
+			case 'image/jpeg':
+				$src = imagecreatefromjpeg($tmpPath);
+				break;
+			case 'image/png':
+				$src = imagecreatefrompng($tmpPath);
+				break;
+			case 'image/webp':
+				$src = imagecreatefromwebp($tmpPath);
+				break;
+			default:
+				throw new Exception('Tipe gambar tidak didukung');
+		}
 
 		$dst = imagecreatetruecolor($newWidth, $newHeight);
 
@@ -50,11 +58,17 @@ trait CustomTraitAbsen
 
 		$tmpNew = tempnam(sys_get_temp_dir(), 'img_');
 
-		match ($mime) {
-			'image/jpeg' => imagejpeg($dst, $tmpNew, $quality),
-			'image/png' => imagepng($dst, $tmpNew, 7),
-			'image/webp' => imagewebp($dst, $tmpNew, $quality),
-		};
+		switch ($mime) {
+			case 'image/jpeg':
+				imagejpeg($dst, $tmpNew, $quality);
+				break;
+			case 'image/png':
+				imagepng($dst, $tmpNew, 7);
+				break;
+			case 'image/webp':
+				imagewebp($dst, $tmpNew, $quality);
+				break;
+		}
 
 		chmod($tmpNew, 0644);
 
@@ -102,7 +116,7 @@ trait CustomTraitAbsen
 			}
 
 			// ====== IMAGE FRIENDLY FLOW ======
-			if (str_starts_with($file['type'], 'image/')) {
+			if (0 === strpos($file['type'], 'image/')) {
 
 				$processedTmp = self::resizeAndCompressImage(
 					$file['tmp_name'],
