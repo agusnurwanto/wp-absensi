@@ -282,34 +282,66 @@ class Wp_Absen_Public_Pegawai {
                 $params = $columns = $totalRecords = $data = array();
                 $params = $_REQUEST;
 
-                $columns = array( 
-                    0 => 'nik',
-                    1 => 'nama',
-                    2 => 'jabatan', // Insert Jabatan here
-                    3 => 'no_hp',
-                    4 => 'email',
-                    5 => 'id_instansi', // Corrected: Use DB column for SQL select/sort
-                    6 => 'active',
-                    7 => 'id'
+               $columns = array(
+                    0 => 'p.nik',
+                    1 => 'p.nama',
+                    2 => 'p.jabatan',
+                    3 => 'p.no_hp',
+                    4 => 'p.email',
+                    5 => 'p.active',
+                    6 => 'p.id'
                 );
 
                 $where = $sqlTot = $sqlRec = "";
 
                 if (!empty($params['search']['value'])) {
-                    $where .= " AND ( nama LIKE " . $wpdb->prepare('%s', "%" . $params['search']['value'] . "%");  
-                    $where .= " OR nik LIKE " . $wpdb->prepare('%s', "%" . $params['search']['value'] . "%").")";
+                    $search = '%' . $wpdb->esc_like($params['search']['value']) . '%';
+
+                    $where .= $wpdb->prepare(
+                        " AND (p.nama LIKE %s OR p.nik LIKE %s)",
+                        $search,
+                        $search
+                    );
                 }
 
-                $sql_tot = "SELECT count(id) as jml FROM `absensi_data_pegawai`";
-                $sql = "SELECT ".implode(', ', $columns)." FROM `absensi_data_pegawai`";
-                $where_first = $wpdb->prepare(" WHERE deleted_at IS NULL AND tahun = %d", $_POST['tahun']);
+                $sql_tot = "
+                    SELECT COUNT(DISTINCT p.id) as jml
+                    FROM absensi_data_pegawai p
+                    LEFT JOIN absensi_data_pegawai_instansi pi
+                        ON p.id = pi.id_pegawai
+                ";
 
-                // Filter for Admin Instansi
+                $sql = "
+                    SELECT 
+                        p.id,
+                        p.id_user,
+                        p.nik,
+                        p.nama,
+                        p.jabatan,
+                        p.no_hp,
+                        p.email,
+                        p.active
+                    FROM absensi_data_pegawai p
+                    LEFT JOIN absensi_data_pegawai_instansi pi
+                        ON p.id = pi.id_pegawai
+                ";
+
+                $where_first = $wpdb->prepare(
+                    " WHERE p.deleted_at IS NULL 
+                    AND p.tahun = %d",
+                    $_POST['tahun']
+                );
+
+                // ===============================
+                // FILTER ADMIN INSTANSI
+                // ===============================
                 $current_user = wp_get_current_user();
-                $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+                $is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles) 
+                                    && !in_array('administrator', (array) $current_user->roles);
+
                 if ($is_admin_instansi) {
                     $where_first .= $wpdb->prepare(
-                        " AND FIND_IN_SET(%d, id_instansi)",
+                        " AND pi.id_instansi = %d",
                         $current_user->ID
                     );
                 }
@@ -327,7 +359,7 @@ class Wp_Absen_Public_Pegawai {
                 }
 
                 // ORDER BY Logic (Fix for missing order param)
-                $order_clause = " ORDER BY id DESC"; // Default
+                $order_clause = " ORDER BY p.id DESC"; // Default
                 if (isset($params['order'][0]['column']) && isset($columns[$params['order'][0]['column']])) {
                     $order_col = $columns[$params['order'][0]['column']];
                     $order_dir = isset($params['order'][0]['dir']) ? $params['order'][0]['dir'] : 'DESC';
@@ -399,20 +431,28 @@ class Wp_Absen_Public_Pegawai {
                     // ===============================
                     $instansi_name = '-';
 
-                    if (!empty($recVal['id_instansi'])) {
+                    $instansi_rows = $wpdb->get_results(
+                        $wpdb->prepare(
+                            "SELECT id_instansi 
+                            FROM absensi_data_pegawai_instansi 
+                            WHERE id_pegawai = %d AND active = 1",
+                            $recVal['id']
+                        ),
+                        ARRAY_A
+                    );
 
-                        $ids = explode(',', $recVal['id_instansi']);
+                    if (!empty($instansi_rows)) {
                         $nama_instansi = array();
 
-                        foreach ($ids as $id_inst) {
-                            $instansi_user = get_userdata($id_inst);
+                        foreach ($instansi_rows as $row_instansi) {
+                            $instansi_user = get_userdata($row_instansi['id_instansi']);
                             if ($instansi_user) {
                                 $nama_instansi[] = $instansi_user->display_name;
                             }
                         }
 
                         if (!empty($nama_instansi)) {
-                            $instansi_name = implode(', ', $nama_instansi);
+                            $instansi_name = implode('<br>', $nama_instansi); // TANPA KOMA
                         }
                     }
 
@@ -592,22 +632,12 @@ class Wp_Absen_Public_Pegawai {
                     $lulus = !empty($_POST['lulus']) ? $_POST['lulus'] : null;
 
                     $current_user = wp_get_current_user();
-                    if (!empty($_POST['admin_instansi'])) {
-                        if (is_array($_POST['admin_instansi'])) {
-                            $id_instansi = implode(',', $_POST['admin_instansi']);
-                        } else {
-                            $id_instansi = $_POST['admin_instansi'];
-                        }
-                    } else {
-                        $id_instansi = '';
-                    }
 
                     $user_role = 'pegawai';
 
                     $tahun = !empty($_POST['tahun']) ? $_POST['tahun'] : date('Y');
 
                     $data = array(
-                        'id_instansi' => $id_instansi,
                         'nik' => $nik,
 
                         'nama' => $nama,
@@ -640,15 +670,10 @@ class Wp_Absen_Public_Pegawai {
                         $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
 
                         if ($is_admin_instansi) {
-
-                            $ids = explode(',', $existing_data->id_instansi);
-
-                            if (!in_array($current_user->ID, $ids)) {
                                 $ret['status'] = 'error';
                                 $ret['message'] = 'Anda tidak memiliki hak akses untuk mengedit data ini!';
                                 die(json_encode($ret));
                             }
-                        }
 
                         // SYNC TO WORDPRESS USER
                         if (!empty($existing_data->id_user)) {
@@ -668,6 +693,36 @@ class Wp_Absen_Public_Pegawai {
                         $wpdb->update('absensi_data_pegawai', $data, array(
                             'id' => $_POST['id_data']
                         ));
+                        $id_pegawai = intval($_POST['id_data']);
+
+                        $wpdb->update(
+                            'absensi_data_pegawai_instansi',
+                            ['active'    => 0,
+                             'update_at' => current_time('mysql')],
+                            ['id_pegawai' => $id_pegawai]
+                        );
+                        error_log(print_r($_POST['instansi'], true));
+                        // Insert ulang relasi baru
+                        if (!empty($_POST['instansi'])) {
+                            foreach ($_POST['instansi'] as $row) {
+                                $kode_kerja_array = !empty($row['kode_kerja']) ? $row['kode_kerja'] : [0]; // default 0
+                                foreach ($kode_kerja_array as $id_kode_kerja) {
+                                    $wpdb->insert(
+                                        'absensi_data_pegawai_instansi',
+                                        [
+                                            'id_pegawai'    => $id_pegawai,
+                                            'id_instansi'   => intval($row['id_instansi']),
+                                            'id_kode_kerja' => intval($id_kode_kerja),
+                                            'tahun'         => intval($tahun),
+                                            'active'        => 1,
+                                            'created_at'    => current_time('mysql'),
+                                            'update_at'     => current_time('mysql')
+                                        ],
+                                        ['%d','%d','%d','%d','%d','%s','%s']
+                                    );
+                                }
+                            }
+                        }
                         $ret['message'] = 'Berhasil update data!';
                     } else {
                         $cek_nik = $wpdb->get_row($wpdb->prepare('
@@ -710,11 +765,35 @@ class Wp_Absen_Public_Pegawai {
                                     
                                     // Note: The variable $id_instansi logic above handles this ID selection correctly.
                                     // However, $id_instansi is the WP User ID of the Admin Instansi.
-                                    update_user_meta($user_id, 'id_admin_instansi', $id_instansi);
+                                    $admin_instansi = $_POST['admin_instansi'];
+                                    update_user_meta($user_id, 'id_admin_instansi', $admin_instansi);
 
                                     // Proceed to insert into custom table
                                     $data['id_user'] = $user_id;
                                     $wpdb->insert('absensi_data_pegawai', $data);
+
+                                    $id_pegawai = $wpdb->insert_id;
+
+                                    if (!empty($_POST['instansi'])) {
+                                    foreach ($_POST['instansi'] as $row) {
+                                        $kode_kerja_array = !empty($row['kode_kerja']) ? $row['kode_kerja'] : [0]; // default 0
+                                        foreach ($kode_kerja_array as $id_kode_kerja) {
+                                            $wpdb->insert(
+                                                'absensi_data_pegawai_instansi',
+                                                [
+                                                    'id_pegawai'    => $id_pegawai,
+                                                    'id_instansi'   => intval($row['id_instansi']),
+                                                    'id_kode_kerja' => intval($id_kode_kerja),
+                                                    'tahun'         => intval($tahun),
+                                                    'active'        => 1,
+                                                    'created_at'    => current_time('mysql'),
+                                                    'update_at'     => current_time('mysql')
+                                                ],
+                                                ['%d','%d','%d','%d','%d','%s','%s']
+                                            );
+                                        }
+                                    }
+                                }
                                 }
                             }
                         } else {

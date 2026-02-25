@@ -774,6 +774,16 @@ $current_user_id = $current_user->ID;
             });
         }
 
+        let instansiData = [];
+
+        jQuery.each(admin_instansi, function(i, id_instansi){
+            // Jika belum ada kode_kerja, bisa set kosong dulu
+            instansiData.push({
+                id_instansi: id_instansi,
+                kode_kerja: [] // nanti kalau mau dikaitkan dengan kode kerja, isi di sini
+            });
+        });
+
         let tempat_lahir = jQuery('#tempat_lahir').val();
         let tanggal_lahir = jQuery('#tanggal_lahir').val();
         let agama = jQuery('#agama').val();
@@ -816,6 +826,7 @@ $current_user_id = $current_user->ID;
                 'nama_sekolah': nama_sekolah,
                 'lulus': lulus,
                 'email': email,
+                'instansi': instansiData,
                 'tahun': <?php echo $input['tahun_anggaran']; ?>
             },
             success: (res) => {
