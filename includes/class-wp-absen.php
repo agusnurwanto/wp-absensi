@@ -298,6 +298,7 @@ class Wp_Absen
 		$this->loader->add_action('wp_ajax_hapus_data_pegawai_by_id', $plugin_public_pegawai, 'hapus_data_pegawai_by_id');
 		$this->loader->add_action('wp_ajax_copy_data_pegawai', $plugin_public_pegawai, 'copy_data_pegawai');
 		$this->loader->add_action('wp_ajax_toggle_status_pegawai', $plugin_public_pegawai, 'toggle_status_pegawai');
+		$this->loader->add_action('wp_ajax_get_kode_kerja_by_instansi', $plugin_public_pegawai, 'get_kode_kerja_by_instansi');
 
 		$this->loader->add_action('wp_ajax_toggle_status_pegawai', $plugin_public_pegawai, 'toggle_status_pegawai');
 

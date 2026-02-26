@@ -247,6 +247,29 @@ $current_user_id = $current_user->ID;
                         </select>
                     </div>
 
+                    <div class="col-md-12 mt-3">
+                        <div id="container_instansi_kode_kerja" class="hidden">
+                            <hr>
+                            <h6 class="mb-3"><b>Pengaturan Kode Kerja</b></h6>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped align-middle">
+                                    <thead class="thead-light">
+                                        <tr class="text-center">
+                                            <th style="width:40%">Instansi</th>
+                                            <th style="width:60%">
+                                                Kode Kerja (Secondary) 
+                                                <span class="text-danger">*</span>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody_instansi_kode_kerja">
+                                        <!-- Akan diisi via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -291,6 +314,19 @@ $current_user_id = $current_user->ID;
         jQuery('#admin_instansi').select2({
             placeholder: "Pilih Instansi",
             width: '100%'
+        });
+        jQuery('#admin_instansi').on('change', function() {
+
+            let selected = jQuery(this).val();
+
+            if (!selected || selected.length === 0) {
+                jQuery('#container_instansi_kode_kerja').addClass('hidden');
+                jQuery('#tbody_instansi_kode_kerja').html('');
+                return;
+            }
+
+            loadInstansiKodeKerja(selected);
+
         });
     });
 
@@ -843,5 +879,71 @@ $current_user_id = $current_user->ID;
                 jQuery('#wrap-loading').hide();
             }
         });
+    }
+
+    function loadInstansiKodeKerja(instansiList) {
+        jQuery.ajax({
+            url: '<?php echo admin_url('admin-ajax.php'); ?>',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'get_kode_kerja_by_instansi',
+                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                id_instansi: instansiList
+            },
+            beforeSend: function() {
+                jQuery('#tbody_instansi_kode_kerja').html(
+                    '<tr><td colspan="2" class="text-center">Loading...</td></tr>'
+                );
+                jQuery('#container_instansi_kode_kerja').removeClass('hidden');
+            },
+            success: function(res) {
+
+                if (!res.status) {
+                    jQuery('#tbody_instansi_kode_kerja').html('');
+                    jQuery('#container_instansi_kode_kerja').addClass('hidden');
+                    return;
+                }
+
+                let html = '';
+
+                res.data.forEach(function(row, index) {
+
+                    html += `
+                        <tr>
+                            <td>
+                                ${row.nama_instansi}
+                                <input type="hidden" 
+                                    name="instansi[${index}][id_instansi]" 
+                                    value="${row.id_instansi}">
+                            </td>
+                            <td>
+                                <select 
+                                    name="instansi[${index}][id_kode_secondary]" 
+                                    class="form-control"
+                                    required
+                                >
+                                    <option value="">-- pilih kode kerja --</option>
+                    `;
+
+                    row.secondary.forEach(function(sec){
+                        html += `
+                            <option value="${sec.id}">
+                                ${sec.nama_kerja}
+                            </option>
+                        `;
+                    });
+
+                    html += `
+                                </select>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                jQuery('#tbody_instansi_kode_kerja').html(html);
+            }
+        });
+
     }
 </script>
