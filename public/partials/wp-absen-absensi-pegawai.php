@@ -91,9 +91,7 @@ $current_user = wp_get_current_user();
                     </div>
 
                     <div class="d-flex justify-content-center gap-3">
-                        <button id="btn-absen-masuk"
-                            class="btn btn-lg btn-primary w-100"
-                            onclick="submit_absensi('masuk')">
+                        <button id="btn-absen-masuk" class="btn btn-lg btn-primary w-100" onclick="handleSubmitMasuk()">
                             <i class="dashicons dashicons-location-alt"></i>
                             Absen<br>Masuk
                         </button>
@@ -227,18 +225,17 @@ function checkStatusAbsensi() {
                 jQuery('#info-masuk').text(waktu_masuk ? waktu_masuk : '-');
                 jQuery('#info-pulang').text(waktu_pulang ? waktu_pulang : '-');
 
-                if (waktu_masuk) {
-                    // Sudah masuk → tombol masuk dikunci
-                    jQuery('#btn-absen-masuk')
-                        .prop('disabled', true)
-                        .html('<i class="dashicons dashicons-yes"></i> Sudah Absen Masuk');
+                if(response.waktu_masuk){
+                jQuery('#btn-absen-masuk')
+                    .removeClass('btn-primary')
+                    .addClass('btn-warning');
                 }
 
                 if (waktu_pulang) {
                     // Sudah pulang → tombol pulang dikunci
                     jQuery('#btn-absen-pulang')
-                        .prop('disabled', true)
-                        .html('<i class="dashicons dashicons-yes"></i> Sudah Absen Pulang');
+                        .removeClass('btn-primary')
+                        .addClass('btn-warning');
                 }
             } else if (response.status == 'error') {
                 Swal.fire({
@@ -285,7 +282,7 @@ function showError(error) {
     jQuery('#location-status').html(`<span class="text-danger">${msg}</span>`);
 }
 
-function submit_absensi(tipe) {
+function submit_absensi(tipe, force = 0) {
     let id_kode = jQuery('#id_kode_kerja_pegawai').val();
     let koordinat = jQuery('#current_koordinat').val();
 
@@ -317,6 +314,7 @@ function submit_absensi(tipe) {
             fd.append('id_kode_kerja', id_kode);
             fd.append('koordinat', koordinat);
             fd.append('tipe_absen', tipe);
+            fd.append('force', force);
 
             // Append foto if exists
             let fotoInput = jQuery('#foto_lampiran')[0];
@@ -356,6 +354,78 @@ function submit_absensi(tipe) {
                     Swal.fire('Error', 'Terjadi kesalahan koneksi server.', 'error');
                 }
             });
+        }
+    });
+}
+function handleSubmitMasuk() {
+    let id_kode = jQuery('#id_kode_kerja_pegawai').val();
+    if (!id_kode) return;
+
+    // Panggil status absensi dulu
+    jQuery.ajax({
+        url: ajax.url,
+        type: 'post',
+        data: {
+            action: 'check_status_absensi',
+            api_key: ajax.api_key,
+            id_kode_kerja: id_kode
+        },
+        dataType: 'json',
+        success: function(res){
+            let alreadyMasuk = res.waktu_masuk ? true : false;
+
+            if(alreadyMasuk){
+                Swal.fire({
+                    title: 'Anda sudah absen masuk!',
+                    text: "Apakah tetap ingin absen lagi?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, tetap absen',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if(result.isConfirmed){
+                        submit_absensi('masuk', 1); // force = 1
+                    }
+                });
+            } else {
+                submit_absensi('masuk', 0); // force = 0
+            }
+        }
+    });
+}
+function handleSubmitMasuk() {
+    let id_kode = jQuery('#id_kode_kerja_pegawai').val();
+    if (!id_kode) return;
+
+    // Panggil status absensi dulu
+    jQuery.ajax({
+        url: ajax.url,
+        type: 'post',
+        data: {
+            action: 'check_status_absensi',
+            api_key: ajax.api_key,
+            id_kode_kerja: id_kode
+        },
+        dataType: 'json',
+        success: function(res){
+            let alreadyMasuk = res.waktu_masuk ? true : false;
+
+            if(alreadyMasuk){
+                Swal.fire({
+                    title: 'Anda sudah absen masuk!',
+                    text: "Apakah tetap ingin absen lagi?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, tetap absen',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if(result.isConfirmed){
+                        submit_absensi('masuk', 1); // force = 1
+                    }
+                });
+            } else {
+                submit_absensi('masuk', 0); // force = 0
+            }
         }
     });
 }

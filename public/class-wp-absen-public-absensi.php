@@ -142,84 +142,76 @@ class Wp_Absen_Public_Absensi
             $existing = $wpdb->get_row($wpdb->prepare("
                 SELECT id, waktu_masuk, waktu_pulang
                 FROM absensi_harian
-                WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s AND deleted_at IS NULL
+                WHERE id_pegawai = %d 
+                AND id_kode_kerja = %d 
+                AND tanggal = %s
+                AND deleted_at IS NULL
+                ORDER BY id DESC
+                LIMIT 1
             ", $id_pegawai, $id_kode_kerja, $tanggal));
+            $force = isset($_POST['force']) ? intval($_POST['force']) : 0;
 
             if ($tipe_absen == 'masuk') {
-                if ($existing && !empty($existing->waktu_masuk)) {
+
+                if ($existing && !$force) {
+
+                    $ret['status'] = 'error';
                     $ret['message'] = 'Anda sudah absen masuk untuk jadwal ini!';
-                } else {
-                    // Simpan Absen Masuk
-                    $data = array(
-                        'id_pegawai' => $id_pegawai,
-                        'id_instansi' => $id_instansi,
-                        'id_kode_kerja' => $id_kode_kerja,
-                        'tanggal' => $tanggal,
-                        'waktu_masuk' => $waktu_sekarang,
-                        'koordinat_masuk' => $koordinat,
-                        'status' => 'Hadir', // Default Hadir, nanti bisa logic telat
-                        'tahun' => $tahun
-                    );
-
-                    // Add foto masuk if uploaded
-                    if (!empty($foto_lampiran)) {
-                        $data['foto_masuk'] = $foto_lampiran;
-                    }
-
-                    if ($existing) {
-                        $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
-                    } else {
-                        $wpdb->insert('absensi_harian', $data);
-                    }
-                    $ret['status'] = 'success';
-                    $ret['message'] = 'Berhasil Absen Masuk pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
+                    die(json_encode($ret));
                 }
+
+                $data = array(
+                    'id_pegawai' => $id_pegawai,
+                    'id_instansi' => $id_instansi,
+                    'id_kode_kerja' => $id_kode_kerja,
+                    'tanggal' => $tanggal,
+                    'waktu_masuk' => $waktu_sekarang,
+                    'koordinat_masuk' => $koordinat,
+                    'status' => 'Hadir',
+                    'tahun' => $tahun
+                );
+
+                if (!empty($foto_lampiran)) {
+                    $data['foto_masuk'] = $foto_lampiran;
+                }
+
+                $wpdb->insert('absensi_harian', $data);
+
+                $ret['status'] = 'success';
+                $ret['message'] = 'Berhasil Absen Masuk pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
+
             } elseif ($tipe_absen == 'pulang') {
+
                 if (!$existing || empty($existing->waktu_masuk)) {
+
+                    $ret['status'] = 'error';
                     $ret['message'] = 'Anda belum absen masuk!';
-                } elseif (!empty($existing->waktu_pulang)) {
-                    // Update Pulang (Allow overwrite or block? Assume block for now, or allow update)
-                    // Let's allow update for now as "Update Pulang"
-                    $data = array(
-                        'waktu_pulang' => $waktu_sekarang,
-                        'koordinat_pulang' => $koordinat
-                    );
-
-                    // Add foto pulang if uploaded
-                    if (!empty($foto_lampiran)) {
-                        $data['foto_pulang'] = $foto_lampiran;
-                    }
-
-                    $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
-                    $ret['status'] = 'success';
-                    $ret['message'] = 'Berhasil Update Absen Pulang pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
-                } else {
-                    // First time pulang
-                    $data = array(
-                        'waktu_pulang' => $waktu_sekarang,
-                        'koordinat_pulang' => $koordinat
-                    );
-
-                    // Add foto pulang if uploaded
-                    if (!empty($foto_lampiran)) {
-                        $data['foto_pulang'] = $foto_lampiran;
-                    }
-
-                    $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
-                    $ret['status'] = 'success';
-                    $ret['message'] = 'Berhasil Absen Pulang pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
+                    die(json_encode($ret));
                 }
+
+                $data = array(
+                    'waktu_pulang' => $waktu_sekarang,
+                    'koordinat_pulang' => $koordinat
+                );
+
+                if (!empty($foto_lampiran)) {
+                    $data['foto_pulang'] = $foto_lampiran;
+                }
+
+                $wpdb->update('absensi_harian', $data, array('id' => $existing->id));
+
+                $ret['status'] = 'success';
+                $ret['message'] = 'Berhasil Absen Pulang pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
+
             } else {
+
+                $ret['status'] = 'error';
                 $ret['message'] = 'Tipe Absen tidak valid!';
             }
-
-        } else {
-            $ret['message'] = 'Invalid API Key';
+        
         }
-
         die(json_encode($ret));
     }
-    
     // Check Status for Today (Helper for Frontend UI)
     public function check_status_absensi() {
         global $wpdb;
@@ -244,7 +236,12 @@ class Wp_Absen_Public_Absensi
                 $data = $wpdb->get_row($wpdb->prepare("
                     SELECT waktu_masuk, waktu_pulang 
                     FROM absensi_harian 
-                    WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s AND deleted_at IS NULL
+                    WHERE id_pegawai = %d 
+                    AND id_kode_kerja = %d 
+                    AND tanggal = %s 
+                    AND deleted_at IS NULL
+                    ORDER BY id DESC
+                    LIMIT 1
                 ", $pegawai_id, $id_kode_kerja, $tanggal));
                 
                 if ($data) {
