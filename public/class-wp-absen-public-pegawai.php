@@ -594,16 +594,40 @@ class Wp_Absen_Public_Pegawai {
         );
 
         if (!empty($_POST)) {
-            if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
-                $ret['data'] = $wpdb->get_row($wpdb->prepare('
+            if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
+
+                $pegawai = $wpdb->get_row($wpdb->prepare('
                     SELECT *
                     FROM absensi_data_pegawai
-                    WHERE id=%d
+                    WHERE id = %d
                 ', $_POST['id']), ARRAY_A);
 
-                if (!empty($ret['data']['id_instansi'])) {
-                    $ret['data']['id_instansi'] = explode(',', $ret['data']['id_instansi']);
+                if (!$pegawai) {
+                    $ret['status'] = 'error';
+                    $ret['message'] = 'Data tidak ditemukan!';
+                    die(json_encode($ret));
                 }
+
+                // 🔥 Ambil semua instansi dari tabel relasi
+                $instansi_rows = $wpdb->get_results($wpdb->prepare('
+                    SELECT id_instansi
+                    FROM absensi_data_pegawai_instansi
+                    WHERE id_pegawai = %d
+                    AND active = 1
+                ', $_POST['id']), ARRAY_A);
+
+                $id_instansi = array();
+
+                if (!empty($instansi_rows)) {
+                    foreach ($instansi_rows as $row) {
+                        $id_instansi[] = $row['id_instansi'];
+                    }
+                }
+
+                $pegawai['id_instansi'] = $id_instansi;
+
+                $ret['data'] = $pegawai;
+
             } else {
                 $ret['status']  = 'error';
                 $ret['message'] = 'Api key tidak ditemukan!';
@@ -945,6 +969,67 @@ class Wp_Absen_Public_Pegawai {
         }
 
         die(json_encode($ret));
+    }
+
+    function get_kode_kerja_by_instansi() {
+
+        global $wpdb;
+
+        $ret = array(
+            'status' => false,
+            'data'   => array()
+        );
+
+        if (empty($_POST['id_instansi'])) {
+            wp_send_json($ret);
+        }
+
+        $user_id = $_POST['id_instansi'];
+        $id_instansi_list = array_map('intval', $_POST['id_instansi']);
+
+        foreach ($id_instansi_list as $id_instansi) {
+            // 1️⃣ Ambil instansi milik user
+            $instansi = $wpdb->get_row(
+                $wpdb->prepare("
+                    SELECT id, nama_instansi, id_user
+                    FROM absensi_data_instansi
+                    WHERE id_user = %d
+                    AND active = 1
+                    AND deleted_at IS NULL
+                ", $id_instansi, $user_id),
+                ARRAY_A
+            );
+
+            if (empty($instansi)) {
+                continue;
+            }
+
+            // 2️⃣ Ambil secondary kode kerja
+            $secondary = $wpdb->get_results(
+                $wpdb->prepare("
+                    SELECT id, nama_kerja, id_instansi
+                    FROM absensi_data_kerja
+                    WHERE id_instansi = %d
+                    AND jenis = 'Secondary'
+                    AND active = 1
+                    AND deleted_at IS NULL
+                    ORDER BY nama_kerja ASC
+                ", $id_instansi, $user_id),
+                ARRAY_A
+            );
+
+            $ret['data'][] = array(
+                'id_instansi'   => $instansi['id'],
+                'nama_instansi' => $instansi['nama_instansi'],
+                'secondary'     => $secondary
+            );
+        }
+
+        if (!empty($ret['data'])) {
+            $ret['status'] = true;
+        }
+
+        wp_send_json($ret);
     }
 
     public function toggle_status_pegawai() {
