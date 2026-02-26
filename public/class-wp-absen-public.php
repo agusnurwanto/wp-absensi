@@ -241,7 +241,7 @@ class Wp_Absen_Public
 			'no_key' => 1,
 			'post_status' => 'publish'
 		));
-		$get_data_kerja .= '
+		$get_data_kerja = '
 			<a target="_blank"
 			href="' . esc_url($management_data_kerja['url']) . '"
 			class="btn btn-primary mb-3">

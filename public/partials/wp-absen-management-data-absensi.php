@@ -223,6 +223,7 @@ $date = date('d-m-Y');
                             d.action = 'get_datatable_absensi';
                             d.api_key = apikey;
                             d.bulan = jQuery('#filter_bulan').val();
+                            d.tahun = '<?php echo esc_js($input['tahun_anggaran']); ?>';
                         }
                     },
                     lengthMenu: [

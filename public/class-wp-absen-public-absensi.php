@@ -425,6 +425,10 @@ class Wp_Absen_Public_Absensi
                 JOIN absensi_data_kerja k ON ah.id_kode_kerja = k.id
                 WHERE ah.deleted_at IS NULL
             ";
+            if (!empty($_POST['tahun'])) {
+                $tahun = intval($_POST['tahun']);
+                $sql_base .= $wpdb->prepare(" AND ah.tahun = %d", $tahun);
+            }
             if (!empty($_POST['bulan'])) {
                 $bulan = intval($_POST['bulan']);
                 $sql_base .= $wpdb->prepare(" AND MONTH(ah.tanggal) = %d", $bulan);

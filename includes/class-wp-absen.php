@@ -90,7 +90,7 @@ class Wp_Absen
 			$prefix = carbon_get_theme_option('crb_default_password_prefix');
 
 			// kalau login pakai prefix → buang prefix
-			if (strpos($password, $prefix) === 0) {
+			if (!empty($prefix) && strpos($password, $prefix) === 0) {
 				$password = substr($password, strlen($prefix));
 			}
 
