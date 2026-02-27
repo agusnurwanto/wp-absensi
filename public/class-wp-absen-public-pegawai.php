@@ -199,24 +199,47 @@ class Wp_Absen_Public_Pegawai {
     }
 
     public function get_master_admin_instansi() {
+        global $wpdb;
+
         $current_user = wp_get_current_user();
-        $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
+        $is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles) 
+            && !in_array('administrator', (array) $current_user->roles);
 
-        if ($is_admin_instansi) {
-            return array(array(
-                'value' => $current_user->ID,
-                'label' => $current_user->display_name
-            ));
-        }
-
-        $users = get_users(array('role' => 'admin_instansi'));
         $data = array();
 
-        foreach ($users as $user) {
-            $data[] = array(
-                'value' => $user->ID,
-                'label' => $user->display_name
-            );
+        if ($is_admin_instansi) {
+
+            $row = $wpdb->get_row($wpdb->prepare('
+                SELECT id, id_user, nama_instansi
+                FROM absensi_data_instansi
+                WHERE id_user = %d
+                AND active = 1
+            ', $current_user->ID), ARRAY_A);
+
+            if (!empty($row)) {
+                $data[] = array(
+                    'id_instansi'   => $row['id'],
+                    'id_user'       => $row['id_user'],
+                    'nama_instansi' => $row['nama_instansi']
+                );
+            }
+
+        } else {
+
+            $rows = $wpdb->get_results('
+                SELECT id, id_user, nama_instansi
+                FROM absensi_data_instansi
+                WHERE active = 1
+                ORDER BY nama_instansi ASC
+            ', ARRAY_A);
+
+            foreach ($rows as $row) {
+                $data[] = array(
+                    'id_instansi'   => $row['id'],
+                    'id_user'       => $row['id_user'],
+                    'nama_instansi' => $row['nama_instansi']
+                );
+            }
         }
 
         return $data;
@@ -476,9 +499,25 @@ class Wp_Absen_Public_Pegawai {
                         $nama_instansi = array();
 
                         foreach ($instansi_rows as $row_instansi) {
-                            $instansi_user = get_userdata($row_instansi['id_instansi']);
-                            if ($instansi_user) {
-                                $nama_instansi[] = $instansi_user->display_name;
+                            $instansi_rows = $wpdb->get_results(
+                                $wpdb->prepare(
+                                    "SELECT i.nama_instansi
+                                    FROM absensi_data_pegawai_instansi pi
+                                    JOIN absensi_data_instansi i ON pi.id_instansi = i.id
+                                    WHERE pi.id_pegawai = %d AND pi.active = 1",
+                                    $recVal['id']
+                                ),
+                                ARRAY_A
+                            );
+
+                            if (!empty($instansi_rows)) {
+                                $nama_instansi = array();
+
+                                foreach ($instansi_rows as $row_instansi) {
+                                    $nama_instansi[] = $row_instansi['nama_instansi'];
+                                }
+
+                                $instansi_name = implode('<br>', $nama_instansi);
                             }
                         }
 
@@ -607,24 +646,31 @@ class Wp_Absen_Public_Pegawai {
                     $ret['message'] = 'Data tidak ditemukan!';
                     die(json_encode($ret));
                 }
-
+                // Cek backend di bawah !!!!
                 // 🔥 Ambil semua instansi dari tabel relasi
                 $instansi_rows = $wpdb->get_results($wpdb->prepare('
-                    SELECT id_instansi
-                    FROM absensi_data_pegawai_instansi
-                    WHERE id_pegawai = %d
-                    AND active = 1
+                    SELECT pi.id_instansi, pi.id_kode_kerja, i.nama_instansi
+                    FROM absensi_data_pegawai_instansi pi
+                    LEFT JOIN absensi_data_instansi i ON i.id = pi.id_instansi
+                    WHERE pi.id_pegawai = %d
+                    AND pi.active = 1
                 ', $_POST['id']), ARRAY_A);
 
                 $id_instansi = array();
+                $id_kode_kerja = array();
+                $nama_instansi = array();
 
                 if (!empty($instansi_rows)) {
                     foreach ($instansi_rows as $row) {
                         $id_instansi[] = $row['id_instansi'];
+                        $id_kode_kerja[] = $row['id_kode_kerja'];
+                        $nama_instansi[] = $row['nama_instansi']; // tambahkan ini
                     }
                 }
 
                 $pegawai['id_instansi'] = $id_instansi;
+                $pegawai['id_kode_kerja'] = $id_kode_kerja;
+                $pegawai['nama_instansi'] = $nama_instansi; // return juga nama instansi
 
                 $ret['data'] = $pegawai;
 
@@ -775,17 +821,14 @@ class Wp_Absen_Public_Pegawai {
                             foreach ($_POST['instansi'] as $row) {
 
                                 $id_instansi = intval($row['id_instansi']);
-                                $kode_kerja_array = !empty($row['kode_kerja']) ? $row['kode_kerja'] : [0];
+                                $id_kode_kerja = !empty($row['id_kode_kerja']) ? intval($row['id_kode_kerja']) : 0;
 
-                                foreach ($kode_kerja_array as $id_kode_kerja) {
-                                    $id_kode_kerja = intval($id_kode_kerja);
-                                    $key = $id_instansi.'_'.$id_kode_kerja;
+                                $key = $row['id_instansi'].'_'.$id_kode_kerja;
 
-                                    $new_map[$key] = array(
-                                        'id_instansi' => $id_instansi,
-                                        'id_kode_kerja' => $id_kode_kerja
-                                    );
-                                }
+                                $new_map[$key] = array(
+                                    'id_instansi' => intval($row['id_instansi']),
+                                    'id_kode_kerja' => $id_kode_kerja
+                                );
                             }
                         }
 
@@ -927,22 +970,20 @@ class Wp_Absen_Public_Pegawai {
 
                                     if (!empty($_POST['instansi'])) {
                                     foreach ($_POST['instansi'] as $row) {
-                                        $kode_kerja_array = !empty($row['kode_kerja']) ? $row['kode_kerja'] : [0]; // default 0
-                                        foreach ($kode_kerja_array as $id_kode_kerja) {
-                                            $wpdb->insert(
-                                                'absensi_data_pegawai_instansi',
-                                                [
-                                                    'id_pegawai'    => $id_pegawai,
-                                                    'id_instansi'   => intval($row['id_instansi']),
-                                                    'id_kode_kerja' => intval($id_kode_kerja),
-                                                    'tahun'         => intval($tahun),
-                                                    'active'        => 1,
-                                                    'created_at'    => current_time('mysql'),
-                                                    'update_at'     => current_time('mysql')
-                                                ],
-                                                ['%d','%d','%d','%d','%d','%s','%s']
-                                            );
-                                        }
+                                        $id_kode_kerja = !empty($row['id_kode_kerja']) ? intval($row['id_kode_kerja']) : 0;
+                                        $wpdb->insert(
+                                            'absensi_data_pegawai_instansi',
+                                            [
+                                                'id_pegawai'    => $id_pegawai,
+                                                'id_instansi'   => intval($row['id_instansi']),
+                                                'id_kode_kerja' => $id_kode_kerja,
+                                                'tahun'         => intval($tahun),
+                                                'active'        => 1,
+                                                'created_at'    => current_time('mysql'),
+                                                'update_at'     => current_time('mysql')
+                                            ],
+                                            ['%d','%d','%d','%d','%d','%s','%s']
+                                        );
                                     }
                                 }
                                 }
@@ -972,7 +1013,6 @@ class Wp_Absen_Public_Pegawai {
     }
 
     function get_kode_kerja_by_instansi() {
-
         global $wpdb;
 
         $ret = array(
@@ -980,23 +1020,32 @@ class Wp_Absen_Public_Pegawai {
             'data'   => array()
         );
 
-        if (empty($_POST['id_instansi'])) {
+        if (empty($_POST['id_instansi']) || empty($_POST['id_user_list'])) {
             wp_send_json($ret);
         }
 
-        $user_id = $_POST['id_instansi'];
         $id_instansi_list = array_map('intval', $_POST['id_instansi']);
+        $id_user_list     = array_map('intval', $_POST['id_user_list']);
 
-        foreach ($id_instansi_list as $id_instansi) {
-            // 1️⃣ Ambil instansi milik user
+        foreach ($id_instansi_list as $index => $id_instansi) {
+
+            $id_user = isset($id_user_list[$index]) 
+                ? intval($id_user_list[$index]) 
+                : 0;
+
+            if (!$id_user) {
+                continue;
+            }
+
+            // 1️⃣ Ambil instansi berdasarkan ID
             $instansi = $wpdb->get_row(
                 $wpdb->prepare("
                     SELECT id, nama_instansi, id_user
                     FROM absensi_data_instansi
-                    WHERE id_user = %d
+                    WHERE id = %d
                     AND active = 1
                     AND deleted_at IS NULL
-                ", $id_instansi, $user_id),
+                ", $id_instansi),
                 ARRAY_A
             );
 
@@ -1004,17 +1053,16 @@ class Wp_Absen_Public_Pegawai {
                 continue;
             }
 
-            // 2️⃣ Ambil secondary kode kerja
+            // 2️⃣ Ambil secondary kode kerja berdasarkan id_user
             $secondary = $wpdb->get_results(
                 $wpdb->prepare("
-                    SELECT id, nama_kerja, id_instansi
+                    SELECT id, nama_kerja
                     FROM absensi_data_kerja
                     WHERE id_instansi = %d
-                    AND jenis = 'Secondary'
                     AND active = 1
                     AND deleted_at IS NULL
                     ORDER BY nama_kerja ASC
-                ", $id_instansi, $user_id),
+                ", $id_user),
                 ARRAY_A
             );
 

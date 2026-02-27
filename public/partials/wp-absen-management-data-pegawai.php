@@ -476,12 +476,14 @@ $current_user_id = $current_user->ID;
         });
 
         let admin_instansi = jQuery('#admin_instansi');
-        admin_instansi.find('option:not(:first)').remove();
+        admin_instansi.find('option').remove();
+
         if (masterData.admin_instansi) {
             jQuery.each(masterData.admin_instansi, (i, item) => {
                 admin_instansi.append(jQuery('<option>', {
-                    value: item.value,
-                    text: item.label
+                    value: item.id_instansi,
+                    text: item.nama_instansi,
+                    'data-id_user': item.id_user
                 }));
             });
         }
@@ -811,13 +813,31 @@ $current_user_id = $current_user->ID;
         }
 
         let instansiData = [];
+        jQuery('#tbody_instansi_kode_kerja tr').each(function(){
 
-        jQuery.each(admin_instansi, function(i, id_instansi){
-            // Jika belum ada kode_kerja, bisa set kosong dulu
+            let id_instansi = jQuery(this)
+                .find('input[name*="[id_instansi]"]')
+                .val();
+
+            let id_kode_kerja = jQuery(this)
+                .find('select[name*="[id_kode_kerja]"]')
+                .val();
+
+            if (!id_kode_kerja) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: 'Kode Kerja wajib dipilih!'
+                });
+                instansiData = [];
+                return false; // stop loop
+            }
+
             instansiData.push({
                 id_instansi: id_instansi,
-                kode_kerja: [] // nanti kalau mau dikaitkan dengan kode kerja, isi di sini
+                id_kode_kerja: id_kode_kerja
             });
+
         });
 
         let tempat_lahir = jQuery('#tempat_lahir').val();
@@ -882,6 +902,13 @@ $current_user_id = $current_user->ID;
     }
 
     function loadInstansiKodeKerja(instansiList) {
+         console.log('LOAD INSTANSI DIPANGGIL', instansiList);
+        let id_user_list = [];
+
+        jQuery('#admin_instansi option:selected').each(function(){
+            id_user_list.push(jQuery(this).data('id_user'));
+        });   
+        console.log('ID USER LIST:', id_user_list);
         jQuery.ajax({
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
             type: 'POST',
@@ -889,7 +916,8 @@ $current_user_id = $current_user->ID;
             data: {
                 action: 'get_kode_kerja_by_instansi',
                 'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
-                id_instansi: instansiList
+                id_instansi: instansiList,
+                id_user_list: id_user_list
             },
             beforeSend: function() {
                 jQuery('#tbody_instansi_kode_kerja').html(
@@ -919,7 +947,7 @@ $current_user_id = $current_user->ID;
                             </td>
                             <td>
                                 <select 
-                                    name="instansi[${index}][id_kode_secondary]" 
+                                    name="instansi[${index}][id_kode_kerja]" 
                                     class="form-control"
                                     required
                                 >
