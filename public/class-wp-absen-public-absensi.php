@@ -45,35 +45,39 @@ class Wp_Absen_Public_Absensi
      */
     public function get_valid_kode_kerja() {
         global $wpdb;
-        $ret = array('status' => 'success', 'data' => array());
-        
-        if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
-            $current_user = wp_get_current_user();
-            $id_instansi = 0;
 
-            // Check if Admin requesting for specific Instansi/Pegawai
-            if ((in_array('administrator', (array)$current_user->roles) || in_array('admin_instansi', (array)$current_user->roles)) && !empty($_POST['id_instansi'])) {
-                $id_instansi = intval($_POST['id_instansi']);
-            } 
-            // Else derive from current user (Employee context)
-            else {
-                $id_instansi = get_user_meta($current_user->ID, 'id_admin_instansi', true);
-                if (!$id_instansi && in_array('admin_instansi', (array) $current_user->roles)) {
-                    $id_instansi = $current_user->ID;
-                }
-            }
+        $ret = array(
+            'status' => 'success',
+            'debug'  => array(),
+            'data'   => array()
+        );
 
-            if ($id_instansi) {
-                $results = $wpdb->get_results($wpdb->prepare("
-                    SELECT id, nama_kerja, jam_masuk, jam_pulang, jenis
-                    FROM absensi_data_kerja
-                    WHERE id_instansi = %d AND active = 1 AND deleted_at IS NULL
-                ", $id_instansi), ARRAY_A);
-                
-                $ret['data'] = $results;
-            }
+        $current_user = wp_get_current_user();
+        $wp_user_id = $current_user->ID;
+
+        $pegawai_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+            $wp_user_id
+        ));
+
+        $ret['debug']['wp_user_id'] = $wp_user_id;
+        $ret['debug']['pegawai_id_ditemukan'] = $pegawai_id;
+
+        if (!$pegawai_id) {
+            die(json_encode($ret));
         }
-        die(json_encode($ret)); 
+
+        $results = $wpdb->get_results($wpdb->prepare("
+            SELECT k.id, k.nama_kerja
+            FROM absensi_data_pegawai_instansi p
+            JOIN absensi_data_kerja k ON p.id_kode_kerja = k.id
+            WHERE p.id_pegawai = %d
+            AND p.active = 1
+        ", $pegawai_id), ARRAY_A);
+
+        $ret['data'] = $results;
+
+        die(json_encode($ret));
     }
 
     /**
@@ -81,14 +85,18 @@ class Wp_Absen_Public_Absensi
      */
     public function submit_absensi_pegawai() {
         global $wpdb;
+
         $ret = array('status' => 'error', 'message' => 'Terjadi Kesalahan!');
 
         if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
+
             $current_user = wp_get_current_user();
             $id_pegawai_user = $current_user->ID;
-
-            // Retrieve Pegawai ID from absensi_data_pegawai using id_user
-            $pegawai = $wpdb->get_row($wpdb->prepare("SELECT id, id_instansi FROM absensi_data_pegawai WHERE id_user = %d", $id_pegawai_user));
+            
+            $pegawai = $wpdb->get_row($wpdb->prepare(
+                "SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+                $id_pegawai_user
+            ));
 
             if (!$pegawai) {
                 $ret['message'] = 'Data Pegawai tidak ditemukan!';
@@ -96,37 +104,67 @@ class Wp_Absen_Public_Absensi
             }
 
             $id_pegawai = $pegawai->id;
-            $id_instansi = $pegawai->id_instansi;
+            
+            $data_instansi = $wpdb->get_row($wpdb->prepare("
+                SELECT id_instansi
+                FROM absensi_data_pegawai_instansi
+                WHERE id_pegawai = %d
+                AND active = 1
+                LIMIT 1
+            ", $id_pegawai));
+
+            if (!$data_instansi) {
+                $ret['message'] = 'Instansi tidak ditemukan untuk pegawai ini!';
+                die(json_encode($ret));
+            }
+
+            $id_instansi = $data_instansi->id_instansi;
+            
             $id_kode_kerja = isset($_POST['id_kode_kerja']) ? intval($_POST['id_kode_kerja']) : 0;
             $koordinat = isset($_POST['koordinat']) ? sanitize_text_field($_POST['koordinat']) : '';
-            $tipe_absen = isset($_POST['tipe_absen']) ? sanitize_text_field($_POST['tipe_absen']) : ''; // 'masuk' or 'pulang'
+            $tipe_absen = isset($_POST['tipe_absen']) ? sanitize_text_field($_POST['tipe_absen']) : '';
             $tanggal = current_time('Y-m-d');
             $waktu_sekarang = current_time('mysql');
             $tahun = current_time('Y');
+            $force = isset($_POST['force']) ? intval($_POST['force']) : 0;
 
             if (empty($id_kode_kerja)) {
                 $ret['message'] = 'Kode Kerja harus dipilih!';
                 die(json_encode($ret));
             }
+            
+            $cek_kode = $wpdb->get_var($wpdb->prepare("
+                SELECT COUNT(*) 
+                FROM absensi_data_pegawai_instansi
+                WHERE id_pegawai = %d
+                AND id_kode_kerja = %d
+                AND active = 1
+            ", $id_pegawai, $id_kode_kerja));
 
-            // Handle Foto Upload
+            if (!$cek_kode) {
+                $ret['message'] = 'Kode kerja tidak valid untuk pegawai ini!';
+                die(json_encode($ret));
+            }
+            
             $foto_lampiran = '';
+
             if (!empty($_FILES['foto_lampiran']['name'])) {
+
                 $target_path = ABSEN_PLUGIN_PATH . 'public/img/absensi/';
                 $ext = ['jpg', 'jpeg', 'png'];
 
-                // Ensure directory exists
                 if (!file_exists($target_path)) {
                     mkdir($target_path, 0755, true);
                 }
 
                 $prefix = 'absensi_' . $tipe_absen . '_' . $id_pegawai . '_' . time();
+
                 $upload = self::uploadFileAbsen(
                     get_option(ABSEN_APIKEY),
                     $target_path,
                     $_FILES['foto_lampiran'],
                     $ext,
-                    2000000, // 2MB max
+                    2000000,
                     $prefix
                 );
 
@@ -137,8 +175,7 @@ class Wp_Absen_Public_Absensi
                     die(json_encode($ret));
                 }
             }
-
-            // Check existing attendance for today & code
+            
             $existing = $wpdb->get_row($wpdb->prepare("
                 SELECT id, waktu_masuk, waktu_pulang
                 FROM absensi_harian
@@ -146,45 +183,47 @@ class Wp_Absen_Public_Absensi
                 AND id_kode_kerja = %d 
                 AND tanggal = %s
                 AND deleted_at IS NULL
+                AND waktu_pulang IS NULL
                 ORDER BY id DESC
-                LIMIT 1
             ", $id_pegawai, $id_kode_kerja, $tanggal));
-            $force = isset($_POST['force']) ? intval($_POST['force']) : 0;
 
             if ($tipe_absen == 'masuk') {
 
-                if ($existing && !$force) {
-
-                    $ret['status'] = 'error';
-                    $ret['message'] = 'Anda sudah absen masuk untuk jadwal ini!';
-                    die(json_encode($ret));
-                }
-
                 $data = array(
                     'id_pegawai' => $id_pegawai,
-                    'id_instansi' => $id_instansi,
+                    'id_instansi' => $id_instansi, // 🔥 SUDAH AMAN
                     'id_kode_kerja' => $id_kode_kerja,
                     'tanggal' => $tanggal,
                     'waktu_masuk' => $waktu_sekarang,
                     'koordinat_masuk' => $koordinat,
                     'status' => 'Hadir',
-                    'tahun' => $tahun
+                    'tahun' => $tahun,
+                    'created_at' => current_time('mysql')
                 );
 
                 if (!empty($foto_lampiran)) {
                     $data['foto_masuk'] = $foto_lampiran;
                 }
+                $already_masuk = false;
+                if ($existing) {
+                    $already_masuk = true;
+                }
+                $insert = $wpdb->insert('absensi_harian', $data);
 
-                $wpdb->insert('absensi_harian', $data);
-
+                if ($insert === false) {
+                    $ret['message'] = 'Gagal simpan ke database!';
+                    $ret['debug'] = $wpdb->last_error;
+                } else {
+                    $ret['status'] = 'success';
+                    $ret['message'] = 'Berhasil Absen Masuk pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
+                }
                 $ret['status'] = 'success';
+                $ret['already_masuk'] = $already_masuk;
                 $ret['message'] = 'Berhasil Absen Masuk pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
-
+            
             } elseif ($tipe_absen == 'pulang') {
 
                 if (!$existing || empty($existing->waktu_masuk)) {
-
-                    $ret['status'] = 'error';
                     $ret['message'] = 'Anda belum absen masuk!';
                     die(json_encode($ret));
                 }
@@ -204,12 +243,10 @@ class Wp_Absen_Public_Absensi
                 $ret['message'] = 'Berhasil Absen Pulang pada ' . date_i18n('H:i', strtotime($waktu_sekarang));
 
             } else {
-
-                $ret['status'] = 'error';
                 $ret['message'] = 'Tipe Absen tidak valid!';
             }
-        
         }
+
         die(json_encode($ret));
     }
     // Check Status for Today (Helper for Frontend UI)
@@ -231,6 +268,20 @@ class Wp_Absen_Public_Absensi
                 $ret['message'] = 'Data Pegawai tidak ditemukan untuk User ini!';
                 die(json_encode($ret));
             }
+            $data_instansi = $wpdb->get_row($wpdb->prepare("
+                SELECT id_instansi 
+                FROM absensi_data_pegawai_instansi
+                WHERE id_pegawai = %d
+                AND active = 1
+                LIMIT 1
+            ", $pegawai_id));
+
+            if (!$data_instansi) {
+                $ret['message'] = 'Instansi pegawai tidak ditemukan!';
+                die(json_encode($ret));
+            }
+
+            $id_instansi = $data_instansi->id_instansi;
 
             if ($id_kode_kerja) {
                 $data = $wpdb->get_row($wpdb->prepare("
@@ -252,8 +303,6 @@ class Wp_Absen_Public_Absensi
         }
         die(json_encode($ret));
     }
-
-
 
     /**
      * Get Data Absensi By ID for Edit
@@ -554,7 +603,7 @@ class Wp_Absen_Public_Absensi
                     $foto_pulang_html .= '
                     <div class="aksi-lokasi" style="margin-top:6px;">
                         <a target="_blank"
-                        href="https://www.google.com/maps?q='.$koordinat.'"
+                        href="https://www.google.com/maps?q='.$koordinat_pulang.'"
                         class="btn btn-sm btn-success">
                         🗺️ Lihat Lokasi
                         </a>
@@ -618,7 +667,7 @@ class Wp_Absen_Public_Absensi
                     k.nama_kerja
                 FROM absensi_harian ah
                 JOIN absensi_data_pegawai p ON ah.id_pegawai = p.id
-                JOIN absensi_data_kerja k ON ah.id_kode_kerja = k.id
+                LEFT JOIN absensi_data_kerja k ON ah.id_kode_kerja = k.id
                 WHERE ah.deleted_at IS NULL
             ";
 
