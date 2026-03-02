@@ -133,7 +133,7 @@ $current_user_id = $current_user->ID;
                         <th class="text-center">Jabatan</th>
                         <th class="text-center">No Handphone</th>
                         <th class="text-center">Email</th>
-                        <th class="text-center">Instansi</th>
+                        <th class="text-center">Instansi & Kode Kerja</th>
                         <th class="text-center">Status</th>
                         <th class="text-center" style="width: 150px;">Aksi</th>
                     </tr>
@@ -525,27 +525,27 @@ $current_user_id = $current_user->ID;
                 },
                 "columns": [{
                         "data": 'nik',
-                        className: "text-center"
+                        className: "text-left"
                     },
                     {
                         "data": 'nama',
-                        className: "text-center"
+                        className: "text-left"
                     },
                     {
                         "data": 'jabatan',
-                        className: "text-center"
+                        className: "text-left"
                     },
                     {
                         "data": 'no_hp',
-                        className: "text-center"
+                        className: "text-left"
                     },
                     {
                         "data": 'email',
-                        className: "text-center"
+                        className: "text-left"
                     },
                     {
-                        "data": 'admin_instansi_name',
-                        className: "text-center"
+                        "data": 'instansi_kode',
+                        className: "text-left"
                     },
                     {
                         "data": 'status_badge',
@@ -699,9 +699,23 @@ $current_user_id = $current_user->ID;
                     jQuery('#tanggal_lahir').val(res.data.tanggal_lahir);
                     jQuery('#lulus').val(res.data.lulus);
                     jQuery('#email').val(res.data.email);
+                    let instansiList = res.data.id_instansi || [];
+                    let existingKodeKerja = [];
+
+                    if (res.data.id_instansi && res.data.id_kode_kerja) {
+                        res.data.id_instansi.forEach(function(instansiId, index){
+                            existingKodeKerja.push({
+                                id_instansi: instansiId,
+                                id_kode_kerja: res.data.id_kode_kerja[index]
+                            });
+                        });
+                    }
+
                     jQuery('#admin_instansi')
-                        .val(res.data.id_instansi)
+                        .val(instansiList)
                         .trigger('change');
+
+                    loadInstansiKodeKerja(instansiList, existingKodeKerja);
                     jQuery('#no_hp').val(res.data.no_hp);
                     jQuery('#tahun').val(res.data.tahun);
 
@@ -901,21 +915,21 @@ $current_user_id = $current_user->ID;
         });
     }
 
-    function loadInstansiKodeKerja(instansiList) {
-         console.log('LOAD INSTANSI DIPANGGIL', instansiList);
+    function loadInstansiKodeKerja(instansiList, existingKodeKerja = []) {
+
         let id_user_list = [];
 
         jQuery('#admin_instansi option:selected').each(function(){
             id_user_list.push(jQuery(this).data('id_user'));
-        });   
-        console.log('ID USER LIST:', id_user_list);
+        });
+
         jQuery.ajax({
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
             type: 'POST',
             dataType: 'json',
             data: {
                 action: 'get_kode_kerja_by_instansi',
-                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>',
+                api_key: '<?php echo get_option(ABSEN_APIKEY); ?>',
                 id_instansi: instansiList,
                 id_user_list: id_user_list
             },
@@ -955,8 +969,20 @@ $current_user_id = $current_user->ID;
                     `;
 
                     row.secondary.forEach(function(sec){
+
+                        let selected = '';
+
+                        existingKodeKerja.forEach(function(exist){
+                            if (
+                                parseInt(exist.id_instansi) === parseInt(row.id_instansi) &&
+                                parseInt(exist.id_kode_kerja) === parseInt(sec.id)
+                            ) {
+                                selected = 'selected';
+                            }
+                        });
+
                         html += `
-                            <option value="${sec.id}">
+                            <option value="${sec.id}" ${selected}>
                                 ${sec.nama_kerja}
                             </option>
                         `;
@@ -972,6 +998,5 @@ $current_user_id = $current_user->ID;
                 jQuery('#tbody_instansi_kode_kerja').html(html);
             }
         });
-
     }
 </script>
