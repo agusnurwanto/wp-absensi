@@ -140,7 +140,14 @@ $current_user_id = $current_user->ID;
     jQuery(document).ready(() => {
         jQuery('.mg-card-box').parent().removeClass('col-md-8').addClass('col-md-12');
         jQuery('#secondary').parent().remove();
-        load_master_data();
+
+        if (isAdminInstansi) {
+            load_master_data(currentUserId);
+            jQuery('#admin_instansi').prop('disabled', true);
+        } else {
+            load_master_data();
+        }
+
         get_data_kode_kerja();
     });
 
@@ -201,22 +208,35 @@ $current_user_id = $current_user->ID;
         }
     }
 
-    function load_master_data() {
+    function load_master_data(selectedValue = null, triggerChange = true) {
         jQuery.ajax({
             method: 'post',
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
             dataType: 'json',
             data: {
-                'action': 'get_master_data',
-                'api_key': '<?php echo get_option(ABSEN_APIKEY); ?>'
+                action: 'get_master_data',
+                api_key: '<?php echo get_option(ABSEN_APIKEY); ?>'
             },
-            success: (res) => {
-                if (res.status == 'success') {
+            success: function(res) {
+                if (res.status === 'success') {
+
                     let options = '<option value="">-- Pilih Admin Instansi --</option>';
-                    res.data.admin_instansi.forEach((item) => {
-                        options += `<option value="${item.value}">${item.label}</option>`;
+
+                    res.data.admin_instansi.forEach(function(item) {
+                        options += '<option value="' + item.id_user + '">' + item.nama_instansi + '</option>';
                     });
-                    jQuery('#admin_instansi').html(options);
+
+                    let $select = jQuery('#admin_instansi');
+                    $select.html(options);
+
+                    if (selectedValue !== null && selectedValue !== '') {
+                        $select.val(String(selectedValue));
+                    }
+
+                    // 🔥 HANYA TRIGGER JIKA DIIZINKAN
+                    if (triggerChange) {
+                        $select.trigger('change');
+                    }
                 }
             }
         });
@@ -234,12 +254,13 @@ $current_user_id = $current_user->ID;
             .show();
         jQuery('#koordinat').val('');
         jQuery('#radius_meter').val('100');
-        jQuery('#admin_instansi').val('');
+        if (!isAdminInstansi) {
+            jQuery('#admin_instansi').val('').trigger('change');
+        }
 
         // Handle Restricted Access and Auto-Check
         if (isAdminInstansi) {
             jQuery('#admin_instansi').val(currentUserId).trigger('change').prop('disabled', true);
-            checkPrimaryAvailability(currentUserId);
         } else {
             jQuery('#admin_instansi').prop('disabled', false);
         }
@@ -284,7 +305,7 @@ $current_user_id = $current_user->ID;
             },
             success: (res) => {
                 if (res.status == 'success') {
-                    if (res.data.primary_exists) {
+                    if (res.data && res.data.primary_exists) {
                         jQuery('#jenis').val('Secondary');
                         // Option 1: Disable user interaction but keep value
                         // jQuery('#jenis option[value="Primary"]').prop('disabled', true);
@@ -322,8 +343,7 @@ $current_user_id = $current_user->ID;
                     jQuery('#jenis').val(res.data.jenis);
                     jQuery('#koordinat').val(res.data.koordinat);
                     jQuery('#radius_meter').val(res.data.radius_meter);
-                    jQuery('#admin_instansi').val(res.data.id_instansi);
-
+                    load_master_data(res.data.id_instansi, false);
                     if (isAdminInstansi) {
                         jQuery('#admin_instansi').prop('disabled', true);
                     } else {
