@@ -293,6 +293,7 @@ class Wp_Absen_Public_Kegiatan {
                     padding: 5px;
                     text-align: left;
                     vertical-align: middle;
+					text-align: center;
                 }
                 th {
                     background: #eee;
@@ -300,6 +301,7 @@ class Wp_Absen_Public_Kegiatan {
                 img {
                     max-width: 100px;
                     height: auto;
+					margin: 0 auto; 
                 }
 				
             </style>
@@ -313,46 +315,54 @@ class Wp_Absen_Public_Kegiatan {
 
         <table>
             <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Nama Pegawai</th>
-                    <th>Nama Kegiatan</th>
-                    <th>Tanggal</th>
-                    <th>Tempat</th>
-                    <th>Uraian</th>
-                    <th>Foto</th>
-                </tr>
-            </thead>
+				<tr>
+					<th>No</th>
+					<th>Nama Pegawai</th>
+					<th>Nama Kegiatan</th>
+					<th>Tanggal</th>
+					<th>Waktu</th>
+					<th>Tempat</th>
+					<th>Uraian</th>
+					<th>Lampiran</th>
+				</tr>
+			</thead>
             <tbody>
             <?php
             $no = 1;
-            foreach ($data as $row) {
+			foreach ($data as $row) {
 
-                echo "<tr>";
-                echo "<td>".$no++."</td>";
-                echo "<td>".esc_html($row->nama_pegawai)."</td>";
-                echo "<td>".esc_html($row->nama_kegiatan)."</td>";
-                echo "<td>".date_i18n('d F Y', strtotime($row->tanggal))."</td>";
-                echo "<td>".esc_html($row->tempat)."</td>";
-                echo "<td>".esc_html($row->uraian)."</td>";
+				$waktu = '';
+				if (!empty($row->jam_mulai) && !empty($row->jam_selesai)) {
+					$waktu = date('H:i', strtotime($row->jam_mulai)) . ' - ' . 
+							date('H:i', strtotime($row->jam_selesai));
+				}
 
-                echo "<td>";
+				echo "<tr>";
+				echo "<td>".$no++."</td>";
+				echo "<td>".esc_html($row->nama_pegawai)."</td>";
+				echo "<td>".esc_html($row->nama_kegiatan)."</td>";
+				echo "<td>".date_i18n('d F Y', strtotime($row->tanggal))."</td>";
+				echo "<td>".$waktu."</td>";
+				echo "<td>".esc_html($row->tempat)."</td>";
+				echo "<td>".esc_html($row->uraian)."</td>";
 
-                if (!empty($row->file_lampiran)) {
+				echo "<td>";
 
-                    $file_url = plugins_url(
-                        'public/img/kegiatan/' . $row->file_lampiran,
-                        dirname(__FILE__)
-                    );
+				if (!empty($row->file_lampiran)) {
 
-                    echo '<img src="'.esc_url($file_url).'">';
-                } else {
-                    echo "-";
-                }
+					$file_url = plugins_url(
+						'public/img/kegiatan/' . $row->file_lampiran,
+						dirname(__FILE__)
+					);
 
-                echo "</td>";
-                echo "</tr>";
-            }
+					echo '<img src="'.esc_url($file_url).'">';
+				} else {
+					echo "-";
+				}
+
+				echo "</td>";
+				echo "</tr>";
+			}
             ?>
             </tbody>
         </table>
@@ -421,7 +431,18 @@ class Wp_Absen_Public_Kegiatan {
 				if (isset($_POST['id_pegawai']) && intval($_POST['id_pegawai']) > 0) {
 					$requested_id_pegawai = intval($_POST['id_pegawai']);
 					// Verify ownership
-					$verify_pegawai = $wpdb->get_var($wpdb->prepare("SELECT id FROM absensi_data_pegawai WHERE id = %d AND id_instansi = %d", $requested_id_pegawai, $current_user->ID));
+					$verify_pegawai = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id 
+							FROM absensi_data_pegawai_instansi
+							WHERE id_pegawai = %d 
+							AND id_instansi = %d
+							AND active = 1
+							AND deleted_at IS NULL",
+							$requested_id_pegawai,
+							$current_user->ID
+						)
+					);
 					if ($verify_pegawai) {
 						$id_pegawai = $requested_id_pegawai;
 					} else {
@@ -430,14 +451,35 @@ class Wp_Absen_Public_Kegiatan {
 					}
 				}
 			} elseif (in_array('pegawai', $user_roles)) {
-				// Fetch Pegawai Data
-				$pegawai_data = $wpdb->get_row($wpdb->prepare("SELECT id, id_instansi FROM absensi_data_pegawai WHERE id_user = %d", $current_user->ID));
-				if ($pegawai_data) {
-					$id_pegawai = $pegawai_data->id;
-					$id_instansi = $pegawai_data->id_instansi;
+				// Ambil id pegawai
+				$pegawai_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				if ($pegawai_id) {
+
+					// Ambil instansi dari tabel relasi
+					$id_instansi = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id_instansi 
+							FROM absensi_data_pegawai_instansi
+							WHERE id_pegawai = %d
+							AND active = 1
+							AND deleted_at IS NULL
+							ORDER BY id DESC LIMIT 1",
+							$pegawai_id
+						)
+					);
+
+					$id_pegawai = $pegawai_id;
+
 				} else {
 					$ret['message'] = 'Data Pegawai tidak ditemukan!';
-					ob_end_clean(); wp_send_json($ret);
+					ob_end_clean(); 
+					wp_send_json($ret);
 				}
 			}
 
