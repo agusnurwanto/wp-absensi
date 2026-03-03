@@ -143,9 +143,13 @@ class Wp_Absen_Public_Ijin {
 
 					$files = '-';
 					if (!empty($row['file_lampiran'])) {
-                        // Path: public/img/ijin/
 						$file_url = ABSEN_PLUGIN_URL . 'public/img/ijin/' . $row['file_lampiran'];
-						$files = '-';
+						$files = '
+							<a href="'.$file_url.'" target="_blank">
+								<img src="'.$file_url.'" style="max-width:80px; display:block; margin:0 auto 5px;">
+							</a>
+						';
+
 					if (!empty($row['file_lampiran'])) {
                         // Path: public/img/ijin/
 						$file_url = ABSEN_PLUGIN_URL . 'public/img/ijin/' . $row['file_lampiran'];
@@ -336,7 +340,7 @@ class Wp_Absen_Public_Ijin {
 							dirname(__FILE__)
 						);
 
-						echo '<img src="'.esc_url($file_url).'" style="max-width:80px;">';
+						echo '<img src="'.esc_url($file_url).'" style="max-width:80px;display:block; margin:0 auto;">';
 
 					} else {
 						echo "-";
@@ -400,7 +404,18 @@ class Wp_Absen_Public_Ijin {
 				$id_instansi = $current_user->ID;
 				if (isset($_POST['id_pegawai']) && intval($_POST['id_pegawai']) > 0) {
 					$requested_id_pegawai = intval($_POST['id_pegawai']);
-					$verify_pegawai = $wpdb->get_var($wpdb->prepare("SELECT id FROM absensi_data_pegawai WHERE id = %d AND id_instansi = %d", $requested_id_pegawai, $current_user->ID));
+					$verify_pegawai = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id_pegawai 
+							FROM absensi_data_pegawai_instansi
+							WHERE id_pegawai = %d
+							AND id_instansi = %d
+							AND active = 1
+							AND deleted_at IS NULL",
+							$requested_id_pegawai,
+							$current_user->ID
+						)
+					);
 					if ($verify_pegawai) {
 						$id_pegawai = $requested_id_pegawai;
 					} else {
@@ -409,10 +424,36 @@ class Wp_Absen_Public_Ijin {
 					}
 				}
 			} elseif (in_array('pegawai', $user_roles)) {
-				$pegawai_data = $wpdb->get_row($wpdb->prepare("SELECT id, id_instansi FROM absensi_data_pegawai WHERE id_user = %d", $current_user->ID));
-				if ($pegawai_data) {
-					$id_pegawai = $pegawai_data->id;
-					$id_instansi = $pegawai_data->id_instansi;
+
+				$pegawai_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_pegawai WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				if ($pegawai_id) {
+
+					$instansi_data = $wpdb->get_row(
+						$wpdb->prepare(
+							"SELECT id_instansi 
+							FROM absensi_data_pegawai_instansi 
+							WHERE id_pegawai = %d 
+							AND active = 1 
+							AND deleted_at IS NULL
+							ORDER BY id DESC LIMIT 1",
+							$pegawai_id
+						)
+					);
+
+					if ($instansi_data) {
+						$id_pegawai = $pegawai_id;
+						$id_instansi = $instansi_data->id_instansi;
+					} else {
+						$ret['message'] = 'Relasi instansi tidak ditemukan!';
+						ob_end_clean(); wp_send_json($ret);
+					}
+
 				} else {
 					$ret['message'] = 'Data Pegawai tidak ditemukan!';
 					ob_end_clean(); wp_send_json($ret);

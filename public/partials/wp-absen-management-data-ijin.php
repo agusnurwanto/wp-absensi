@@ -172,8 +172,8 @@ $input = shortcode_atts(array(
                         data: function(d) {
                             d.action = 'get_datatable_ijin';
                             d.api_key = apikey;
-                            d.tahun = '<?php echo $input['tahun_anggaran']; ?>';
-                            d.bulan = $('#filter_bulan').val(); // 🔥 INI PENTING
+                            d.tahun = $('#filter_tahun').val() || new Date().getFullYear();
+                            d.bulan = $('#filter_bulan').val(); 
                         }
                     },
                     lengthMenu: [
