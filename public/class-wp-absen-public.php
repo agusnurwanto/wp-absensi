@@ -160,8 +160,8 @@ class Wp_Absen_Public
 						'nama_page' => 'Management Data Instansi | ' . $v['tahun'],
 						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'publish'
+						'no_key' => 0,
+						'post_status' => 'private'
 					));
 					$get_data_instansi .= '
 					<a target="_blank"
@@ -175,8 +175,8 @@ class Wp_Absen_Public
 						'nama_page' => 'Management Data Pegawai | ' . $v['tahun'],
 						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'publish'
+						'no_key' => 0,
+						'post_status' => 'private'
 					));
 					$get_data_pegawai .= '
 					<a target="_blank"
@@ -190,8 +190,8 @@ class Wp_Absen_Public
 						'nama_page' => 'Management Data Absensi | ' . $v['tahun'],
 						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'publish'
+						'no_key' => 0,
+						'post_status' => 'private'
 					));
 					$get_data_absensi .= '
 					<a target="_blank"
@@ -204,8 +204,8 @@ class Wp_Absen_Public
 						'nama_page' => 'Manajemen Data Kegiatan | ' . $v['tahun'],
 						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'publish'
+						'no_key' => 0,
+						'post_status' => 'private'
 					));
 					$get_data_kegiatan .= '
 					<a target="_blank"
@@ -219,8 +219,8 @@ class Wp_Absen_Public
 						'nama_page' => 'Manajemen Data Ijin | ' . $v['tahun'],
 						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'publish'
+						'no_key' => 0,
+						'post_status' => 'private'
 					));
 					$get_data_ijin .= '
 					<a target="_blank"
@@ -238,8 +238,8 @@ class Wp_Absen_Public
 			'nama_page' => 'Data Kode Kerja',
 			'content' => '[manajemen_data_kerja]',
 			'show_header' => 1,
-			'no_key' => 1,
-			'post_status' => 'publish'
+			'no_key' => 0,
+			'post_status' => 'private'
 		));
 		$get_data_kerja = '
 			<a target="_blank"

@@ -167,7 +167,7 @@ class Wp_Absen_Admin
 						'nama_page' => 'Management Data Pegawai | ' . $v['tahun'],
 						'content' => '[management_data_pegawai_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
+						'no_key' => 0,
 						'post_status' => 'private'
 					));
 
@@ -176,8 +176,8 @@ class Wp_Absen_Admin
 						'nama_page' => 'Management Data Instansi | ' . $v['tahun'],
 						'content' => '[management_data_instansi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
-						'post_status' => 'published'
+						'no_key' => 0,
+						'post_status' => 'private'
 					));
 
 					$get_data_instansi .= '<li><a target="_blank" href="' . $management_data_instansi['url'] . '">' . esc_html($management_data_instansi['title']) . '</a></li>';
@@ -185,7 +185,7 @@ class Wp_Absen_Admin
 						'nama_page' => 'Data Absensi Pegawai | ' . $v['tahun'],
 						'content' => '[management_data_absensi tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
+						'no_key' => 0,
 						'post_status' => 'private'
 					));
 					$get_absensi_pegawai .= '<li><a target="_blank" href="' . $management_data_absensi['url'] . '">' . esc_html($management_data_absensi['title']) . '</a></li>';
@@ -194,7 +194,7 @@ class Wp_Absen_Admin
 						'nama_page' => 'Data Kegiatan Pegawai | ' . $v['tahun'],
 						'content' => '[management_data_kegiatan tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
+						'no_key' => 0,
 						'post_status' => 'private'
 					));
 					$get_data_kegiatan .= '<li><a target="_blank" href="' . $management_data_kegiatan['url'] . '">' . esc_html($management_data_kegiatan['title']) . '</a></li>';
@@ -203,7 +203,7 @@ class Wp_Absen_Admin
 						'nama_page' => 'Data Ijin Pegawai | ' . $v['tahun'],
 						'content' => '[management_data_ijin tahun_anggaran="' . $v["tahun"] . '"]',
 						'show_header' => 1,
-						'no_key' => 1,
+						'no_key' => 0,
 						'post_status' => 'private'
 					));
 					$get_data_ijin .= '<li><a target="_blank" href="' . $management_data_ijin['url'] . '">' . esc_html($management_data_ijin['title']) . '</a></li>';
@@ -268,8 +268,8 @@ class Wp_Absen_Admin
 			'nama_page' => 'Data Kode Kerja',
 			'content' => '[manajemen_data_kerja]',
 			'show_header' => 1,
-			'no_key' => 1,
-			'post_status' => 'publish'
+			'no_key' => 0,
+			'post_status' => 'private'
 		));
 
 		return [
