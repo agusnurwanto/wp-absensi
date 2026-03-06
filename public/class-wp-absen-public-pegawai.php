@@ -289,205 +289,270 @@ class Wp_Absen_Public_Pegawai {
     public function get_datatable_pegawai() {
         global $wpdb;
 
-        $ret = array(
-            'status' => 'success',
-            'message' => 'Berhasil get data!',
-            'data'  => array()
-        );
-
-        if (!empty($_POST)) {
-            if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option(ABSEN_APIKEY)) {
-
-                if (empty($_POST['tahun'])) {
-                    $ret['status'] = 'error';
-                    $ret['message'] = 'Tahun kosong!';
-                    die(json_encode($ret));
-                }
-
-                $params = $_REQUEST;
-                $tahun  = intval($_POST['tahun']);
-
-                $columns = array(
-                    0 => 'p.nik',
-                    1 => 'p.nama',
-                    2 => 'p.jabatan',
-                    3 => 'p.no_hp',
-                    4 => 'p.email',
-                    5 => 'p.active',
-                    6 => 'p.id'
-                );
-
-                $where = $sqlTot = $sqlRec = "";
-
-                if (!empty($params['search']['value'])) {
-                    $search = '%' . $wpdb->esc_like($params['search']['value']) . '%';
-                    $where .= $wpdb->prepare(
-                        " AND (p.nama LIKE %s OR p.nik LIKE %s)",
-                        $search,
-                        $search
-                    );
-                }
-
-                // ===============================
-                // QUERY PEGAWAI SAJA
-                // ===============================
-                $sql_tot = "
-                    SELECT COUNT(p.id) as jml
-                    FROM absensi_data_pegawai p
-                ";
-
-                $sql = "
-                    SELECT 
-                        p.id,
-                        p.nik,
-                        p.nama,
-                        p.jabatan,
-                        p.no_hp,
-                        p.email,
-                        p.active
-                    FROM absensi_data_pegawai p
-                ";
-
-                $where_first = $wpdb->prepare(
-                    " WHERE p.deleted_at IS NULL
-                    AND p.tahun = %d",
-                    $tahun
-                );
-
-                $sqlTot .= $sql_tot . $where_first . $where;
-                $sqlRec .= $sql . $where_first . $where;
-
-                $limit = '';
-                if ($params['length'] != -1) {
-                    $limit = " LIMIT ".$wpdb->prepare('%d', $params['start']).",".
-                            $wpdb->prepare('%d', $params['length']);
-                }
-
-                $order_clause = " ORDER BY p.id DESC";
-                if (isset($params['order'][0]['column']) && isset($columns[$params['order'][0]['column']])) {
-                    $order_col = $columns[$params['order'][0]['column']];
-                    $order_dir = $params['order'][0]['dir'];
-                    $order_clause = " ORDER BY $order_col $order_dir";
-                }
-
-                $sqlRec .= $order_clause . $limit;
-
-                $queryTot = $wpdb->get_results($sqlTot, ARRAY_A);
-                $totalRecords = $queryTot[0]['jml'];
-                $queryRecords = $wpdb->get_results($sqlRec, ARRAY_A);
-
-                foreach ($queryRecords as $recKey => $recVal) {
-
-                    // ===============================
-                    // AMBIL INSTANSI + KODE KERJA
-                    // ===============================
-                    $instansi_name = '-';
-                    $kode_kerja_name = '-';
-
-                    $pegawai_instansi = $wpdb->get_results(
-                        $wpdb->prepare("
-                            SELECT id_instansi, id_kode_kerja
-                            FROM absensi_data_pegawai_instansi
-                            WHERE id_pegawai = %d
-                            AND tahun = %d
-                            AND active = 1 
-                            AND deleted_at IS NULL
-                        ", $recVal['id'], $tahun),
-                        ARRAY_A
-                    );
-
-                    if (!empty($pegawai_instansi)) {
-
-                        $list_relasi = array();
-
-                        foreach ($pegawai_instansi as $pi) {
-
-                            // Ambil nama instansi
-                            $nama_instansi = $wpdb->get_var(
-                                $wpdb->prepare("
-                                    SELECT nama_instansi
-                                    FROM absensi_data_instansi
-                                    WHERE id = %d
-                                ", $pi['id_instansi'])
-                            );
-
-                            // Ambil nama kerja
-                            $nama_kerja = $wpdb->get_var(
-                                $wpdb->prepare("
-                                    SELECT nama_kerja
-                                    FROM absensi_data_kerja
-                                    WHERE id = %d
-                                ", $pi['id_kode_kerja'])
-                            );
-
-                            if (!empty($nama_instansi) && !empty($nama_kerja)) {
-                                $list_relasi[] = $nama_instansi . ' (' . $nama_kerja . ')';
-                            }
-                        }
-
-                        if (!empty($list_relasi)) {
-
-                            $instansi_kode = '<ul style="list-style:padding-left:18px;margin:0;">';
-
-                            foreach ($list_relasi as $item) {
-                                $instansi_kode .= '<li>' . $item . '</li>';
-                            }
-
-                            $instansi_kode .= '</ul>';
-
-                        } else {
-                            $instansi_kode = '-';
-                        }
-                    } else {
-                        $instansi_kode = '-';
-                    }
-
-                    $queryRecords[$recKey]['instansi_kode'] = $instansi_kode;
-
-                    // ===============================
-                    // STATUS & BUTTON
-                    // ===============================
-                    if ($recVal["active"] == 1) {
-                        $status_badge = '<span class="badge badge-success" style="background:#28a745;color:#fff;padding:5px 10px;border-radius:4px;">Aktif</span>';
-                    } else {
-                        $status_badge = '<span class="badge badge-secondary" style="background:#6c757d;color:#fff;padding:5px 10px;border-radius:4px;">Tidak Aktif</span>';
-                    }
-
-                    $btn  = '<a class="btn btn-sm btn-warning" onclick="edit_data(\''.$recVal['id'].'\'); return false;" href="#" title="Edit Data"><i class="dashicons dashicons-edit"></i></a>';
-                    $btn .= ' <a class="btn btn-sm btn-danger" onclick="hapus_data(\''.$recVal['id'].'\'); return false;" href="#" title="Hapus Data"><i class="dashicons dashicons-trash"></i></a>';
-
-                    if ($recVal["active"] == 1) {
-                        $btn .= ' <a class="btn btn-sm btn-secondary" onclick="toggle_status_pegawai(\''.$recVal["id"].'\',0); return false;" href="#" title="Nonaktifkan"><i class="dashicons dashicons-hidden"></i></a>';
-                    } else {
-                        $btn .= ' <a class="btn btn-sm btn-success" onclick="toggle_status_pegawai(\''.$recVal["id"].'\',1); return false;" href="#" title="Aktifkan"><i class="dashicons dashicons-visibility"></i></a>';
-                    }
-                    $queryRecords[$recKey]["status_badge"] = $status_badge;
-                    $queryRecords[$recKey]['aksi'] = $btn;
-                }
-
-                $json_data = array(
-                    "draw"            => intval($params['draw']),
-                    "recordsTotal"    => intval($totalRecords),
-                    "recordsFiltered" => intval($totalRecords),
-                    "data"            => $queryRecords
-                );
-
-                die(json_encode($json_data));
-
-            } else {
-                $return = array(
-                    'status' => 'error',
-                    'message' => 'Api Key tidak sesuai!'
-                );
-            }
-        } else {
-            $return = array(
+        if (empty($_POST)) {
+            die(json_encode([
                 'status' => 'error',
                 'message' => 'Format tidak sesuai!'
+            ]));
+        }
+
+        if (empty($_POST['api_key']) || $_POST['api_key'] != get_option(ABSEN_APIKEY)) {
+            die(json_encode([
+                'status' => 'error',
+                'message' => 'Api Key tidak sesuai!'
+            ]));
+        }
+
+        if (empty($_POST['tahun'])) {
+            die(json_encode([
+                'status' => 'error',
+                'message' => 'Tahun kosong!'
+            ]));
+        }
+
+        $params = $_REQUEST;
+        $tahun  = intval($_POST['tahun']);
+
+        // ===============================
+        // CEK ROLE
+        // ===============================
+        $current_user      = wp_get_current_user();
+        $current_user_id   = $current_user->ID;
+        $is_admin          = in_array('administrator', $current_user->roles);
+        $is_admin_instansi = in_array('admin_instansi', $current_user->roles);
+
+        if (!$is_admin && !$is_admin_instansi) {
+            die(json_encode([
+                'status'  => 'error',
+                'message' => 'Anda tidak memiliki akses ke halaman ini!'
+            ]));
+        }
+
+        // ===============================
+        // FILTER INSTANSI (ADMIN INSTANSI)
+        // ===============================
+        $join_instansi  = "";
+        $where_instansi = "";
+
+        if ($is_admin_instansi && !$is_admin) {
+
+            // ambil instansi milik admin dari tabel instansi
+            $id_instansi = $wpdb->get_var(
+                $wpdb->prepare("
+                    SELECT id
+                    FROM absensi_data_instansi
+                    WHERE id_user = %d
+                    AND tahun = %d
+                    AND active = 1
+                    AND deleted_at IS NULL
+                ", $current_user_id, $tahun)
+            );
+
+            if (empty($id_instansi)) {
+                die(json_encode([
+                    'status'  => 'error',
+                    'message' => 'Admin tidak memiliki instansi aktif!'
+                ]));
+            }
+
+            $join_instansi = "
+                INNER JOIN absensi_data_pegawai_instansi api
+                    ON api.id_pegawai = p.id
+            ";
+
+            $where_instansi = $wpdb->prepare(
+                " AND api.id_instansi = %d
+                AND api.tahun = %d
+                AND api.active = 1
+                AND api.deleted_at IS NULL",
+                $id_instansi,
+                $tahun
             );
         }
 
-        die(json_encode($return));
+        // ===============================
+        // COLUMN DATATABLE
+        // ===============================
+        $columns = array(
+            0 => 'p.nik',
+            1 => 'p.nama',
+            2 => 'p.jabatan',
+            3 => 'p.no_hp',
+            4 => 'p.email',
+            5 => 'p.active',
+            6 => 'p.id'
+        );
+
+        $where = "";
+
+        if (!empty($params['search']['value'])) {
+            $search = '%' . $wpdb->esc_like($params['search']['value']) . '%';
+            $where .= $wpdb->prepare(
+                " AND (p.nama LIKE %s OR p.nik LIKE %s)",
+                $search,
+                $search
+            );
+        }
+
+        // ===============================
+        // QUERY TOTAL
+        // ===============================
+        $sqlTot = "
+            SELECT COUNT(DISTINCT p.id) as jml
+            FROM absensi_data_pegawai p
+            $join_instansi
+            WHERE p.deleted_at IS NULL
+            AND p.tahun = %d
+            $where_instansi
+            $where
+        ";
+
+        $sqlTot = $wpdb->prepare($sqlTot, $tahun);
+
+        // ===============================
+        // QUERY DATA
+        // ===============================
+        $sqlRec = "
+            SELECT DISTINCT
+                p.id,
+                p.nik,
+                p.nama,
+                p.jabatan,
+                p.no_hp,
+                p.email,
+                p.active
+            FROM absensi_data_pegawai p
+            $join_instansi
+            WHERE p.deleted_at IS NULL
+            AND p.tahun = %d
+            $where_instansi
+            $where
+        ";
+
+        $sqlRec = $wpdb->prepare($sqlRec, $tahun);
+
+        // ORDER
+        $order_clause = " ORDER BY p.id DESC";
+        if (isset($params['order'][0]['column']) && isset($columns[$params['order'][0]['column']])) {
+            $order_col = $columns[$params['order'][0]['column']];
+            $order_dir = $params['order'][0]['dir'] === 'asc' ? 'ASC' : 'DESC';
+            $order_clause = " ORDER BY $order_col $order_dir";
+        }
+
+        // LIMIT
+        $limit = '';
+        if ($params['length'] != -1) {
+            $limit = $wpdb->prepare(
+                " LIMIT %d, %d",
+                intval($params['start']),
+                intval($params['length'])
+            );
+        }
+
+        $sqlRec .= $order_clause . $limit;
+
+        $queryTot     = $wpdb->get_results($sqlTot, ARRAY_A);
+        $totalRecords = !empty($queryTot) ? intval($queryTot[0]['jml']) : 0;
+        $queryRecords = $wpdb->get_results($sqlRec, ARRAY_A);
+
+        // ===============================
+        // FORMAT OUTPUT
+        // ===============================
+        foreach ($queryRecords as $recKey => $recVal) {
+
+        // default supaya tidak error DataTables
+        $queryRecords[$recKey]['instansi_kode'] = '-';
+        $queryRecords[$recKey]['status_badge']  = '-';
+        $queryRecords[$recKey]['aksi']          = '-';
+
+        // ===============================
+        // AMBIL INSTANSI + KODE KERJA
+        // ===============================
+        $pegawai_instansi = $wpdb->get_results(
+            $wpdb->prepare("
+                SELECT id_instansi, id_kode_kerja
+                FROM absensi_data_pegawai_instansi
+                WHERE id_pegawai = %d
+                AND tahun = %d
+                AND active = 1 
+                AND deleted_at IS NULL
+            ", $recVal['id'], $tahun),
+            ARRAY_A
+        );
+
+        if (!empty($pegawai_instansi)) {
+
+            $list_relasi = array();
+
+            foreach ($pegawai_instansi as $pi) {
+
+                $nama_instansi = $wpdb->get_var(
+                    $wpdb->prepare("
+                        SELECT nama_instansi
+                        FROM absensi_data_instansi
+                        WHERE id = %d
+                    ", $pi['id_instansi'])
+                );
+
+                $nama_kerja = $wpdb->get_var(
+                    $wpdb->prepare("
+                        SELECT nama_kerja
+                        FROM absensi_data_kerja
+                        WHERE id = %d
+                    ", $pi['id_kode_kerja'])
+                );
+
+                if (!empty($nama_instansi) && !empty($nama_kerja)) {
+                    $list_relasi[] = $nama_instansi . ' (' . $nama_kerja . ')';
+                }
+            }
+
+            if (!empty($list_relasi)) {
+
+                $instansi_kode = '<ul style="padding-left:18px;margin:0;">';
+
+                foreach ($list_relasi as $item) {
+                    $instansi_kode .= '<li>' . $item . '</li>';
+                }
+
+                $instansi_kode .= '</ul>';
+
+                $queryRecords[$recKey]['instansi_kode'] = $instansi_kode;
+            }
+        }
+
+        // ===============================
+        // STATUS BADGE
+        // ===============================
+        if ($recVal["active"] == 1) {
+            $queryRecords[$recKey]["status_badge"] =
+                '<span style="background:#28a745;color:#fff;padding:5px 10px;border-radius:4px;">Aktif</span>';
+        } else {
+            $queryRecords[$recKey]["status_badge"] =
+                '<span style="background:#6c757d;color:#fff;padding:5px 10px;border-radius:4px;">Tidak Aktif</span>';
+        }
+
+        // ===============================
+        // BUTTON
+        // ===============================
+        $btn  = '<a class="btn btn-sm btn-warning" onclick="edit_data(\''.$recVal['id'].'\'); return false;" href="#"><i class="dashicons dashicons-edit"></i></a>';
+        $btn .= ' <a class="btn btn-sm btn-danger" onclick="hapus_data(\''.$recVal['id'].'\'); return false;" href="#"><i class="dashicons dashicons-trash"></i></a>';
+
+        if ($recVal["active"] == 1) {
+            $btn .= ' <a class="btn btn-sm btn-secondary" onclick="toggle_status_pegawai(\''.$recVal["id"].'\',0); return false;" href="#"><i class="dashicons dashicons-hidden"></i></a>';
+        } else {
+            $btn .= ' <a class="btn btn-sm btn-success" onclick="toggle_status_pegawai(\''.$recVal["id"].'\',1); return false;" href="#"><i class="dashicons dashicons-visibility"></i></a>';
+        }
+
+        $queryRecords[$recKey]['aksi'] = $btn;
+    }
+
+        die(json_encode([
+            "draw"            => intval($params['draw']),
+            "recordsTotal"    => $totalRecords,
+            "recordsFiltered" => $totalRecords,
+            "data"            => $queryRecords
+        ]));
     }
 
     public function hapus_data_pegawai_by_id() {
@@ -591,7 +656,7 @@ class Wp_Absen_Public_Pegawai {
                 
                 // Ambil semua instansi dari tabel relasi
                 $instansi_rows = $wpdb->get_results($wpdb->prepare('
-                    SELECT pi.id_instansi, pi.id_kode_kerja, i.nama_instansi
+                    SELECT pi.id_instansi, pi.id_kode_kerja, i.nama_instansi, i.id_user
                     FROM absensi_data_pegawai_instansi pi
                     LEFT JOIN absensi_data_instansi i ON i.id = pi.id_instansi
                     WHERE pi.id_pegawai = %d
@@ -601,19 +666,21 @@ class Wp_Absen_Public_Pegawai {
                 $id_instansi = array();
                 $id_kode_kerja = array();
                 $nama_instansi = array();
+                $id_user_instansi = array();
 
                 if (!empty($instansi_rows)) {
                     foreach ($instansi_rows as $row) {
                         $id_instansi[] = $row['id_instansi'];
                         $id_kode_kerja[] = $row['id_kode_kerja'];
                         $nama_instansi[] = $row['nama_instansi']; // tambahkan ini
+                        $id_user_instansi[] = $row['id_user'];
                     }
                 }
 
                 $pegawai['id_instansi'] = $id_instansi;
                 $pegawai['id_kode_kerja'] = $id_kode_kerja;
                 $pegawai['nama_instansi'] = $nama_instansi; // return juga nama instansi
-
+                $pegawai['id_user_instansi'] = $id_user_instansi;
                 $ret['data'] = $pegawai;
 
             } else {
@@ -631,324 +698,220 @@ class Wp_Absen_Public_Pegawai {
     public function tambah_data_pegawai() {
         global $wpdb;
 
-        $ret = array(
+        $ret = [
             'status' => 'success',
             'message' => 'Berhasil simpan data!',
-            'data' => array()
-        );
+            'data' => []
+        ];
 
-        if (!empty($_POST)) {
-            if (!empty($_POST['api_key']) && $_POST['api_key'] == get_option( ABSEN_APIKEY )) {
-                if (empty($_POST['admin_instansi'])) {
+        if (empty($_POST)) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Format Salah!';
+            die(json_encode($ret));
+        }
+
+        if (empty($_POST['api_key']) || $_POST['api_key'] != get_option(ABSEN_APIKEY)) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Api key tidak ditemukan!';
+            die(json_encode($ret));
+        }
+
+        if (empty($_POST['admin_instansi'])) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Admin Instansi (Parent Role) tidak boleh kosong!';
+            die(json_encode($ret));
+        } elseif (empty($_POST['nik'])) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Data NIK tidak boleh kosong!';
+            die(json_encode($ret));
+        } elseif (empty($_POST['nama'])) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Data Nama tidak boleh kosong!';
+            die(json_encode($ret));
+        } elseif (empty($_POST['email'])) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Email tidak boleh kosong!';
+            die(json_encode($ret));
+        } elseif (empty($_POST['jenis_kelamin']) && !carbon_get_theme_option('crb_hide_jenis_kelamin')) {
+            $ret['status'] = 'error';
+            $ret['message'] = 'Jenis Kelamin tidak boleh kosong!';
+            die(json_encode($ret));
+        }
+
+        // Ambil data dari POST
+        $nik = $_POST['nik'];
+        $nama = $_POST['nama'];
+        $email = $_POST['email'];
+        $tempat_lahir = $_POST['tempat_lahir'] ?? null;
+        $tanggal_lahir = $_POST['tanggal_lahir'] ?? null;
+        $jenis_kelamin = $_POST['jenis_kelamin'];
+        $agama = $_POST['agama'] ?? null;
+        $no_hp = $_POST['no_hp'] ?? null;
+        $alamat = $_POST['alamat'] ?? null;
+        $pendidikan_terakhir = $_POST['pendidikan_terakhir'] ?? null;
+        $pendidikan_sekarang = $_POST['pendidikan_sekarang'] ?? null;
+        $nama_sekolah = $_POST['nama_sekolah'] ?? null;
+        $lulus = $_POST['lulus'] ?? null;
+        $user_role = 'pegawai';
+        $tahun = $_POST['tahun'] ?? date('Y');
+
+        $data = [
+            'nik' => $nik,
+            'nama' => $nama,
+            'tempat_lahir' => $tempat_lahir,
+            'tanggal_lahir' => $tanggal_lahir,
+            'jenis_kelamin' => $jenis_kelamin,
+            'agama' => $agama,
+            'no_hp' => $no_hp,
+            'alamat' => $alamat,
+            'jabatan' => $_POST['jabatan'] ?? null,
+            'pendidikan_terakhir' => $pendidikan_terakhir,
+            'pendidikan_sekarang' => $pendidikan_sekarang,
+            'nama_sekolah' => $nama_sekolah,
+            'lulus' => $lulus,
+            'email' => $email,
+            'user_role' => $user_role,
+            'tahun' => $tahun,
+            'status_kerja' => 1,
+            'active' => 1,
+            'update_at' => current_time('mysql')
+        ];
+
+        $current_user = wp_get_current_user();
+        $is_admin_instansi = in_array('admin_instansi', (array)$current_user->roles) && !in_array('administrator', (array)$current_user->roles);
+
+        if (!empty($_POST['id_data'])) {
+            // --- EDIT DATA ---
+            $id_pegawai = intval($_POST['id_data']);
+            $existing_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM absensi_data_pegawai WHERE id = %d", $id_pegawai));
+
+            // Check admin_instansi ownership
+            if ($is_admin_instansi) {
+                $admin_id = get_current_user_id();
+                $pegawai_instansi = $wpdb->get_var($wpdb->prepare("
+                    SELECT COUNT(*) FROM absensi_data_pegawai_instansi
+                    WHERE id_pegawai = %d
+                    AND id_instansi IN (
+                        SELECT id_instansi FROM absensi_data_instansi WHERE id_user = %d
+                    )
+                    AND active = 1
+                ", $id_pegawai, $admin_id));
+
+                if ($pegawai_instansi == 0) {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Admin Instansi (Parent Role) tidak boleh kosong!';
-                } else if (empty($_POST['nik'])) {
+                    $ret['message'] = 'Anda tidak memiliki hak akses untuk mengedit data ini!';
+                    die(json_encode($ret));
+                }
+            }
+
+            // Sync WP user
+            if (!empty($existing_data->id_user)) {
+                wp_update_user([
+                    'ID' => $existing_data->id_user,
+                    'user_email' => $email,
+                    'first_name' => $nama
+                ]);
+                if ($existing_data->nik !== $nik) {
+                    $wpdb->update($wpdb->users, ['user_login' => $nik], ['ID' => $existing_data->id_user]);
+                }
+            }
+
+            $wpdb->update('absensi_data_pegawai', $data, ['id' => $id_pegawai]);
+
+        } else {
+            // --- INSERT DATA BARU ---
+            $cek_nik = $wpdb->get_row($wpdb->prepare("SELECT id, active FROM absensi_data_pegawai WHERE nik=%s", $nik), ARRAY_A);
+            $prefix = carbon_get_theme_option('crb_default_password_prefix');
+            $password_with_prefix = $prefix . $nik;
+
+            if (empty($cek_nik)) {
+                if (username_exists($nik)) {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Data NIK tidak boleh kosong!';
-                } else if (empty($_POST['nama'])) {
+                    $ret['message'] = 'Username (NIK) sudah terdaftar sebagai User WordPress!';
+                    die(json_encode($ret));
+                } elseif (email_exists($email)) {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Data Nama tidak boleh kosong!';
-                } else if (empty($_POST['email'])) {
-                    $ret['status'] = 'error';
-                    $ret['message'] = 'Email tidak boleh kosong!';
-                } else if (empty($_POST['jenis_kelamin']) && !carbon_get_theme_option('crb_hide_jenis_kelamin')) {
-                    $ret['status'] = 'error';
-                    $ret['message'] = 'Jenis Kelamin tidak boleh kosong!';
+                    $ret['message'] = 'Email sudah terdaftar sebagai User WordPress!';
+                    die(json_encode($ret));
                 } else {
-                    $nik = $_POST['nik'];
-                    $nama = $_POST['nama'];
-                    $email = !empty($_POST['email']) ? $_POST['email'] : null;
-
-                    $tempat_lahir = !empty($_POST['tempat_lahir']) ? $_POST['tempat_lahir'] : null;
-                    $tanggal_lahir = !empty($_POST['tanggal_lahir']) ? $_POST['tanggal_lahir'] : null;
-
-                    $jenis_kelamin = $_POST['jenis_kelamin'];
-                    $agama = !empty($_POST['agama']) ? $_POST['agama'] : null;
-
-                    $no_hp = !empty($_POST['no_hp']) ? $_POST['no_hp'] : null;
-                    $alamat = !empty($_POST['alamat']) ? $_POST['alamat'] : null;
-
-                    $pendidikan_terakhir = !empty($_POST['pendidikan_terakhir']) ? $_POST['pendidikan_terakhir'] : null;
-                    $pendidikan_sekarang = !empty($_POST['pendidikan_sekarang']) ? $_POST['pendidikan_sekarang'] : null;
-
-                    $nama_sekolah = !empty($_POST['nama_sekolah']) ? $_POST['nama_sekolah'] : null;
-                    $lulus = !empty($_POST['lulus']) ? $_POST['lulus'] : null;
-
-                    $current_user = wp_get_current_user();
-
-                    $user_role = 'pegawai';
-
-                    $tahun = !empty($_POST['tahun']) ? $_POST['tahun'] : date('Y');
-
-                    $data = array(
-                        'nik' => $nik,
-
-                        'nama' => $nama,
-                        'tempat_lahir' => $tempat_lahir,
-                        'tanggal_lahir' => $tanggal_lahir,
-                        'jenis_kelamin' => $jenis_kelamin,
-                        'agama' => $agama,
-                        'no_hp' => $no_hp,
-
-                        'alamat' => $alamat,
-                        'jabatan' => !empty($_POST['jabatan']) ? $_POST['jabatan'] : null,
-                        'pendidikan_terakhir' => $pendidikan_terakhir,
-                        'pendidikan_sekarang' => $pendidikan_sekarang,
-                        'nama_sekolah' => $nama_sekolah,
-                        'lulus' => $lulus,
-                        'email' => $email,
-                        'user_role' => $user_role,
-
-                        'tahun' => $tahun,
-                        'status_kerja' => 1,
-                        'active' => 1,
-                        'update_at' => current_time('mysql')
-                    );
-
-                    if (!empty($_POST['id_data'])) {
-                        // Check Ownership for Admin Instansi
-                        $existing_data = $wpdb->get_row($wpdb->prepare("SELECT * FROM absensi_data_pegawai WHERE id = %d", $_POST['id_data']));
-
-                        $current_user = wp_get_current_user();
-                        $is_admin_instansi = in_array( 'admin_instansi', (array) $current_user->roles ) && !in_array( 'administrator', (array) $current_user->roles );
-
-                        if ($is_admin_instansi) {
-                                $ret['status'] = 'error';
-                                $ret['message'] = 'Anda tidak memiliki hak akses untuk mengedit data ini!';
-                                die(json_encode($ret));
-                            }
-
-                        // SYNC TO WORDPRESS USER
-                        if (!empty($existing_data->id_user)) {
-                            // Update Email and Name
-                            wp_update_user(array(
-                                'ID' => $existing_data->id_user,
-                                'user_email' => $email,
-                                'first_name' => $nama
-                            ));
-
-                            // Update Username (NIK) if changed
-                            if ($existing_data->nik !== $nik) {
-                                $wpdb->update($wpdb->users, array('user_login' => $nik), array('ID' => $existing_data->id_user));
-                            }
-                        }
-
-                        $wpdb->update('absensi_data_pegawai', $data, array(
-                            'id' => $_POST['id_data']
-                        ));
-                        $id_pegawai = intval($_POST['id_data']);
-
-                        // 1. Ambil data lama (active=1)
-                        $old_relasi = $wpdb->get_results(
-                            $wpdb->prepare("
-                                SELECT id_instansi, id_kode_kerja
-                                FROM absensi_data_pegawai_instansi
-                                WHERE id_pegawai = %d
-                                AND active = 1
-                            ", $id_pegawai),
-                            ARRAY_A
-                        );
-
-                        // Ubah jadi array unik key: instansi_kodekerja
-                        $old_map = array();
-                        foreach ($old_relasi as $row) {
-                            $key = $row['id_instansi'].'_'.$row['id_kode_kerja'];
-                            $old_map[$key] = $row;
-                        }
-
-                        // 2. Ambil data baru dari POST
-                        $new_map = array();
-
-                        if (!empty($_POST['instansi'])) {
-                            foreach ($_POST['instansi'] as $row) {
-
-                                $id_instansi = intval($row['id_instansi']);
-                                $id_kode_kerja = !empty($row['id_kode_kerja']) ? intval($row['id_kode_kerja']) : 0;
-
-                                $key = $row['id_instansi'].'_'.$id_kode_kerja;
-
-                                $new_map[$key] = array(
-                                    'id_instansi' => intval($row['id_instansi']),
-                                    'id_kode_kerja' => $id_kode_kerja
-                                );
-                            }
-                        }
-
-                        // 3. Hitung perbedaan
-                        $old_keys = array_keys($old_map);
-                        $new_keys = array_keys($new_map);
-
-                        $to_insert = array_diff($new_keys, $old_keys);
-                        $to_delete = array_diff($old_keys, $new_keys);
-
-                        // 4. SOFT DELETE yang tidak dipilih lagi
-                        if (!empty($to_delete)) {
-                            foreach ($to_delete as $key) {
-
-                                list($id_instansi, $id_kode_kerja) = explode('_', $key);
-
-                                $wpdb->update(
-                                    'absensi_data_pegawai_instansi',
-                                    array(
-                                        'active'    => 0,
-                                        'update_at' => current_time('mysql')
-                                    ),
-                                    array(
-                                        'id_pegawai'    => $id_pegawai,
-                                        'id_instansi'   => intval($id_instansi),
-                                        'id_kode_kerja' => intval($id_kode_kerja)
-                                    ),
-                                    array('%d','%s'),
-                                    array('%d','%d','%d')
-                                );
-                            }
-                        }
-
-                        // 5. INSERT atau RE-ACTIVATE
-                        if (!empty($to_insert)) {
-                            foreach ($to_insert as $key) {
-
-                                $row = $new_map[$key];
-
-                                // cek apakah pernah ada (active=0 atau 1)
-                                $existing_relasi = $wpdb->get_row(
-                                    $wpdb->prepare("
-                                        SELECT id
-                                        FROM absensi_data_pegawai_instansi
-                                        WHERE id_pegawai = %d
-                                        AND id_instansi = %d
-                                        AND id_kode_kerja = %d
-                                    ",
-                                        $id_pegawai,
-                                        $row['id_instansi'],
-                                        $row['id_kode_kerja']
-                                    )
-                                );
-
-                                if (!empty($existing_relasi)) {
-
-                                    // re-activate
-                                    $wpdb->update(
-                                        'absensi_data_pegawai_instansi',
-                                        array(
-                                            'active'    => 1,
-                                            'update_at' => current_time('mysql')
-                                        ),
-                                        array(
-                                            'id' => $existing_relasi->id
-                                        ),
-                                        array('%d','%s'),
-                                        array('%d')
-                                    );
-
-                                } else {
-
-                                    // insert baru
-                                    $wpdb->insert(
-                                        'absensi_data_pegawai_instansi',
-                                        array(
-                                            'id_pegawai'    => $id_pegawai,
-                                            'id_instansi'   => $row['id_instansi'],
-                                            'id_kode_kerja' => $row['id_kode_kerja'],
-                                            'tahun'         => intval($tahun),
-                                            'active'        => 1,
-                                            'created_at'    => current_time('mysql'),
-                                            'update_at'     => current_time('mysql')
-                                        ),
-                                        array('%d','%d','%d','%d','%d','%s','%s')
-                                    );
-                                }
-                            }
-                        }
-                    } else {
-                        $cek_nik = $wpdb->get_row($wpdb->prepare('
-                            SELECT
-                                id,
-                                active
-                            FROM absensi_data_pegawai
-                            WHERE nik=%s
-                        ', $nik), ARRAY_A);
-
-                        $prefix = carbon_get_theme_option('crb_default_password_prefix');
-                        $password_with_prefix = $prefix . $nik;
-
-                        if (empty($cek_nik)) {
-                            // Create WordPress User
-                            if (username_exists($nik)) {
-                                $ret['status'] = 'error';
-                                $ret['message'] = 'Username (NIK) sudah terdaftar sebagai User WordPress!';
-                            } elseif (email_exists($email)) {
-                                $ret['status'] = 'error';
-                                $ret['message'] = 'Email sudah terdaftar sebagai User WordPress!';
-                            } else {
-                                $userdata = array(
-                                    'user_login'    => $nik,
-                                    'user_pass'     => $password_with_prefix, // Password same as Username
-                                    'user_email'    => $email,
-                                    'first_name'    => $nama,
-                                    'role'          => 'pegawai'
-                                );
-
-                                $user_id = wp_insert_user($userdata);
-                                if (is_wp_error($user_id)) {
-                                    $ret['status'] = 'error';
-                                    $ret['message'] = 'Gagal membuat User WordPress: ' . $user_id->get_error_message();
-                                } else {
-                                    // Add User Meta for Admin Instansi (Parent Role)
-                                    // Make sure we have the correct ID. 
-                                    // If currentUser is admin_instansi, use their ID.
-                                    // If currentUser is administrator, use the posted admin_instansi ID.
-                                    
-                                    // Note: The variable $id_instansi logic above handles this ID selection correctly.
-                                    // However, $id_instansi is the WP User ID of the Admin Instansi.
-                                    $admin_instansi = $_POST['admin_instansi'];
-                                    update_user_meta($user_id, 'id_admin_instansi', $admin_instansi);
-
-                                    // Proceed to insert into custom table
-                                    $data['id_user'] = $user_id;
-                                    $wpdb->insert('absensi_data_pegawai', $data);
-
-                                    $id_pegawai = $wpdb->insert_id;
-
-                                    if (!empty($_POST['instansi'])) {
-                                    foreach ($_POST['instansi'] as $row) {
-                                        $id_kode_kerja = !empty($row['id_kode_kerja']) ? intval($row['id_kode_kerja']) : 0;
-                                        $wpdb->insert(
-                                            'absensi_data_pegawai_instansi',
-                                            [
-                                                'id_pegawai'    => $id_pegawai,
-                                                'id_instansi'   => intval($row['id_instansi']),
-                                                'id_kode_kerja' => $id_kode_kerja,
-                                                'tahun'         => intval($tahun),
-                                                'active'        => 1,
-                                                'created_at'    => current_time('mysql'),
-                                                'update_at'     => current_time('mysql')
-                                            ],
-                                            ['%d','%d','%d','%d','%d','%s','%s']
-                                        );
-                                    }
-                                }
-                                }
-                            }
-                        } else {
-                            if ($cek_nik['active'] == 0) {
-                                $wpdb->update('absensi_data_pegawai', $data, array(
-                                    'id' => $cek_nik['id']
-                                ));
-                            } else {
-                                $ret['status'] = 'error';
-                                $ret['message'] = 'Gagal disimpan. Data pegawai dengan NIK="'.$nik.'" sudah ada!';
-                            }
-                        }
+                    $user_id = wp_insert_user([
+                        'user_login' => $nik,
+                        'user_pass' => $password_with_prefix,
+                        'user_email' => $email,
+                        'first_name' => $nama,
+                        'role' => 'pegawai'
+                    ]);
+                    if (is_wp_error($user_id)) {
+                        $ret['status'] = 'error';
+                        $ret['message'] = 'Gagal membuat User WordPress: ' . $user_id->get_error_message();
+                        die(json_encode($ret));
                     }
+                    update_user_meta($user_id, 'id_admin_instansi', $_POST['admin_instansi']);
+                    $data['id_user'] = $user_id;
+                    $wpdb->insert('absensi_data_pegawai', $data);
+                    $id_pegawai = $wpdb->insert_id;
                 }
             } else {
-                $ret['status']  = 'error';
-                $ret['message'] = 'Api key tidak ditemukan!';
+                if ($cek_nik['active'] == 0) {
+                    $wpdb->update('absensi_data_pegawai', $data, ['id' => $cek_nik['id']]);
+                    $id_pegawai = $cek_nik['id'];
+                } else {
+                    $ret['status'] = 'error';
+                    $ret['message'] = 'Gagal disimpan. Data pegawai dengan NIK="'.$nik.'" sudah ada!';
+                    die(json_encode($ret));
+                }
             }
-        } else {
-            $ret['status']  = 'error';
-            $ret['message'] = 'Format Salah!';
+        }
+
+        // --- HANDLE INSTANSI & KODE KERJA ---
+        if (!empty($_POST['instansi'])) {
+            foreach ($_POST['instansi'] as $row) {
+                $id_instansi = intval($row['id_instansi']);
+                $id_kode_kerja = !empty($row['id_kode_kerja']) ? intval($row['id_kode_kerja']) : 0;
+
+                // Nonaktifkan semua kode kerja lama pegawai untuk instansi ini
+                $wpdb->update(
+                    'absensi_data_pegawai_instansi',
+                    ['active' => 0, 'update_at' => current_time('mysql')],
+                    ['id_pegawai' => $id_pegawai, 'id_instansi' => $id_instansi],
+                    ['%d','%s'],
+                    ['%d','%d']
+                );
+
+                // Cek apakah relasi sudah ada
+                $existing_relasi = $wpdb->get_row($wpdb->prepare("
+                    SELECT id FROM absensi_data_pegawai_instansi
+                    WHERE id_pegawai = %d
+                    AND id_instansi = %d
+                    AND id_kode_kerja = %d
+                ", $id_pegawai, $id_instansi, $id_kode_kerja));
+
+                if ($existing_relasi) {
+                    // Re-activate
+                    $wpdb->update(
+                        'absensi_data_pegawai_instansi',
+                        ['active' => 1, 'update_at' => current_time('mysql')],
+                        ['id' => $existing_relasi->id],
+                        ['%d','%s'],
+                        ['%d']
+                    );
+                } else {
+                    // Insert baru
+                    $wpdb->insert(
+                        'absensi_data_pegawai_instansi',
+                        [
+                            'id_pegawai' => $id_pegawai,
+                            'id_instansi' => $id_instansi,
+                            'id_kode_kerja' => $id_kode_kerja,
+                            'tahun' => intval($tahun),
+                            'active' => 1,
+                            'created_at' => current_time('mysql'),
+                            'update_at' => current_time('mysql')
+                        ],
+                        ['%d','%d','%d','%d','%d','%s','%s']
+                    );
+                }
+            }
         }
 
         die(json_encode($ret));
@@ -962,24 +925,21 @@ class Wp_Absen_Public_Pegawai {
             'data'   => array()
         );
 
-        if (empty($_POST['id_instansi']) || empty($_POST['id_user_list'])) {
+        if (!isset($_POST['id_instansi'])) {
             wp_send_json($ret);
         }
 
+        $current_user = wp_get_current_user();
+        $current_user_id = $current_user->ID;
+
+        $is_admin_instansi = in_array('admin_instansi', (array) $current_user->roles)
+            && !in_array('administrator', (array) $current_user->roles);
+
         $id_instansi_list = array_map('intval', $_POST['id_instansi']);
-        $id_user_list     = array_map('intval', $_POST['id_user_list']);
 
-        foreach ($id_instansi_list as $index => $id_instansi) {
+        foreach ($id_instansi_list as $id_instansi) {
 
-            $id_user = isset($id_user_list[$index]) 
-                ? intval($id_user_list[$index]) 
-                : 0;
-
-            if (!$id_user) {
-                continue;
-            }
-
-            // 1️⃣ Ambil instansi berdasarkan ID
+            // ambil instansi
             $instansi = $wpdb->get_row(
                 $wpdb->prepare("
                     SELECT id, nama_instansi, id_user
@@ -995,7 +955,12 @@ class Wp_Absen_Public_Pegawai {
                 continue;
             }
 
-            // 2️⃣ Ambil secondary kode kerja berdasarkan id_user
+            // jika admin instansi hanya boleh instansi miliknya
+            if ($is_admin_instansi && $instansi['id_user'] != $current_user_id) {
+                continue;
+            }
+
+            // ambil kode kerja berdasarkan id_user instansi
             $secondary = $wpdb->get_results(
                 $wpdb->prepare("
                     SELECT id, nama_kerja
@@ -1004,7 +969,7 @@ class Wp_Absen_Public_Pegawai {
                     AND active = 1
                     AND deleted_at IS NULL
                     ORDER BY nama_kerja ASC
-                ", $id_user),
+                ", $instansi['id_user']),
                 ARRAY_A
             );
 

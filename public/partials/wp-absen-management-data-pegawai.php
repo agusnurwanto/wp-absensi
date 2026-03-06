@@ -714,14 +714,16 @@ $current_user_id = $current_user->ID;
                     jQuery('#admin_instansi')
                         .val(instansiList)
                         .trigger('change');
+                    
+                    let id_user_list = res.data.id_user_instansi || [];
+                    console.log('instansiList:', instansiList);
+                    console.log('id_user_list:', id_user_list);
 
-                    loadInstansiKodeKerja(instansiList, existingKodeKerja);
+                    setTimeout(function(){
+                        loadInstansiKodeKerja(instansiList, existingKodeKerja, id_user_list);
+                    }, 200);
                     jQuery('#no_hp').val(res.data.no_hp);
                     jQuery('#tahun').val(res.data.tahun);
-
-                    if (isAdminInstansi) {
-                        jQuery('#admin_instansi').val(res.data.id_instansi).prop('disabled', true).prop('readonly', true);
-                    }
 
                     jQuery('#modalTambahDataPegawai').modal('show');
 
@@ -765,7 +767,7 @@ $current_user_id = $current_user->ID;
         jQuery('#nik').val('').prop('readonly', false).prop('disabled', false);
 
         if (isAdminInstansi) {
-            jQuery('#admin_instansi').val(currentUserId).trigger('change').prop('disabled', true).prop('readonly', true);
+            jQuery('#admin_instansi').val(currentUserId).trigger('change');
         }
 
         jQuery('#modalTambahDataPegawai').modal('show');
@@ -915,14 +917,7 @@ $current_user_id = $current_user->ID;
         });
     }
 
-    function loadInstansiKodeKerja(instansiList, existingKodeKerja = []) {
-
-        let id_user_list = [];
-
-        jQuery('#admin_instansi option:selected').each(function(){
-            id_user_list.push(jQuery(this).data('id_user'));
-        });
-
+    function loadInstansiKodeKerja(instansiList, existingKodeKerja = [], id_user_list = []) {
         jQuery.ajax({
             url: '<?php echo admin_url('admin-ajax.php'); ?>',
             type: 'POST',
@@ -940,7 +935,7 @@ $current_user_id = $current_user->ID;
                 jQuery('#container_instansi_kode_kerja').removeClass('hidden');
             },
             success: function(res) {
-
+                console.log(res.data);
                 if (!res.status) {
                     jQuery('#tbody_instansi_kode_kerja').html('');
                     jQuery('#container_instansi_kode_kerja').addClass('hidden');
@@ -948,6 +943,12 @@ $current_user_id = $current_user->ID;
                 }
 
                 let html = '';
+
+                // 🔹 mapping kode kerja existing berdasarkan instansi
+                let mapKodeKerja = {};
+                existingKodeKerja.forEach(function(item){
+                    mapKodeKerja[item.id_instansi] = item.id_kode_kerja;
+                });
 
                 res.data.forEach(function(row, index) {
 
@@ -972,14 +973,13 @@ $current_user_id = $current_user->ID;
 
                         let selected = '';
 
-                        existingKodeKerja.forEach(function(exist){
-                            if (
-                                parseInt(exist.id_instansi) === parseInt(row.id_instansi) &&
-                                parseInt(exist.id_kode_kerja) === parseInt(sec.id)
-                            ) {
-                                selected = 'selected';
-                            }
-                        });
+                        // 🔹 cek apakah ada kode kerja existing
+                        if (
+                            mapKodeKerja[row.id_instansi] &&
+                            parseInt(mapKodeKerja[row.id_instansi]) === parseInt(sec.id)
+                        ) {
+                            selected = 'selected';
+                        }
 
                         html += `
                             <option value="${sec.id}" ${selected}>
