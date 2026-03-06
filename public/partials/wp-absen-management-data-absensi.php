@@ -145,7 +145,6 @@ $date = date('d-m-Y');
 </div> 
 <!-- modalTambahDataAbsensi -->
 
-<!-- ✅ TAMBAH DI SINI -->
 <div class="modal fade" id="modalMap" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -196,13 +195,31 @@ $date = date('d-m-Y');
         });
 
         // Listener: When Pegawai Selected -> Load Kode Kerja
-        jQuery('#id_pegawai_manual').on('select2:select', (e) => {
-            let data = e.params.data;
-            if (data.id_instansi) {
-                loadKodeKerjaManual(data.id_instansi);
-            }
-        });
+        jQuery('#id_pegawai_manual').on('change', function(){
 
+            var id_pegawai = jQuery(this).val();
+
+            jQuery('#id_kode_kerja_manual').select2({
+                ajax: {
+                    url: ajaxurl,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            action: 'get_kode_kerja_by_pegawai',
+                            api_key: apikey,
+                            id_pegawai: id_pegawai
+                        };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data.items
+                        };
+                    }
+                }
+            });
+
+        });
         // Helper: Get Data Table
         function get_data_absensi() {
             if (typeof dataabsensi == 'undefined') {
@@ -479,7 +496,7 @@ $date = date('d-m-Y');
                             text: response.message,
                         });
                         jQuery('#modalTambahDataAbsensi').modal('hide');
-                        get_data_absensi();
+                        dataabsensi.ajax.reload();
                     } else {
                         Swal.fire({
                             icon: 'error',
