@@ -62,10 +62,41 @@ class Wp_Absen_Public_Ijin {
 			// Fetch List Pegawai
 			$sql_pegawai = "SELECT id, nama, nik FROM absensi_data_pegawai WHERE active = 1 AND deleted_at IS NULL";
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
-				$sql_pegawai .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
-			}
-			$sql_pegawai .= " ORDER BY nama ASC";
+				$id_instansi = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				$sql_pegawai = "
+				SELECT p.id, p.nama, p.nik
+				FROM absensi_data_pegawai p
+				JOIN absensi_data_pegawai_instansi pi ON p.id = pi.id_pegawai
+				WHERE pi.id_instansi = %d
+				AND pi.active = 1
+				AND pi.deleted_at IS NULL
+				AND p.active = 1
+				AND p.deleted_at IS NULL
+				ORDER BY p.nama ASC
+				";
+
+				$list_pegawai = $wpdb->get_results(
+					$wpdb->prepare($sql_pegawai, $id_instansi),
+					ARRAY_A
+				);
+		} else {
+
+			$sql_pegawai = "
+			SELECT id, nama, nik
+			FROM absensi_data_pegawai
+			WHERE active = 1
+			AND deleted_at IS NULL
+			ORDER BY nama ASC
+			";
+
 			$list_pegawai = $wpdb->get_results($sql_pegawai, ARRAY_A);
+		}
 		}
 
 		ob_start();
@@ -105,13 +136,29 @@ class Wp_Absen_Public_Ijin {
 				$sql_base .= $wpdb->prepare(" AND MONTH(i.tanggal_mulai) = %d", intval($bulan));
 			}
 
-
 			$current_user = wp_get_current_user();
 			$user_roles = (array) $current_user->roles;
 			$is_admin = in_array('administrator', $user_roles) || in_array('admin_instansi', $user_roles);
-
+			$instansi_id = $current_user->ID;
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
-				$sql_base .= $wpdb->prepare(" AND i.id_instansi = %d", $current_user->ID);
+
+			$id_instansi = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+					$current_user->ID
+				)
+			);
+
+			$sql_base .= $wpdb->prepare("
+				AND i.id_pegawai IN (
+					SELECT id_pegawai
+					FROM absensi_data_pegawai_instansi
+					WHERE id_instansi = %d
+					AND active = 1
+					AND deleted_at IS NULL
+				)
+			", $id_instansi);
+			
 			} elseif (in_array('pegawai', $user_roles) && !in_array('administrator', $user_roles) && !in_array('admin_instansi', $user_roles)) {
 				$pegawai_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM absensi_data_pegawai WHERE id_user = %d", $current_user->ID));
 				if ($pegawai_id) {
@@ -149,16 +196,6 @@ class Wp_Absen_Public_Ijin {
 								<img src="'.$file_url.'" style="max-width:80px; display:block; margin:0 auto 5px;">
 							</a>
 						';
-
-					if (!empty($row['file_lampiran'])) {
-                        // Path: public/img/ijin/
-						$file_url = ABSEN_PLUGIN_URL . 'public/img/ijin/' . $row['file_lampiran'];
-						$files = '
-						<a href="'.$file_url.'" target="_blank">
-							<img src="'.$file_url.'" style="max-width:80px; display:block; margin:0 auto 5px;">
-						</a>
-						';
-					}
 					}
 
                     // Status Badge
@@ -239,9 +276,21 @@ class Wp_Absen_Public_Ijin {
 			$user_roles = (array) $current_user->roles;
 
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
-
-				$sql .= $wpdb->prepare(" AND i.id_instansi = %d", $current_user->ID);
-
+				$id_instansi = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+					$current_user->ID
+				)
+			);
+			$sql .= $wpdb->prepare("
+				AND i.id_pegawai IN (
+					SELECT id_pegawai
+					FROM absensi_data_pegawai_instansi
+					WHERE id_instansi = %d
+					AND active = 1
+					AND deleted_at IS NULL
+				)
+			", $id_instansi);
 			} elseif (in_array('pegawai', $user_roles)
 				&& !in_array('administrator', $user_roles)
 				&& !in_array('admin_instansi', $user_roles)) {
@@ -395,13 +444,34 @@ class Wp_Absen_Public_Ijin {
             if (in_array('administrator', $user_roles)) {
 				if (isset($_POST['id_pegawai']) && intval($_POST['id_pegawai']) > 0) {
 					$id_pegawai = intval($_POST['id_pegawai']);
-					$p_instansi = $wpdb->get_var($wpdb->prepare("SELECT id_instansi FROM absensi_data_pegawai WHERE id = %d", $id_pegawai));
+					$p_instansi = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id_instansi 
+							FROM absensi_data_pegawai_instansi
+							WHERE id_pegawai = %d
+							AND active = 1
+							AND deleted_at IS NULL
+							ORDER BY id DESC
+							LIMIT 1",
+							$id_pegawai
+						)
+					);
 					$id_instansi = $p_instansi ? $p_instansi : $current_user->ID;
 				} else {
-					$id_instansi = $current_user->ID;
+					$id_instansi = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+							$current_user->ID
+						)
+					);
 				}
 			} elseif (in_array('admin_instansi', $user_roles)) {
-				$id_instansi = $current_user->ID;
+				$id_instansi = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
 				if (isset($_POST['id_pegawai']) && intval($_POST['id_pegawai']) > 0) {
 					$requested_id_pegawai = intval($_POST['id_pegawai']);
 					$verify_pegawai = $wpdb->get_var(
@@ -413,7 +483,7 @@ class Wp_Absen_Public_Ijin {
 							AND active = 1
 							AND deleted_at IS NULL",
 							$requested_id_pegawai,
-							$current_user->ID
+							$id_instansi
 						)
 					);
 					if ($verify_pegawai) {
