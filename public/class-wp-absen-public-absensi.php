@@ -71,8 +71,11 @@ class Wp_Absen_Public_Absensi
             SELECT k.id, k.nama_kerja
             FROM absensi_data_pegawai_instansi p
             JOIN absensi_data_kerja k ON p.id_kode_kerja = k.id
+            JOIN absensi_data_instansi i ON p.id_instansi = i.id
             WHERE p.id_pegawai = %d
             AND p.active = 1
+            AND k.active = 1
+            AND i.active = 1
         ", $pegawai_id), ARRAY_A);
 
         $ret['data'] = $results;
@@ -317,10 +320,16 @@ class Wp_Absen_Public_Absensi
             if ($id) {
                 // Fetch data join with Pegawai for name/instansi check if needed
                 $data = $wpdb->get_row($wpdb->prepare("
-                    SELECT ah.*, p.nama as nama_pegawai, p.nik, p.id_instansi 
+                    SELECT 
+                    ah.*, 
+                    p.nama as nama_pegawai, 
+                    p.nik,
+                    r.id_instansi
                     FROM absensi_harian ah
                     JOIN absensi_data_pegawai p ON ah.id_pegawai = p.id
+                    JOIN absensi_data_pegawai_instansi r ON p.id = r.id_pegawai
                     WHERE ah.id = %d
+                    AND r.active = 1
                 ", $id), ARRAY_A);
                 
                 if ($data) {
@@ -332,7 +341,14 @@ class Wp_Absen_Public_Absensi
                         die(json_encode($ret));
                     }
                     if (in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles)) {
-                        if ($data['id_instansi'] != $current_user->ID) {
+
+                        $instansi_user = $wpdb->get_var($wpdb->prepare("
+                            SELECT id
+                            FROM absensi_data_instansi
+                            WHERE id_user = %d
+                        ", $current_user->ID));
+
+                        if ($data['id_instansi'] != $instansi_user) {
                             $ret['message'] = "Akses Ditolak!";
                             die(json_encode($ret));
                         }
@@ -374,7 +390,6 @@ class Wp_Absen_Public_Absensi
             $tanggal = isset($_POST['tanggal']) ? sanitize_text_field($_POST['tanggal']) : '';
             $jam_masuk = isset($_POST['jam_masuk']) ? sanitize_text_field($_POST['jam_masuk']) : '';
             $jam_pulang = isset($_POST['jam_pulang']) ? sanitize_text_field($_POST['jam_pulang']) : '';
-            $jam_pulang = isset($_POST['jam_pulang']) ? sanitize_text_field($_POST['jam_pulang']) : '';
             // Default Status always Hadir for manual entry unless specified otherwise by logic (but user asked to remove input)
             $status = 'Hadir';
             $tahun = current_time('Y');
@@ -385,15 +400,30 @@ class Wp_Absen_Public_Absensi
             }
 
             // Get Instansi from Pegawai (Safety Check)
-            $pegawai = $wpdb->get_row($wpdb->prepare("SELECT id_instansi FROM absensi_data_pegawai WHERE id = %d", $id_pegawai));
+            $pegawai = $wpdb->get_row($wpdb->prepare("
+            SELECT id_instansi
+            FROM absensi_data_pegawai_instansi
+            WHERE id_pegawai = %d
+            AND active = 1
+            LIMIT 1
+            ", $id_pegawai));
+
             if (!$pegawai) {
-                $ret['message'] = 'Pegawai tidak ditemukan!';
+                $ret['message'] = 'Pegawai tidak terhubung dengan instansi!';
                 die(json_encode($ret));
             }
             
             // Instansi Check for Admin Instansi
             if (in_array('admin_instansi', (array)$current_user->roles) && !in_array('administrator', (array)$current_user->roles)) {
-                if ($pegawai->id_instansi != $current_user->ID) {
+
+                $instansi_user = $wpdb->get_var($wpdb->prepare("
+                    SELECT id
+                    FROM absensi_data_instansi
+                    WHERE id_user = %d
+                    LIMIT 1
+                ", $current_user->ID));
+
+                if ($pegawai->id_instansi != $instansi_user) {
                     $ret['message'] = 'Akses Ditolak (Pegawai bukan milik Instansi Anda)!';
                     die(json_encode($ret));
                 }
@@ -404,11 +434,13 @@ class Wp_Absen_Public_Absensi
             $waktu_pulang = $jam_pulang ? $tanggal . ' ' . $jam_pulang . ':00' : null;
 
             // Check if exist
-            $existing = $wpdb->get_row($wpdb->prepare("
+            $$existing = $wpdb->get_row($wpdb->prepare("
                 SELECT id FROM absensi_harian 
-                WHERE id_pegawai = %d AND id_kode_kerja = %d AND tanggal = %s
+                WHERE id_pegawai = %d 
+                AND id_kode_kerja = %d 
+                AND tanggal = %s
+                AND deleted_at IS NULL
             ", $id_pegawai, $id_kode_kerja, $tanggal));
-
             $data = array(
                 'id_pegawai' => $id_pegawai,
                 'id_instansi' => $pegawai->id_instansi,
@@ -485,7 +517,16 @@ class Wp_Absen_Public_Absensi
             $is_pegawai_only = in_array('pegawai', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles) && !in_array('admin_instansi', (array) $current_user->roles);
 
             if (in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles)) {
-                $sql_base .= $wpdb->prepare(" AND ah.id_instansi = %d", $current_user->ID);
+
+                $id_instansi = $wpdb->get_var($wpdb->prepare("
+                    SELECT id
+                    FROM absensi_data_instansi
+                    WHERE id_user = %d
+                    LIMIT 1
+                ", $current_user->ID));
+                if ($id_instansi) {
+                    $sql_base .= $wpdb->prepare(" AND ah.id_instansi = %d", $id_instansi);
+                }
             } else if ($is_pegawai_only) {
                 // Get Pegawai ID associated with this user
                 $pegawai_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM absensi_data_pegawai WHERE id_user = %d", $current_user->ID));
@@ -671,7 +712,7 @@ class Wp_Absen_Public_Absensi
                 WHERE ah.deleted_at IS NULL
             ";
 
-			$sql .= $wpdb->prepare(" AND ah.tahun = %s", $tahun);
+			$sql .= $wpdb->prepare(" AND ah.tahun = %d", intval($tahun));
 
 			if (!empty($bulan)) {
                 $sql .= $wpdb->prepare(" AND MONTH(ah.tanggal) = %d", intval($bulan));
@@ -682,7 +723,18 @@ class Wp_Absen_Public_Absensi
 
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
 
-				$sql .= $wpdb->prepare(" AND ah.id_instansi = %d", $current_user->ID);
+                $id_instansi = $wpdb->get_var(
+                    $wpdb->prepare(
+                        "SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+                        $current_user->ID
+                    )
+                );
+
+                if ($id_instansi) {
+                    $sql .= $wpdb->prepare(" AND ah.id_instansi = %d", $id_instansi);
+                } else {
+                    $sql .= " AND 1=0";
+                }
 
 			} elseif (in_array('pegawai', $user_roles)
 				&& !in_array('administrator', $user_roles)
@@ -863,7 +915,15 @@ class Wp_Absen_Public_Absensi
                 if (in_array('administrator', (array) $current_user->roles)) {
                     $allow = true;
                 } else if (in_array('admin_instansi', (array) $current_user->roles)) {
-                    if ($data->id_instansi == $current_user->ID) {
+
+                    $id_instansi_user = $wpdb->get_var($wpdb->prepare("
+                        SELECT id 
+                        FROM absensi_data_instansi 
+                        WHERE id_user = %d
+                        LIMIT 1
+                    ", $current_user->ID));
+
+                    if ($data->id_instansi == $id_instansi_user) {
                         $allow = true;
                     }
                 }

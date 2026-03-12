@@ -172,7 +172,7 @@ $input = shortcode_atts(array(
                         data: function(d) {
                             d.action = 'get_datatable_ijin';
                             d.api_key = apikey;
-                            d.tahun = $('#filter_tahun').val() || new Date().getFullYear();
+                            d.tahun = '<?php echo esc_html($input['tahun_anggaran']); ?>';
                             d.bulan = $('#filter_bulan').val(); 
                         }
                     },

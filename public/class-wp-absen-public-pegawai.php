@@ -1107,34 +1107,77 @@ class Wp_Absen_Public_Pegawai {
      */
     public function get_master_pegawai_search() {
         global $wpdb;
+
         $ret = array('items' => array());
 
         if (!empty($_GET['api_key']) && $_GET['api_key'] == get_option(ABSEN_APIKEY)) {
+
             $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
-            $query = "SELECT id, nama, nik, id_instansi FROM absensi_data_pegawai WHERE active = 1 AND deleted_at IS NULL";
 
-            // Instansi Filter
-            $current_user = wp_get_current_user();
-            if (in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles)) {
-                $query .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
-            }
+            $query = "
+            SELECT 
+                p.id,
+                p.nama,
+                p.nik,
+                r.id_instansi
+            FROM absensi_data_pegawai p
+            JOIN absensi_data_pegawai_instansi r 
+                ON r.id_pegawai = p.id
+            WHERE r.active = 1
+            ";
 
+            // filter search
             if ($search) {
-                $query .= " AND (nama LIKE '%$search%' OR nik LIKE '%$search%')";
+                $query .= " AND (p.nama LIKE '%$search%' OR p.nik LIKE '%$search%')";
             }
 
             $query .= " LIMIT 20";
+
             $results = $wpdb->get_results($query);
+
             foreach ($results as $row) {
                 $ret['items'][] = array(
                     'id' => $row->id,
                     'text' => $row->nama . ' (' . $row->nik . ')',
-                    'id_instansi' => $row->id_instansi // Pass this for frontend Use
+                    'id_instansi' => $row->id_instansi
                 );
             }
         }
 
         die(json_encode($ret));
     }
+    public function get_kode_kerja_by_pegawai() {
+    global $wpdb;
 
+    $ret = array('items' => array());
+
+    if (!empty($_GET['api_key']) && $_GET['api_key'] == get_option(ABSEN_APIKEY)) {
+
+        $id_pegawai = isset($_GET['id_pegawai']) ? intval($_GET['id_pegawai']) : 0;
+
+        if ($id_pegawai) {
+
+            $results = $wpdb->get_results($wpdb->prepare("
+                SELECT 
+                    k.id,
+                    k.nama_kerja
+                FROM absensi_data_pegawai_instansi r
+                JOIN absensi_data_kerja k 
+                    ON k.id = r.id_kode_kerja
+                WHERE r.id_pegawai = %d
+                AND r.active = 1
+                AND k.active = 1
+            ", $id_pegawai));
+
+            foreach ($results as $row) {
+                $ret['items'][] = array(
+                    'id' => $row->id,
+                    'text' => $row->nama_kerja
+                );
+            }
+        }
+    }
+
+    die(json_encode($ret));
+}
 }

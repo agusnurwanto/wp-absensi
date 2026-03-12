@@ -82,16 +82,38 @@ class Wp_Absen_Public_Kegiatan {
 				$pegawai_info['id'] = $pegawai_data->id;
 				$pegawai_info['nama'] = $pegawai_data->nama;
 			}
-		} elseif ($is_admin) {
-			// Fetch List Pegawai
-			$sql_pegawai = "SELECT id, nama, nik FROM absensi_data_pegawai WHERE active = 1 AND deleted_at IS NULL";
+		}elseif ($is_admin) {
+
+			$sql_pegawai = "
+			SELECT p.id, p.nama, p.nik
+			FROM absensi_data_pegawai p
+			JOIN absensi_data_pegawai_instansi r 
+				ON r.id_pegawai = p.id
+			WHERE p.active = 1
+			AND p.deleted_at IS NULL
+			AND r.active = 1
+			AND r.deleted_at IS NULL
+			";
+
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
-				$sql_pegawai .= $wpdb->prepare(" AND id_instansi = %d", $current_user->ID);
+
+				$instansi_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				if ($instansi_id) {
+					$sql_pegawai .= $wpdb->prepare(" AND r.id_instansi = %d", $instansi_id);
+				}
 			}
-			$sql_pegawai .= " ORDER BY nama ASC";
+
+			$sql_pegawai .= " ORDER BY p.nama ASC";
+
 			$list_pegawai = $wpdb->get_results($sql_pegawai, ARRAY_A);
 		}
-
+			
 		ob_start();
 		require 'partials/wp-absen-management-data-kegiatan.php';
 		
@@ -131,7 +153,7 @@ class Wp_Absen_Public_Kegiatan {
 						 WHERE k.active = 1 AND k.deleted_at IS NULL";
 			
 			// Filter Tahun
-			$sql_base .= $wpdb->prepare(" AND k.tahun = %s", $tahun);
+			$sql_base .= $wpdb->prepare(" AND YEAR(k.tanggal) = %d", $tahun);
 			if (!empty($bulan)) {
 				$sql_base .= $wpdb->prepare(" AND MONTH(k.tanggal) = %d", intval($bulan));
 			}
@@ -140,7 +162,19 @@ class Wp_Absen_Public_Kegiatan {
 			$user_roles = (array) $current_user->roles;
 
 			if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
-				$sql_base .= $wpdb->prepare(" AND k.id_instansi = %d", $current_user->ID);
+
+				$instansi_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
+
+				if ($instansi_id) {
+					$sql_base .= $wpdb->prepare(" AND k.id_instansi = %d", $instansi_id);
+				} else {
+					$sql_base .= " AND 1=0";
+				}
 			} elseif (in_array('pegawai', $user_roles) && !in_array('administrator', $user_roles) && !in_array('admin_instansi', $user_roles)) {
 				// Filter by Pegawai ID
 				$pegawai_id = $wpdb->get_var($wpdb->prepare("SELECT id FROM absensi_data_pegawai WHERE id_user = %d", $current_user->ID));
@@ -242,9 +276,16 @@ class Wp_Absen_Public_Kegiatan {
         $user_roles = (array) $current_user->roles;
 
         if (in_array('admin_instansi', $user_roles) && !in_array('administrator', $user_roles)) {
+			$instansi_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+				$current_user->ID
+			)
+		);
 
-            $sql .= $wpdb->prepare(" AND k.id_instansi = %d", $current_user->ID);
-
+		if ($instansi_id) {
+			$sql .= $wpdb->prepare(" AND k.id_instansi = %d", $instansi_id);
+		}
         } elseif (in_array('pegawai', $user_roles) 
             && !in_array('administrator', $user_roles) 
             && !in_array('admin_instansi', $user_roles)) {
@@ -427,7 +468,12 @@ class Wp_Absen_Public_Kegiatan {
 				}
 
 			} elseif (in_array('admin_instansi', $user_roles)) {
-				$id_instansi = $current_user->ID;
+				$id_instansi = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
 				if (isset($_POST['id_pegawai']) && intval($_POST['id_pegawai']) > 0) {
 					$requested_id_pegawai = intval($_POST['id_pegawai']);
 					// Verify ownership
@@ -440,7 +486,7 @@ class Wp_Absen_Public_Kegiatan {
 							AND active = 1
 							AND deleted_at IS NULL",
 							$requested_id_pegawai,
-							$current_user->ID
+							$id_instansi
 						)
 					);
 					if ($verify_pegawai) {
@@ -574,7 +620,15 @@ class Wp_Absen_Public_Kegiatan {
 				$current_user = wp_get_current_user();
 				// Check Access
 				if (in_array('admin_instansi', (array) $current_user->roles) && !in_array('administrator', (array) $current_user->roles)) {
-					if ($data['id_instansi'] != $current_user->ID) {
+
+					$instansi_id = $wpdb->get_var(
+						$wpdb->prepare(
+							"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+							$current_user->ID
+						)
+					);
+
+					if ($data['id_instansi'] != $instansi_id) {
 						echo json_encode($ret); wp_die();
 					}
 				}
@@ -601,8 +655,16 @@ class Wp_Absen_Public_Kegiatan {
 			if ($data) {
 				$allow = false;
 				if (in_array('administrator', (array) $current_user->roles)) $allow = true;
-				if (in_array('admin_instansi', (array) $current_user->roles) && $data->id_instansi == $current_user->ID) $allow = true;
+				$instansi_id = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT id FROM absensi_data_instansi WHERE id_user = %d",
+						$current_user->ID
+					)
+				);
 
+				if (in_array('admin_instansi', (array) $current_user->roles) && $data->id_instansi == $instansi_id) {
+					$allow = true;
+				}
 				if ($allow) {
 					// Soft Delete: Set deleted_at timestamp
 					$wpdb->update(
