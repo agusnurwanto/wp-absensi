@@ -468,6 +468,15 @@ class Wp_Absen_Public_Pegawai {
         // ===============================
         // AMBIL INSTANSI + KODE KERJA
         // ===============================
+        $where_instansi_pegawai = "";
+
+        if ($is_admin_instansi && !$is_admin) {
+            $where_instansi_pegawai = $wpdb->prepare(
+                " AND id_instansi = %d",
+                $id_instansi
+            );
+        }
+
         $pegawai_instansi = $wpdb->get_results(
             $wpdb->prepare("
                 SELECT id_instansi, id_kode_kerja
@@ -476,6 +485,7 @@ class Wp_Absen_Public_Pegawai {
                 AND tahun = %d
                 AND active = 1 
                 AND deleted_at IS NULL
+                $where_instansi_pegawai
             ", $recVal['id'], $tahun),
             ARRAY_A
         );
@@ -545,14 +555,14 @@ class Wp_Absen_Public_Pegawai {
         }
 
         $queryRecords[$recKey]['aksi'] = $btn;
-    }
+        }
 
-        die(json_encode([
-            "draw"            => intval($params['draw']),
-            "recordsTotal"    => $totalRecords,
-            "recordsFiltered" => $totalRecords,
-            "data"            => $queryRecords
-        ]));
+            die(json_encode([
+                "draw"            => intval($params['draw']),
+                "recordsTotal"    => $totalRecords,
+                "recordsFiltered" => $totalRecords,
+                "data"            => $queryRecords
+            ]));
     }
 
     public function hapus_data_pegawai_by_id() {
@@ -827,7 +837,7 @@ class Wp_Absen_Public_Pegawai {
             if (empty($cek_nik)) {
                 if (username_exists($nik)) {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Username (NIK) sudah terdaftar sebagai User WordPress!';
+                    $ret['message'] = 'Username (NIK) sudah terdaftar sebagai User WordPress! Harap hubungi admin';
                     die(json_encode($ret));
                 } elseif (email_exists($email)) {
                     $ret['status'] = 'error';
@@ -857,7 +867,7 @@ class Wp_Absen_Public_Pegawai {
                     $id_pegawai = $cek_nik['id'];
                 } else {
                     $ret['status'] = 'error';
-                    $ret['message'] = 'Gagal disimpan. Data pegawai dengan NIK="'.$nik.'" sudah ada!';
+                    $ret['message'] = 'Gagal disimpan. Data pegawai dengan NIK="'.$nik.'" sudah ada! Harap hubungi Admin!';
                     die(json_encode($ret));
                 }
             }
