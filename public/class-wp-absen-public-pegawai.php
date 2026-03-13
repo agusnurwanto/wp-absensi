@@ -1114,6 +1114,16 @@ class Wp_Absen_Public_Pegawai {
 
             $search = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
 
+            $current_user = wp_get_current_user();
+
+            // ambil instansi admin
+            $id_instansi_admin = $wpdb->get_var($wpdb->prepare("
+                SELECT id
+                FROM absensi_data_instansi
+                WHERE id_user = %d
+                AND active = 1
+            ", $current_user->ID));
+
             $query = "
             SELECT 
                 p.id,
@@ -1126,7 +1136,11 @@ class Wp_Absen_Public_Pegawai {
             WHERE r.active = 1
             ";
 
-            // filter search
+            // filter instansi jika bukan administrator
+            if (!current_user_can('administrator')) {
+                $query .= " AND r.id_instansi = " . intval($id_instansi_admin);
+            }
+
             if ($search) {
                 $query .= " AND (p.nama LIKE '%$search%' OR p.nik LIKE '%$search%')";
             }
